@@ -11,7 +11,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "stamp")
+@Table(name = "tickers")
 @Getter
 @Setter
 public class Tickers {

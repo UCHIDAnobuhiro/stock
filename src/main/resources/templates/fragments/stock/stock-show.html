@@ -23,14 +23,10 @@
 				<th></th>
 			</thead>
 			<tbody>
-				<tr>
-					<td class="py-1 text-xl">楽天証券楽天証券楽天証券</td>
-					<td class="py-1 text-xl pl-5">4755</td>
+				<tr th:each="ticker : ${tickers}">
+					<td class="py-1 text-xl" th:text="${ticker.brand}"></td>
+					<td class="py-1 text-xl pl-5" th:text="${ticker.ticker}"></td>
 					</td>
-				</tr>
-				<tr>
-					<td class="py-1 text-xl">楽天証券</td>
-					<td class="py-1 text-xl pl-5	">4755</td>
 				</tr>
 			</tbody>
 		</table>

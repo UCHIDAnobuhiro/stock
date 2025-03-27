@@ -27,9 +27,9 @@ public class TickersService {
 			return tickersRepository.findAll();
 		} catch (DataAccessException e) {
 			//DataAccessExceptionが発生した場合、エラーメッセージとともにTickersExceptionをスローする
-			throw new TickersException("getAllTickersError", e.getMessage());
+			String errorMessage = "すべての銘柄リスト取得失敗しました: " + e.getMessage();
+			throw new TickersException("getAllTickersError", errorMessage);
 		}
-
 	}
 
 }
