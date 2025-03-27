@@ -1,56 +1,35 @@
 <!DOCTYPE html>
 
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" style="width: 100vw;">
 
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Login</title>
-	<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<link rel="stylesheet" href="css/radio-switch-style.css">
 </head>
 
-<body class="flex flex-col min-h-screen min-w-[980px] overflow-x-auto">
-	<div th:insert="~{fragments/header :: header-template}"></div>
-	<main class="flex-grow container mx-auto p-4 flex flex-row ">
-		<!--	左側の一覧リストなど-->
-		<section class="text-gray-600 body-font w-1/3 p-4">
-			<h2>Left</h2>
+<body class="flex flex-col min-h-screen min-w-[980px] w-full overflow-x-auto">
+
+	<div th:insert="~{fragments/common/header :: header-template}" th:with="extraClass='min-w-[980px]'"></div>
+	<main class="flex-grow container mx-auto p-5 flex flex-row min-w-[980px] ">
+		<!--	左側のボタンと一覧リスト-->
+		<section class="text-gray-600 body-font w-1/3 my-4 border-2 rounded-lg border-gray-200 border-opacity-50">
+			<!--一覧リスト-->
+			<div th:insert="~{fragments/stock/stock-show :: stock-show-template}"></div>
 		</section>
 		<!--右側の当日情報、グラフ、出来高-->
-		<section class="text-gray-600 body-font w-2/3 p-4">
+		<section class="text-gray-600 body-font w-2/3 pl-4 py-4">
 			<!--当日情報-->
-			<div class="w-full">
-				<div class="flex border-2 rounded-lg border-gray-200 border-opacity-50 flex-col p-4">
-					<!--銘柄名＋銘柄コード-->
-					<div class="text-xl" id="tickerNameAndCode">
-						楽天証券(4755)
-					</div>
-					<!--現在値-->
-					<div class="text-3xl my-4" id="currentPrice">
-						現在値：179.00円
-					</div>
-					<!--四本値-->
-					<div class="lg:w-2/3 w-full  overflow-auto">
-						<table id="fourPrice" class="table-auto w-full text-left whitespace-no-wrap">
-							<tbody>
-								<tr>
-									<td class="py-1 text-xl">前日終値：160.00円</td>
-									<td class="py-1 text-xl">高値：190.00円</td>
-									</td>
-								</tr>
-								<tr>
-									<td class="py-1 text-xl">始値：180.00円</td>
-									<td class="py-1 text-xl">安値：175.00円</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
-			<!--当日情報END-->
+			<div th:insert="~{fragments/stock/today-information :: toady-information-template}"></div>
+			<!--ローソクと出来高-->
+			<div th:insert="~{fragments/stock/graph-volume-show :: graph-volume-show-template}"></div>
 		</section>
 	</main>
-	<div th:insert="~{fragments/footer :: footer-template}"></div>
+	<div th:insert="~{fragments/common/footer :: footer-template}"></div>
+	<script src="/js/technical-dropdown.js" defer></script>
 </body>
 
 </html>
