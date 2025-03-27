@@ -1,17 +1,18 @@
-<header class="text-gray-600 body-font w-full" th:fragment="header-template">
-	<div class="container mx-auto flex flex-wrap items-center justify-between p-5">
-		<a th:href="${#authorization.expression('isAuthenticated()') ? '/worktime/home' : '/login'}"
+<header class="text-gray-600 body-font w-full"  th:classappend="${extraClass}" th:fragment="header-template">
+	<div class="container mx-auto" th:classappend="${extraClass}">
+		<div class="flex flex-wrap items-center justify-between p-5 w-full">
+		<a th:href="${#authorization.expression('isAuthenticated()') ? '/stock' : '/login'}"
 			class="flex items-center">
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round"
 				stroke-linejoin="round" stroke-width="2" class="w-10 h-10 text-white p-2 bg-indigo-500 rounded-full"
 				viewBox="0 0 24 24">
 				<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
 			</svg>
-			<span class="ml-3 text-2xl">Attendance Management</span>
+			<span class="ml-3 text-2xl">Stock</span>
 		</a>
 		<form th:action="@{/logout}" method="post"
 			th:if="${#authorization.expression('isAuthenticated()')}">
-			<button type="submit" class="flex items-center title-font font-medium text-gray-900 mb-4 md:mb-0">
+			<button type="submit" class="flex items-center title-font font-medium text-gray-900">
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round"
 					stroke-linejoin="round" stroke-width="2" class="w-10 h-10 text-white p-2 bg-indigo-500 rounded-full"
 					viewBox="0 0 24 24">
@@ -21,5 +22,6 @@
 				<span class="ml-2">Logout</span>
 			</button>
 		</form>
+		</div>
 	</div>
 </header>
