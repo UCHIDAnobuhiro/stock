@@ -22,7 +22,7 @@ public class StockService {
 	private final ObjectMapper objectMapper;
 
 	// application.propertiesからAPIキーを読み込む。
-	@Value("${alphavantage.api.key}")
+	@Value("${api.key}")
 	private String apiKey;
 
 	public StockService(RestTemplate restTemplate, ObjectMapper objectMapper) {
