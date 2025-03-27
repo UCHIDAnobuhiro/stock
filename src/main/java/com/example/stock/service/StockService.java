@@ -128,4 +128,30 @@ public class StockService {
 		return list.get(list.size() - 1); // 最新のデータ（リストは昇順）
 	}
 
+	/**
+	 * 指定された銘柄とインターバル（日足・週足など）に基づいて、
+	 * ローソク足形式の株価データ（日時、4本値、出来高）をDTOリストとして返却します。
+	 *
+	 * @param symbol 銘柄コード（例: "AAPL"）
+	 * @param interval データの間隔（例: "1day", "1week", "1month"）
+	 * @return 株価データのリスト（StockCandleDto形式）
+	 */
+	public List<StockCandleDto> getStockCandleDtoList(String symbol, String interval) {
+		// Twelve Data APIから指定された銘柄・間隔の時系列データを取得
+		Map<String, Object> data = getStockTimeSeries(symbol, interval);
+		// "values"キーに格納されたローソク足データを取り出す（List<Map<String, String>> 形式）
+		List<Map<String, String>> values = (List<Map<String, String>>) data.get("values");
+
+		// 各データをStockCandleDtoに変換し、リストとして返却
+		return values.stream()
+				.map(v -> new StockCandleDto(
+						v.get("datetime"),
+						Double.parseDouble(v.get("open")),
+						Double.parseDouble(v.get("high")),
+						Double.parseDouble(v.get("low")),
+						Double.parseDouble(v.get("close")),
+						Long.parseLong(v.get("volume"))))
+				.toList();
+	}
+
 }
