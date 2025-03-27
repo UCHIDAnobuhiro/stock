@@ -1,0 +1,67 @@
+<!--ローソクなどのボタンとグラフと出来高のグラフのテンプレート-->
+<div th:fragment="graph-volume-show-template">
+	<div id="graphInformation" class="w-full mt-2">
+		<div class="flex border-2 rounded-lg border-gray-200 border-opacity-50 flex-col p-4">
+			<div class="flex items-center items-stretch mb-2 flex-row">
+				<!--ローソク-->
+				<div class="relative">
+					<select id="candleSelector" class="rounded border appearance-none border-gray-300 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-200 
+								focus:border-indigo-500 text-base pl-3 pr-10">
+						<option>日足</option>
+						<option>週足</option>
+						<option>月足</option>
+					</select>
+					<span
+						class="absolute right-0 top-0 h-full w-10 text-center text-gray-600 pointer-events-none flex items-center justify-center">
+						<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+							stroke-width="2" class="w-4 h-4" viewBox="0 0 24 24">
+							<path d="M6 9l6 6 6-6"></path>
+						</svg>
+					</span>
+				</div>
+				<!--ローソクEND-->
+				<!--テクニカル-->
+				<div id="technicalDropdown" class="relative inline-block mx-2">
+					<button id="technicalDropdownButton" class="rounded border appearance-none border-gray-300 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-200 
+							focus:border-indigo-500 text-base pl-3 pr-10">
+						テクニカル
+					</button>
+					<span
+						class="absolute right-0 top-0 h-full w-10 text-center text-gray-600 pointer-events-none flex items-center justify-center">
+						<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+							stroke-width="2" class="w-4 h-4" viewBox="0 0 24 24">
+							<path d="M6 9l6 6 6-6"></path>
+						</svg>
+					</span>
+					<div id="technicalDropdownMenu"
+						class="absolute hidden mt-1 bg-white border border-gray-400 shadow-2xl drop-shadow-lg rounded-lg p-2 min-w-max">
+						<label class="block"><input type="checkbox" value="option1"> 移動平均線</label>
+						<label class="block"><input type="checkbox" value="option2"> 一目均衡表</label>
+						<label class="block"><input type="checkbox" value="option3"> ボリンジャーバンド</label>
+					</div>
+				</div>
+				<!--テクニカルEND-->
+				<!--トレンドライン-->
+				<div id="trendLine" class="relative flex flex-row">
+					<label for="trendLineCheckbox" id="trendLineLabel"
+						class="rounded border appearance-none border-gray-300 transition peer-checked:border-blue-500
+							hover:outline-none hover:ring-2 hover:ring-indigo-200 hover:border-indigo-500 text-base px-2 h-full flex items-center">
+						トレンドライン
+						<input type="checkbox" id="trendLineCheckbox" class="mx-2">
+					</label>
+				</div>
+				<!--トレンドラインEND-->
+			</div>
+			<!--グラフ表示-->
+			<div class="charts-wrapper w-full flex flex-col">
+				<div class="graph w-full">
+					<canvas id="chart"></canvas>
+				</div>
+				<div class="graph w-full">
+					<canvas id="volume"></canvas>
+				</div>
+			</div>
+			<!--グラフ表示END-->
+		</div>
+	</div>
+</div>
