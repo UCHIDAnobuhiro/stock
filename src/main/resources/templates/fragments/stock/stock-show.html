@@ -2,12 +2,12 @@
 <div th:fragment="stock-show-template">
 	<!--	ボタン-->
 	<div id="showAllOrFavoriteButton" class="flex flex-row px-4 pt-4 mb-4 border-b border-gray-300 ">
-		<input type="radio" id="showAllButton" value="all" name="showButton" class="hidden" checked>
+		<input type="radio" id="showAllButton" value="all" name="showButton" class="hidden">
 		<label for="showAllButton" class="flex items-center justify-center cursor-pointer text-black text-center border-0 py-2 text-base 
 	rounded px-2 mr-3 text-center transition duration-200 ease-in-out hover:bg-indigo-600">
 			すべて
 		</label>
-		<input type="radio" id="showFavoriteButton" value="favorite" name="showButton" class="hidden">
+		<input type="radio" id="showFavoriteButton" value="favorite" name="showButton" class="hidden" checked>
 		<label for="showFavoriteButton" class="flex items-center justify-center cursor-pointer text-black border-0 py-2 text-base rounded 
 		ml-2 px-2 text-center transition duration-200 ease-in-out hover:bg-indigo-600">
 			お気に入り
@@ -22,7 +22,7 @@
 				<th class="pl-5">銘柄コード</th>
 				<th></th>
 			</thead>
-			<tbody>
+			<tbody id="stocksTbody">
 				<tr th:each="ticker : ${tickers}">
 					<td class="py-1 text-xl" th:text="${ticker.brand}"></td>
 					<td class="py-1 text-xl pl-5" th:text="${ticker.ticker}"></td>

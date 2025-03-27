@@ -1,12 +1,16 @@
 package com.example.stock.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import com.example.stock.exception.TickersException;
+import com.example.stock.model.Favorites;
 import com.example.stock.model.Tickers;
+import com.example.stock.model.Users;
+import com.example.stock.repository.FavoritesRepository;
 import com.example.stock.repository.TickersRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -16,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class TickersService {
 
 	private final TickersRepository tickersRepository;
+	private final FavoritesRepository favoritesRepository;
 
 	/**
 	 *  すべてのtickersを取得
@@ -32,4 +37,16 @@ public class TickersService {
 		}
 	}
 
+	public List<Tickers> getFavoriteTickersByUser(Users user) throws TickersException {
+		List<Favorites> favorites = favoritesRepository.findByUser(user);
+		return convertFavoritesToTickers(favorites);
+	}
+
+	private List<Tickers> convertFavoritesToTickers(List<Favorites> favorites) {
+		List<Tickers> tickersList = new ArrayList<>();
+		for (Favorites favorite : favorites) {
+			tickersList.add(favorite.getTicker());
+		}
+		return tickersList;
+	}
 }
