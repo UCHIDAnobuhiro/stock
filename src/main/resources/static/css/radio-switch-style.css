@@ -28,5 +28,5 @@
 #showFavoriteButton:checked+label {
 	color: #4f46e5;
 	font-weight: 600;
-	box-shadow: inset 0 0 0 2px #4f46e5 , 3px 3px 6px rgb(204, 221, 249);
+	box-shadow: inset 0 0 0 2px #4f46e5, 3px 3px 6px rgb(204, 221, 249);
 }
