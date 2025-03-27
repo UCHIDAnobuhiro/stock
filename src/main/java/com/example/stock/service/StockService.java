@@ -38,8 +38,10 @@ public class StockService {
 	 * @return 完成したAPI URL
 	 */
 	private String buildTimeSeriesUrl(String symbol, String interval) {
-		return UriComponentsBuilder
-				.fromHttpUrl("https://api.twelvedata.com/time_series")
+		return UriComponentsBuilder.newInstance()
+				.scheme("https")
+				.host("api.twelvedata.com")
+				.path("/time_series")
 				.queryParam("symbol", symbol)
 				.queryParam("interval", interval)
 				.queryParam("outputsize", 100)
