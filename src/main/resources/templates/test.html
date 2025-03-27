@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<title>最新株価データ</title>
+	<style>
+		table {
+			border-collapse: collapse;
+			width: 100%;
+			margin-top: 20px;
+		}
+
+		th,
+		td {
+			border: 1px solid #ccc;
+			padding: 8px;
+			text-align: right;
+		}
+
+		th {
+			background-color: #f5f5f5;
+		}
+
+		td:first-child,
+		th:first-child {
+			text-align: center;
+		}
+	</style>
+</head>
+
+<body>
+	<h2 th:text="'最新株価データ（' + ${symbol} + '）'">株価データ</h2>
+
+	<table>
+		<thead>
+			<tr>
+				<th>日付</th>
+				<th>始値</th>
+				<th>高値</th>
+				<th>安値</th>
+				<th>終値</th>
+				<th>前日終値</th>
+				<th>出来高</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td th:text="${stock.datetime}"></td>
+				<td th:text="${stock.open}"></td>
+				<td th:text="${stock.high}"></td>
+				<td th:text="${stock.low}"></td>
+				<td th:text="${stock.close}"></td>
+				<td th:text="${stock.prevClose}"></td>
+				<td th:text="${stock.volume}"></td>
+			</tr>
+		</tbody>
+	</table>
+</body>
+
+</html>

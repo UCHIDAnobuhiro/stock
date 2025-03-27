@@ -1,0 +1,39 @@
+<!--銘柄一覧リストのテンプレート-->
+<div th:fragment="stock-show-template">
+	<!--	ボタン-->
+	<div id="showAllOrFavoriteButton" class="flex flex-row px-4 pt-4 mb-4 border-b border-gray-300 ">
+		<input type="radio" id="showAllButton" value="all" name="showButton" class="hidden" checked>
+		<label for="showAllButton" class="flex items-center justify-center cursor-pointer text-black text-center border-0 py-2 text-base 
+	rounded px-2 mr-3 text-center transition duration-200 ease-in-out hover:bg-indigo-600">
+			すべて
+		</label>
+		<input type="radio" id="showFavoriteButton" value="favorite" name="showButton" class="hidden">
+		<label for="showFavoriteButton" class="flex items-center justify-center cursor-pointer text-black border-0 py-2 text-base rounded 
+		ml-2 px-2 text-center transition duration-200 ease-in-out hover:bg-indigo-600">
+			お気に入り
+		</label>
+	</div>
+	<!--	ボタンEND-->
+	<!--	銘柄一覧リスト-->
+	<div id="stocksList" class="px-4 whitespace-nowrap overflow-x-auto">
+		<table id="fourPrice" class="text-left font-sans">
+			<thead>
+				<th>銘柄名</th>
+				<th class="pl-5">銘柄コード</th>
+				<th></th>
+			</thead>
+			<tbody>
+				<tr>
+					<td class="py-1 text-xl">楽天証券楽天証券楽天証券</td>
+					<td class="py-1 text-xl pl-5">4755</td>
+					</td>
+				</tr>
+				<tr>
+					<td class="py-1 text-xl">楽天証券</td>
+					<td class="py-1 text-xl pl-5	">4755</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<!--	銘柄一覧リストEND-->
+</div>
