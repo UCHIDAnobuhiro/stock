@@ -74,13 +74,11 @@ const rawData =
 		},
 	];
 
-// データを昇順（古い→新しい）に並べ替え
+// 古い順にソート
 rawData.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
 
-// ラベル用の日付配列を作成
 const labels = rawData.map(d => d.datetime);
 
-// 日付をそのままカテゴリラベルとして使う（ISO日付文字列）
 const candleData = rawData.map(d => ({
 	x: d.datetime,
 	o: d.open,
@@ -89,51 +87,67 @@ const candleData = rawData.map(d => ({
 	c: d.close
 }));
 
-// ローソク足の表示
+const volumeData = rawData.map(d => ({
+	x: d.datetime,
+	y: d.volume
+}));
+
 const ctx = document.getElementById("chart").getContext("2d");
+
 const chart = new Chart(ctx, {
 	type: "candlestick",
 	data: {
-		labels: labels,
+		labels: labels, // カテゴリ軸で使う
 		datasets: [
 			{
-				label: "テスト",
+				label: "価格",
 				data: candleData,
-				borderColor: {
-					up: "#26a69a",
-					down: "#ef5350"
-				},
-				backgroundColor: {
-					up: "#26a69a",
-					down: "#ef5350"
-				}
+				borderColor: { up: "#26a69a", down: "#ef5350" },
+				backgroundColor: { up: "#26a69a", down: "#ef5350" },
+				yAxisID: "y-price"
 			},
-		],
+			{
+				type: "bar",
+				label: "出来高",
+				data: volumeData,
+				backgroundColor: "rgba(100, 149, 237, 0.4)",
+				borderColor: "rgba(100, 149, 237, 1)",
+				yAxisID: "y-volume",
+				barThickness: 8
+			}
+		]
 	},
 	options: {
 		responsive: true,
 		scales: {
 			x: {
-				type: 'category', // ← ここをcategoryに変更
-				title: { display: true, text: 'Date' },
+				type: "category",
+				labels: labels,
+				title: { display: true, text: "日付" },
 				ticks: {
-					maxRotation: 0,    // 日付ラベルを回転しない
-					autoSkip: true     // ラベルが多いとき自動で間引き
+					maxRotation: 0,
+					autoSkip: true
 				}
 			},
-			y: {
-				title: { display: true, text: 'Price' }
+			"y-price": {
+				position: "left",
+				title: { display: true, text: "価格" }
+			},
+			"y-volume": {
+				position: "right",
+				title: { display: true, text: "出来高" },
+				grid: { drawOnChartArea: false }
 			}
 		},
 		plugins: {
 			tooltip: {
 				callbacks: {
-					// ツールチップの日付表示をシンプルにする
 					title: (context) => context[0].label,
-
-					// ★ OHLCを日本語で表示するための設定
 					label: (context) => {
 						const item = context.raw;
+						if (context.dataset.type === 'bar') {
+							return `出来高: ${item.y.toLocaleString()}`;
+						}
 						return [
 							`始値: ${item.o}`,
 							`高値: ${item.h}`,
@@ -145,4 +159,4 @@ const chart = new Chart(ctx, {
 			}
 		}
 	}
-})
+});	
