@@ -1,6 +1,9 @@
 let symbol = 'AAPL';
 let interval = '1day';
 
+let candleChart = null;
+let volumeChart = null;
+
 const fetchStockData = async () => {
 	const url = `http://localhost:8080/api/stocks/time-series/values?symbol=${symbol}&interval=${interval}`
 	const res = await fetch(url);
@@ -32,27 +35,20 @@ const renderCharts = async () => {
 		y: d.volume
 	}));
 
-	// 古いチャートを削除してから描画（再描画のため）
-	document.getElementById("candlestick-chart").remove();
-	document.getElementById("volume-chart").remove();
-
 	// 再生成
-	const container = document.getElementById("chartContainer");
-	container.innerHTML = `
-	<div class="graph w-full">
-		<canvas id="candlestick-chart"></canvas>
-	</div>
-	<div class="graph w-full">
-		<canvas id="volume-chart"></canvas>
-	</div>
-		`;
+	if (candleChart) {
+		candleChart.destroy();
+	}
+	if (volumeChart) {
+		volumeChart.destroy();
+	}
 
-	createCandleChart(labels, candleData);
-	createVolumeChart(labels, volumeData);
+	candleChart = createCandleChart(labels, candleData);
+	volumeChart = createVolumeChart(labels, volumeData);
 }
 
 const createCandleChart = (labels, data) => {
-	new Chart(document.getElementById("candlestick-chart").getContext("2d"), {
+	return new Chart(document.getElementById("candlestick-chart").getContext("2d"), {
 		type: "candlestick",
 		data: {
 			labels,
@@ -107,7 +103,7 @@ const createCandleChart = (labels, data) => {
 }
 
 const createVolumeChart = (labels, data) => {
-	new Chart(document.getElementById("volume-chart").getContext("2d"), {
+	return new Chart(document.getElementById("volume-chart").getContext("2d"), {
 		type: "bar",
 		data: {
 			labels,
