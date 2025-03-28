@@ -63,7 +63,10 @@ const createCandleChart = (labels, data) => {
 				y: {
 					position: "right",
 					ticks: {
-					  callback: (value) => value.toFixed(2)
+						callback: (value) => value.toFixed(2)
+					},
+					afterFit: scale => {
+						scale.width = 70;
 					}
 				}
 			},
@@ -82,13 +85,16 @@ const createCandleChart = (labels, data) => {
 						}
 					}
 				},
-				legend: { display: false } 
+				legend: { display: false }
 			}
 		}
 	});
 }
 
 const createVolumeChart = (labels, data) => {
+	const chartWidth = document.getElementById("volume-chart").offsetWidth;
+	const barCount = labels.length;
+	const barThickness = Math.floor(chartWidth / barCount * 0.6);
 	new Chart(document.getElementById("volume-chart").getContext("2d"), {
 		type: "bar",
 		data: {
@@ -98,7 +104,7 @@ const createVolumeChart = (labels, data) => {
 				data,
 				backgroundColor: "rgba(100, 149, 237, 0.4)",
 				borderColor: "rgba(100, 149, 237, 1)",
-				barThickness: 8
+				barThickness: barThickness
 			}]
 		},
 		options: {
@@ -114,6 +120,9 @@ const createVolumeChart = (labels, data) => {
 					position: "right",
 					ticks: {
 						callback: v => `${v / 1_000}K`
+					},
+					afterFit: scale => {
+						scale.width = 70;
 					}
 				}
 			},
