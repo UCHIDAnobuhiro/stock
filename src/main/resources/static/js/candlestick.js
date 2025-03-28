@@ -43,11 +43,11 @@ const renderCharts = async () => {
 		volumeChart.destroy();
 	}
 
-	candleChart = createCandleChart(labels, candleData);
+	candleChart = createCandleChart(labels, candleData, volumeData);
 	volumeChart = createVolumeChart(labels, volumeData);
 }
 
-const createCandleChart = (labels, data) => {
+const createCandleChart = (labels, data, volumeData) => {
 	return new Chart(document.getElementById("candlestick-chart").getContext("2d"), {
 		type: "candlestick",
 		data: {
@@ -64,12 +64,13 @@ const createCandleChart = (labels, data) => {
 			scales: {
 				x: {
 					type: "category",
-					stacked: false,
 					labels: labels,
 					ticks: {
 						maxRotation: 0,
-						autoSkip: true
-					}
+						autoSkip: true,
+						maxTicksLimit: 10,
+						callback: (val, index) => labels[index]
+					},
 				},
 				y: {
 					position: "right",
@@ -87,11 +88,14 @@ const createCandleChart = (labels, data) => {
 						title: (context) => context[0].label,
 						label: (context) => {
 							const item = context.raw;
+							const matchedVolume = volumeData.find(v => v.x === item.x);
+							const volume = matchedVolume ? matchedVolume.y.toLocaleString() : "N/A";
 							return [
 								`始値: ${item.o}`,
 								`高値: ${item.h}`,
 								`安値: ${item.l}`,
 								`終値: ${item.c}`,
+								`出来高: ${volume}`
 							];
 						}
 					}
@@ -121,13 +125,20 @@ const createVolumeChart = (labels, data) => {
 				x: {
 					type: "category",
 					labels: labels,
-					ticks: { maxRotation: 0, autoSkip: true },
-					grid: { display: false }
+					ticks: {
+						maxRotation: 0,
+						autoSkip: true,
+						maxTicksLimit: 10,
+						callback: (val, index) => labels[index]
+					},
+					grid: {
+						display: false
+					}
 				},
 				y: {
 					position: "right",
 					ticks: {
-						callback: v => `${v / 1_000}K`
+						callback: v => v === 0 ? "0" : `${v / 1_000}K`
 					},
 					afterFit: scale => {
 						scale.width = 70;
