@@ -2,6 +2,7 @@ package com.example.stock.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,12 @@ public class TickersService {
 			String errorMessage = "すべての銘柄リスト取得失敗しました: " + e.getMessage();
 			throw new TickersException("getAllTickersError", errorMessage);
 		}
+	}
+
+	public Tickers getTickerById(Long tickerId) {
+		Optional<Tickers> optionalTicker = tickersRepository.findById(tickerId);
+		Tickers ticker = optionalTicker.orElseThrow(() -> new RuntimeException("Ticker not found"));
+		return ticker;
 	}
 
 	public List<Tickers> getFavoriteTickersByUser(Users user) throws TickersException {

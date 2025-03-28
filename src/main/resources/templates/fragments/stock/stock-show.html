@@ -2,12 +2,12 @@
 <div th:fragment="stock-show-template">
 	<!--	ボタン-->
 	<div id="showAllOrFavoriteButton" class="flex flex-row px-4 pt-4 mb-4 border-b border-gray-300 ">
-		<input type="radio" id="showAllButton" value="all" name="showButton" class="hidden">
+		<input type="radio" id="showAllButton" value="all" name="showButton" class="hidden" checked>
 		<label for="showAllButton" class="flex items-center justify-center cursor-pointer text-black text-center border-0 py-2 text-base 
 	rounded px-2 mr-3 text-center transition duration-200 ease-in-out hover:bg-indigo-600">
 			すべて
 		</label>
-		<input type="radio" id="showFavoriteButton" value="favorite" name="showButton" class="hidden" checked>
+		<input type="radio" id="showFavoriteButton" value="favorite" name="showButton" class="hidden">
 		<label for="showFavoriteButton" class="flex items-center justify-center cursor-pointer text-black border-0 py-2 text-base rounded 
 		ml-2 px-2 text-center transition duration-200 ease-in-out hover:bg-indigo-600">
 			お気に入り
@@ -15,21 +15,35 @@
 	</div>
 	<!--	ボタンEND-->
 	<!--	銘柄一覧リスト-->
-	<div id="stocksList" class="px-4 whitespace-nowrap overflow-x-auto">
-		<table id="fourPrice" class="text-left font-sans">
+	<div id="stocksDetailsList" class="px-4 whitespace-nowrap overflow-x-auto">
+		<table id="stocksDetails" class="text-left font-sans">
 			<thead>
-				<th>銘柄名</th>
-				<th class="pl-5">銘柄コード</th>
+				<th>銘柄コード</th>
+				<th class="pl-5">銘柄名</th>
 				<th></th>
 			</thead>
-			<tbody id="stocksTbody">
-				<tr th:each="ticker : ${tickers}">
-					<td class="py-1 text-xl" th:text="${ticker.brand}"></td>
-					<td class="py-1 text-xl pl-5" th:text="${ticker.ticker}"></td>
-					</td>
+			<tbody id="stocksTB">
+				<!--テーブルrowは一部更新の対象になるため、分ける-->
+				<tr th:replace="~{fragments/stock/stock-show :: stocksDetailsTR}">
 				</tr>
 			</tbody>
 		</table>
 	</div>
 	<!--	銘柄一覧リストEND-->
+	<script src="/js/all-favorite-switch.js"></script>
+	<script src="/js/favorite-checker.js"></script>
 </div>
+
+<tr id="stocksTR" th:each="ticker : ${tickers}" th:fragment="stocksDetailsTR">
+	<td class="py-1 text-xl" th:text="${ticker.ticker}"></td>
+	<td class="py-1 text-xl pl-5" th:text="${ticker.brand}"></td>
+	<td >
+		<input type="checkbox" id="favoriteCheckbox"  th:checked="${isFavorite}"  th:data-ticker-id="${ticker.id}" onclick="updateFavorite(this)"/>
+	</td>
+</tr>
+
+
+<!--		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="25" height="25">-->
+<!--		  <path d="M12 21s-8-5.5-8-10.5C4 6.42 6.42 4 9 4c1.66 0 3.33 1.02 4 3 0.67-1.98 2.34-3 4-3 2.58 0 5 2.42 5 6.5 0 5-8 10.5-8 10.5z" -->
+<!--		        fill="none" stroke="black" stroke-width="2" />-->
+<!--		</svg>-->
