@@ -55,15 +55,16 @@ const createCandleChart = (labels, data) => {
 					type: "category",
 					stacked: false,
 					labels: labels,
-					title: { display: true, text: "日付" },
 					ticks: {
 						maxRotation: 0,
 						autoSkip: true
 					}
 				},
 				y: {
-					position: "left",
-					title: { display: true, text: "価格" },
+					position: "right",
+					ticks: {
+					  callback: (value) => value.toFixed(2)
+					}
 				}
 			},
 			plugins: {
@@ -80,7 +81,8 @@ const createCandleChart = (labels, data) => {
 							];
 						}
 					}
-				}
+				},
+				legend: { display: false } 
 			}
 		}
 	});
@@ -109,9 +111,9 @@ const createVolumeChart = (labels, data) => {
 					grid: { display: false }
 				},
 				y: {
-					title: { display: true, text: "出来高" },
+					position: "right",
 					ticks: {
-						callback: v => `${v / 1_000_000}M`
+						callback: v => `${v / 1_000}K`
 					}
 				}
 			},
