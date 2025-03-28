@@ -92,9 +92,6 @@ const createCandleChart = (labels, data) => {
 }
 
 const createVolumeChart = (labels, data) => {
-	const chartWidth = document.getElementById("volume-chart").offsetWidth;
-	const barCount = labels.length;
-	const barThickness = Math.floor(chartWidth / barCount * 0.6);
 	new Chart(document.getElementById("volume-chart").getContext("2d"), {
 		type: "bar",
 		data: {
@@ -104,7 +101,7 @@ const createVolumeChart = (labels, data) => {
 				data,
 				backgroundColor: "rgba(100, 149, 237, 0.4)",
 				borderColor: "rgba(100, 149, 237, 1)",
-				barThickness: barThickness
+				barThickness: 5
 			}]
 		},
 		options: {
