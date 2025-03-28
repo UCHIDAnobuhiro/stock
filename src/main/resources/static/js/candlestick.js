@@ -92,7 +92,7 @@ const volumeData = rawData.map(d => ({
 	y: d.volume
 }));
 
-const ctx = document.getElementById("chart").getContext("2d");
+const ctx = document.getElementById("candlestick-chart").getContext("2d");
 
 const chart = new Chart(ctx, {
 	type: "candlestick",
@@ -104,16 +104,6 @@ const chart = new Chart(ctx, {
 				data: candleData,
 				borderColor: { up: "#26a69a", down: "#ef5350" },
 				backgroundColor: { up: "#26a69a", down: "#ef5350" },
-				yAxisID: "y-price"
-			},
-			{
-				type: "bar",
-				label: "出来高",
-				data: volumeData,
-				backgroundColor: "rgba(100, 149, 237, 0.4)",
-				borderColor: "rgba(100, 149, 237, 1)",
-				yAxisID: "y-volume",
-				barThickness: 8
 			}
 		]
 	},
@@ -122,6 +112,7 @@ const chart = new Chart(ctx, {
 		scales: {
 			x: {
 				type: "category",
+				stacked: false,
 				labels: labels,
 				title: { display: true, text: "日付" },
 				ticks: {
@@ -129,14 +120,9 @@ const chart = new Chart(ctx, {
 					autoSkip: true
 				}
 			},
-			"y-price": {
+			y: {
 				position: "left",
-				title: { display: true, text: "価格" }
-			},
-			"y-volume": {
-				position: "right",
-				title: { display: true, text: "出来高" },
-				grid: { drawOnChartArea: false }
+				title: { display: true, text: "価格" },
 			}
 		},
 		plugins: {
@@ -145,9 +131,6 @@ const chart = new Chart(ctx, {
 					title: (context) => context[0].label,
 					label: (context) => {
 						const item = context.raw;
-						if (context.dataset.type === 'bar') {
-							return `出来高: ${item.y.toLocaleString()}`;
-						}
 						return [
 							`始値: ${item.o}`,
 							`高値: ${item.h}`,
@@ -160,3 +143,44 @@ const chart = new Chart(ctx, {
 		}
 	}
 });	
+
+// 出来高チャート
+    new Chart(document.getElementById("volume-chart").getContext("2d"), {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "出来高",
+          data: volumeData,
+          backgroundColor: "rgba(100, 149, 237, 0.4)",
+          borderColor: "rgba(100, 149, 237, 1)",
+          barThickness: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            type: "category",
+            labels: labels,
+            ticks: { maxRotation: 0, autoSkip: true },
+            grid: { display: false }
+          },
+          y: {
+            title: { display: true, text: "出来高" },
+            ticks: {
+              callback: v => `${v / 1_000_000}M`
+            }
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              title: ctx => ctx[0].label,
+              label: ctx => `出来高: ${ctx.raw.y.toLocaleString()}`
+            }
+          },
+          legend: { display: false }
+        }
+      }
+    });
