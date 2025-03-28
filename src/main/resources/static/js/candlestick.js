@@ -1,5 +1,5 @@
-const symbol = 'AAPL';
-const interval = '1day';
+let symbol = 'AAPL';
+let interval = '1day';
 
 const fetchStockData = async () => {
 	const url = `http://localhost:8080/api/stocks/time-series/values?symbol=${symbol}&interval=${interval}`
@@ -31,6 +31,21 @@ const renderCharts = async () => {
 		x: d.datetime,
 		y: d.volume
 	}));
+
+	// 古いチャートを削除してから描画（再描画のため）
+	document.getElementById("candlestick-chart").remove();
+	document.getElementById("volume-chart").remove();
+
+	// 再生成
+	const container = document.getElementById("chartContainer");
+	container.innerHTML = `
+	<div class="graph w-full">
+		<canvas id="candlestick-chart"></canvas>
+	</div>
+	<div class="graph w-full">
+		<canvas id="volume-chart"></canvas>
+	</div>
+		`;
 
 	createCandleChart(labels, candleData);
 	createVolumeChart(labels, volumeData);
@@ -135,6 +150,12 @@ const createVolumeChart = (labels, data) => {
 		}
 	});
 }
+
+// セレクタ変更イベントで interval 更新＋再描画
+document.getElementById("candleSelector").addEventListener("change", (e) => {
+	interval = e.target.value;
+	renderCharts();
+});
 
 // DOM読み込み後にチャートを描画
 document.addEventListener("DOMContentLoaded", renderCharts);
