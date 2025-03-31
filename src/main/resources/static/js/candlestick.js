@@ -1,6 +1,7 @@
 // 初期設定：表示する銘柄とローソク足の時間軸
 let symbol = 'AAPL';
 let interval = '1day';
+let outputsize = 100;
 
 // グローバル変数：チャートインスタンスを保持しておく
 let candleChart = null;
@@ -8,7 +9,7 @@ let volumeChart = null;
 
 // 株価データをAPIから取得する非同期関数
 const fetchStockData = async () => {
-	const url = `http://localhost:8080/api/stocks/time-series/values?symbol=${symbol}&interval=${interval}`;
+	const url = `http://localhost:8080/api/stocks/time-series/values?symbol=${symbol}&interval=${interval}&outputsize=${outputsize}`;
 	const res = await fetch(url);
 	const json = await res.json();
 
@@ -105,10 +106,10 @@ const createCandleChart = (labels, data, volumeData) => {
 							const matchedVolume = volumeData.find(v => v.x === item.x);
 							const volume = matchedVolume ? matchedVolume.y.toLocaleString() : "N/A";
 							return [
-								`始値: ${item.o}`,
-								`高値: ${item.h}`,
-								`安値: ${item.l}`,
-								`終値: ${item.c}`,
+								`始値: ${item.o.toFixed(4)}`,
+								`高値: ${item.h.toFixed(4)}`,
+								`安値: ${item.l.toFixed(4)}`,
+								`終値: ${item.c.toFixed(4)}`,
 								`出来高: ${volume}`
 							];
 						}
@@ -154,7 +155,7 @@ const createVolumeChart = (labels, data) => {
 					position: "right",
 					ticks: {
 						// 1000単位で"K"表示
-						callback: v => v === 0 ? "0" : `${v / 1_000}K`
+						callback: v => v === 0 ? "0" : `${(v / 1_000).toLocaleString()}K`
 					},
 					afterFit: scale => {
 						scale.width = 70;
