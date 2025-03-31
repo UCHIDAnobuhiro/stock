@@ -56,27 +56,25 @@ public class StockController {
 	//すべてとお気に入りボタンを押下時のリスト変換
 	@PatchMapping("/stock")
 	public String updateTickers(@RequestParam String show, Model model) {
-		try {
-			Users user = usersService.getLoggedInUser();
+		//TODO:エラーハンドリング
+		Users user = usersService.getLoggedInUser();
 
-			//defaultはすべてのtickersを取得
-			List<Tickers> tickers = tickersService.getAllTickers();
-			List<Favorites> favorites = favoritesService.findFavoritesByUsers(user);
+		//defaultはすべてのtickersを取得
+		List<Tickers> tickers = tickersService.getAllTickers();
+		List<Favorites> favorites = favoritesService.findFavoritesByUsers(user);
 
-			if ("favorite".equals(show)) {
-				//favoriteの場合はfavoriteに対応するtickersに変更
-				tickers = tickersService.getFavoriteTickersByUser(user);
-			}
-
-			List<TickersWithFavoriteDTO> tickersWithFavoriteDTOs = TickersDTOConverter
-					.convertToTickersWithFavoriteDTO(tickers, favorites);
-
-			//tickersをあげ直し、一部の画面だけを変更する
-			model.addAttribute("tickers", tickersWithFavoriteDTOs);
-		} catch (TickersException ex) {
-			model.addAttribute(ex.getFieldName(), ex.getMessage());
+		if ("favorite".equals(show)) {
+			//favoriteの場合はfavoriteに対応するtickersに変更
+			tickers = tickersService.getFavoriteTickersByUser(user);
 		}
 
+		List<TickersWithFavoriteDTO> tickersWithFavoriteDTOs = TickersDTOConverter
+				.convertToTickersWithFavoriteDTO(tickers, favorites);
+
+		//tickersをあげ直す。一部の画面だけを変更する
+		model.addAttribute("tickers", tickersWithFavoriteDTOs);
+
+		//一部の画面だけを変更する
 		return "fragments/stock/stock-show.html :: stocksDetailsTR";
 	}
 
@@ -84,17 +82,15 @@ public class StockController {
 	@PatchMapping("/updateFavorites")
 	public ResponseEntity<String> updateFavorites(@RequestParam("isFavorite") boolean isFavorite,
 			@RequestParam("tickerId") Long tickerId, Model model) {
-		try {
-			Tickers ticker = tickersService.getTickerById(tickerId);
-			Users user = usersService.getLoggedInUser();
-			if (isFavorite) {
-				favoritesService.addFavorite(user, ticker);
-			} else {
-				favoritesService.deleteFavorite(user, ticker);
-			}
-		} catch (TickersException ex) {
-			model.addAttribute(ex.getFieldName(), ex.getMessage());
+		//TODO:エラーハンドリング
+		Tickers ticker = tickersService.getTickerById(tickerId);
+		Users user = usersService.getLoggedInUser();
+		if (isFavorite) {
+			favoritesService.addFavorite(user, ticker);
+		} else {
+			favoritesService.deleteFavorite(user, ticker);
 		}
+
 		return ResponseEntity.ok("Favorite updated successfully");
 	}
 

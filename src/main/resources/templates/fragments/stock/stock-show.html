@@ -37,14 +37,8 @@
 <tr id="stocksTR" th:each="ticker : ${tickers}" th:fragment="stocksDetailsTR">
 	<td class="py-1 text-xl" th:text="${ticker.ticker}"></td>
 	<td class="py-1 text-xl pl-5" th:text="${ticker.brand}"></td>
-	<td >
-		<input type="checkbox" id="favoriteCheckbox" 
-		 th:checked="${ticker.isFavorite}"  th:data-ticker-id="${ticker.id}" onclick="updateFavorite(this)"/>
+	<td>
+		<input type="checkbox" class="favoriteCheckbox" th:checked="${ticker.isFavorite}"
+			th:data-ticker-id="${ticker.id}" >
 	</td>
 </tr>
-
-
-<!--		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="25" height="25">-->
-<!--		  <path d="M12 21s-8-5.5-8-10.5C4 6.42 6.42 4 9 4c1.66 0 3.33 1.02 4 3 0.67-1.98 2.34-3 4-3 2.58 0 5 2.42 5 6.5 0 5-8 10.5-8 10.5z" -->
-<!--		        fill="none" stroke="black" stroke-width="2" />-->
-<!--		</svg>-->

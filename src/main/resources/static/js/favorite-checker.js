@@ -1,21 +1,34 @@
-function updateFavorite(checkbox) {
-    // 获取checkbox的选中状态
+//テーブルロールは一部更新されるため、DOMがリセットされeventlistenerがなくなる
+//このためにテーブルボディは更新されないから、ボディにeventlistenerを追加
+document.addEventListener("DOMContentLoaded", () => {
+    // テーブルのボディを取得
+    const stocksTB = document.querySelector("#stocksTB");
+
+    // 子要素にevent追加
+    stocksTB.addEventListener('click', (event) => {
+        if (event.target && event.target.matches('.favoriteCheckbox')) {
+            updateFavorite(event.target);
+        }
+    });
+});
+
+const updateFavorite = checkbox => {
+    // checkbox的状態を取得
     const isFavorite = checkbox.checked;
 
-    // 获取对应的ticker.id
+    // 現在のticker_idを取得
     const tickerId = checkbox.getAttribute('data-ticker-id');
     console.log(isFavorite + " " + tickerId);
 
-    // 发送PATCH请求到后端
+   //Content-Typeでpatch請求し、変数をバックにあげる
     fetch('/updateFavorites', {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: 'isFavorite=' + isFavorite + '&tickerId=' + tickerId
+        body: `isFavorite=${isFavorite}&tickerId=${tickerId}`
     })
     .then(response => {
-        // 因为不关心响应内容，所以我们只检查响应状态
         if (response.ok) {
             console.log("Successfully updated favorite status");
         } else {
@@ -23,4 +36,4 @@ function updateFavorite(checkbox) {
         }
     })
     .catch(error => console.error('Error:', error));
-}
+};

@@ -8,16 +8,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
 			isFetching = true; // リクエスト中　制限加える
 			const selectedValue = event.target.value;
-			console.log(selectedValue);
+
 			try {
 				const response = await fetch(`/stock?show=${selectedValue}`, {
 					method: 'PATCH'
 				});
 				if (!response.ok) throw new Error("リクエスト失敗");
-				
+
 				//fargment「fragments/stock/stock-show.html :: stocksDetailsTR」を取得
-				const html = await response.text(); 
-				
+				const html = await response.text();
+
 				//stocksTBは更新されるfargmentを引用しているため、再引用することで、一部更新ができる
 				document.querySelector("#stocksTB").innerHTML = html;
 			} catch (error) {
