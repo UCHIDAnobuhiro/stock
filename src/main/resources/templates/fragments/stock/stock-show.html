@@ -15,25 +15,29 @@
 	</div>
 	<!--	ボタンEND-->
 	<!--	銘柄一覧リスト-->
-	<div id="stocksList" class="px-4 whitespace-nowrap overflow-x-auto">
-		<table id="fourPrice" class="text-left font-sans">
+	<div id="stocksDetailsList" class="px-4 whitespace-nowrap overflow-x-auto">
+		<table id="stocksDetails" class="text-left font-sans">
 			<thead>
-				<th>銘柄名</th>
-				<th class="pl-5">銘柄コード</th>
-				<th></th>
+				<tr>
+				    <th>銘柄コード</th>
+				    <th class="pl-5">銘柄名</th>
+				    <th></th>
+				</tr>
 			</thead>
-			<tbody>
-				<tr>
-					<td class="py-1 text-xl">楽天証券楽天証券楽天証券</td>
-					<td class="py-1 text-xl pl-5">4755</td>
-					</td>
-				</tr>
-				<tr>
-					<td class="py-1 text-xl">楽天証券</td>
-					<td class="py-1 text-xl pl-5	">4755</td>
-				</tr>
+			<tbody id="stocksTB" th:insert="~{fragments/stock/stock-show :: stocksDetailsTR}">
 			</tbody>
 		</table>
 	</div>
 	<!--	銘柄一覧リストEND-->
+	<script src="/js/all-favorite-switch.js"></script>
+	<script src="/js/favorite-checker.js"></script>
 </div>
+
+<tr th:each="ticker : ${tickers}" th:fragment="stocksDetailsTR">
+	<td class="py-1 text-xl" th:text="${ticker.ticker}"></td>
+	<td class="py-1 text-xl pl-5" th:text="${ticker.brand}"></td>
+	<td>
+		<input type="checkbox" class="favoriteCheckbox" th:checked="${ticker.isFavorite}"
+			th:data-ticker-id="${ticker.id}" >
+	</td>
+</tr>
