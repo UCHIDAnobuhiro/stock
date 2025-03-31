@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class StockService {
 	private final RestTemplate restTemplate;
 	private final ObjectMapper objectMapper;
+
+	private static final Logger logger = LoggerFactory.getLogger(StockService.class);
 
 	// application.propertiesからAPIキーを読み込む。
 	@Value("${api.key}")
@@ -64,6 +68,7 @@ public class StockService {
 		String url = buildTimeSeriesUrl(symbol, interval, outputsize);
 
 		try {
+			logger.info("Fetching stock data from API: {}", url);
 			// APIへGETリクエストを送信し、レスポンスを取得
 			ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
@@ -71,6 +76,7 @@ public class StockService {
 			return objectMapper.readValue(response.getBody(), new TypeReference<>() {
 			});
 		} catch (Exception e) {
+			logger.error("API取得失敗: {}", e.getMessage(), e);
 			throw new StockApiException("株価のデータの取得に失敗しました", e);
 		}
 	}
@@ -106,6 +112,7 @@ public class StockService {
 								Double.parseDouble(v.get("close")),
 								Long.parseLong(v.get("volume")));
 					} catch (NumberFormatException e) {
+						logger.error("数値変換エラー: {}", v, e);
 						throw new StockApiException("数値の変換に失敗しました：不正なデータがあります", e);
 					}
 				})
@@ -127,6 +134,7 @@ public class StockService {
 		// valuesだけを取り出す
 		List<Map<String, String>> raw = (List<Map<String, String>>) data.get("values");
 		if (raw == null || raw.isEmpty()) {
+			logger.warn("取得されたデータが空でした（symbol={}）", symbol);
 			throw new StockApiException("APIから取得した株価データが空、または無効です（前日終値が取得できません）");
 		}
 
@@ -143,6 +151,7 @@ public class StockService {
 						Long.parseLong(v.get("volume"))));
 			}
 		} catch (NumberFormatException e) {
+			logger.error("数値変換エラー:", e);
 			throw new StockApiException("株価データの数値変換に失敗しました（不正な値が含まれている可能性）", e);
 		}
 
@@ -150,9 +159,6 @@ public class StockService {
 		List<StockCandleWithPrevCloseDto> result = new ArrayList<>();
 		for (int i = 0; i < baseList.size(); i++) {
 			StockCandleDto current = baseList.get(i);
-			if (baseList.isEmpty()) {
-				throw new StockApiException("前日終値付き株価データの作成に失敗しました（データが空）");
-			}
 			double prevClose = (i > 0) ? baseList.get(i - 1).getClose() : current.getClose();
 
 			result.add(new StockCandleWithPrevCloseDto(
@@ -180,6 +186,7 @@ public class StockService {
 		List<StockCandleWithPrevCloseDto> list = getStockWithPrevClose(symbol);
 
 		if (list.isEmpty()) {
+			logger.warn("symbol={} のデータが空です（前日終値付き）", symbol);
 			throw new StockApiException("最新の株価データが存在しませんでした");
 		}
 		return list.get(list.size() - 1); // 最新のデータ（リストは昇順）
