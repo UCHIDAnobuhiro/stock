@@ -1,6 +1,7 @@
 // 初期設定：表示する銘柄とローソク足の時間軸
 let symbol = 'AAPL';
 let interval = '1day';
+let outputsize = 100;
 
 // グローバル変数：チャートインスタンスを保持しておく
 let candleChart = null;
@@ -8,7 +9,7 @@ let volumeChart = null;
 
 // 株価データをAPIから取得する非同期関数
 const fetchStockData = async () => {
-	const url = `http://localhost:8080/api/stocks/time-series/values?symbol=${symbol}&interval=${interval}`;
+	const url = `http://localhost:8080/api/stocks/time-series/values?symbol=${symbol}&interval=${interval}&outputsize=${outputsize}`;
 	const res = await fetch(url);
 	const json = await res.json();
 

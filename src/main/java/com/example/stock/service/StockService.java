@@ -35,16 +35,17 @@ public class StockService {
 	 *
 	 * @param symbol   株のティッカーシンボル
 	 * @param interval データの間隔
+	 * @param outputsize データ数or ロウソク足の本数
 	 * @return 完成したAPI URL
 	 */
-	private String buildTimeSeriesUrl(String symbol, String interval) {
+	private String buildTimeSeriesUrl(String symbol, String interval, Integer outputsize) {
 		return UriComponentsBuilder.newInstance()
 				.scheme("https")
 				.host("api.twelvedata.com")
 				.path("/time_series")
 				.queryParam("symbol", symbol)
 				.queryParam("interval", interval)
-				.queryParam("outputsize", 100)
+				.queryParam("outputsize", outputsize)
 				.queryParam("apikey", apiKey)
 				.toUriString();
 	}
@@ -54,11 +55,13 @@ public class StockService {
 	 *
 	 * @param symbol 株のティッカーシンボル（例：AAPL）
 	 * @param interval データの間隔（例：1day, 1week, 1month)
+	 * @param outputsize データ数or ロウソク足の本数 (例: 50, 100) min:1 max:5000
+	 *
 	 * @return Alpha Vantage API から返されたJSONデータ（文字列）
 	 */
-	public Map<String, Object> getStockTimeSeries(String symbol, String interval) {
+	public Map<String, Object> getStockTimeSeries(String symbol, String interval, Integer outputsize) {
 		// Twelve Data APIからデータ取得
-		String url = buildTimeSeriesUrl(symbol, interval);
+		String url = buildTimeSeriesUrl(symbol, interval, outputsize);
 
 		try {
 			// APIへGETリクエストを送信し、レスポンスを取得
@@ -78,11 +81,13 @@ public class StockService {
 	 *
 	 * @param symbol 銘柄コード（例: "AAPL"）
 	 * @param interval データの間隔（例: "1day", "1week", "1month"）
+	 * @param outputsize データ数or ロウソク足の本数 (例: 50, 100) min:1 max:5000
+	 * 
 	 * @return 株価データのリスト（StockCandleDto形式）
 	 */
-	public List<StockCandleDto> getStockCandleDtoList(String symbol, String interval) {
+	public List<StockCandleDto> getStockCandleDtoList(String symbol, String interval, Integer outputsize) {
 		// Twelve Data APIから指定された銘柄・間隔の時系列データを取得
-		Map<String, Object> data = getStockTimeSeries(symbol, interval);
+		Map<String, Object> data = getStockTimeSeries(symbol, interval, outputsize);
 		// "values"キーに格納されたローソク足データを取り出す（List<Map<String, String>> 形式）
 		List<Map<String, String>> values = (List<Map<String, String>>) data.get("values");
 
@@ -103,11 +108,12 @@ public class StockService {
 	 * データは古い順（昇順）に並んでいます。
 	 *
 	 * @param symbol 銘柄コード（例: "AAPL"）
+	 * 
 	 * @return 前日終値付きのローソク足データのリスト
 	 */
 	public List<StockCandleWithPrevCloseDto> getStockWithPrevClose(String symbol) {
 		// Twelve Data APIからデータ取得
-		Map<String, Object> data = getStockTimeSeries(symbol, "1day");
+		Map<String, Object> data = getStockTimeSeries(symbol, "1day", 2);
 
 		// valuesだけを取り出す
 		List<Map<String, String>> raw = (List<Map<String, String>>) data.get("values");

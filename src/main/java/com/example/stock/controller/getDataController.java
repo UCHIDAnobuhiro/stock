@@ -28,13 +28,16 @@ public class getDataController {
 	 *
 	 * @param symbol ティッカーシンボル(例: AAPL)
 	 * @param interval データ間隔(例: 1day, 1week 1month)
+	 * @param outputsize データ数or ロウソク足の本数 (例: 50, 100) min:1 max:5000
+	 * 
 	 * @return APIから取得した株価データのJSONマップ
 	 */
 	@GetMapping("/time-series")
 	public ResponseEntity<Map<String, Object>> getDailyStock(
 			@RequestParam String symbol,
-			@RequestParam String interval) {
-		Map<String, Object> data = stockService.getStockTimeSeries(symbol, interval);
+			@RequestParam String interval,
+			@RequestParam Integer outputsize) {
+		Map<String, Object> data = stockService.getStockTimeSeries(symbol, interval, outputsize);
 		return ResponseEntity.ok(data);
 	}
 
@@ -45,14 +48,17 @@ public class getDataController {
 	 *
 	 * @param symbol ティッカーシンボル(例: AAPL)
 	 * @param interval データ間隔(例: 1day, 1week 1month)
+	 * @param outputsize データ数or ロウソク足の本数 (例: 50, 100) min:1 max:5000
+	 * 
 	 * @return 形済みのローソク足リスト
 	 */
 	@GetMapping("time-series/values")
 	public ResponseEntity<List<StockCandleDto>> getFilteredTimeSeries(
 			@RequestParam String symbol,
-			@RequestParam String interval) {
+			@RequestParam String interval,
+			@RequestParam Integer outputsize) {
 
-		List<StockCandleDto> candles = stockService.getStockCandleDtoList(symbol, interval);
+		List<StockCandleDto> candles = stockService.getStockCandleDtoList(symbol, interval, outputsize);
 
 		return ResponseEntity.ok(candles);
 
