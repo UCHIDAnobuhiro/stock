@@ -51,7 +51,7 @@ public class StockController {
 	}
 
 	//すべてとお気に入りボタンを押下時のリスト変換
-	@GetMapping("/stockList")
+	@GetMapping("/stock-list")
 	public String updateTickers(@RequestParam String show, Model model) {
 		//TODO:エラーハンドリング
 		Users user = usersService.getLoggedInUserOrThrow();
@@ -75,7 +75,7 @@ public class StockController {
 		return "fragments/stock/stock-show.html :: stocksDetailsTR";
 	}
 
-	@PatchMapping("/updateFavorites")
+	@PatchMapping("/update-favorites")
 	public ResponseEntity<String> updateFavorites(@RequestParam boolean isFavorite,
 			@RequestParam Long tickerId, Model model) {
 		try {

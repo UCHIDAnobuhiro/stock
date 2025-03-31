@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			const selectedValue = event.target.value;
 
 			try {
-				const response = await fetch(`/stockList?show=${selectedValue}`, {
+				const response = await fetch(`/stock-list?show=${selectedValue}`, {
 					method: 'GET'
 				});
 				if (!response.ok) throw new Error("リクエスト失敗");

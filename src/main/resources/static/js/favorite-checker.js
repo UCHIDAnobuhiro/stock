@@ -21,7 +21,7 @@ const updateFavorite = checkbox => {
     console.log(isFavorite + " " + tickerId);
 
    //Content-Typeでpatch請求し、変数をバックにあげる
-    fetch('/updateFavorites', {
+    fetch('/update-favorites', {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
