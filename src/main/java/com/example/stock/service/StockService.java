@@ -57,7 +57,7 @@ public class StockService {
 	 * @param interval データの間隔（例：1day, 1week, 1month)
 	 * @param outputsize データ数or ロウソク足の本数 (例: 50, 100) min:1 max:5000
 	 *
-	 * @return Alpha Vantage API から返されたJSONデータ（文字列）
+	 * @return API から返されたJSONデータ（文字列）
 	 */
 	public Map<String, Object> getStockTimeSeries(String symbol, String interval, Integer outputsize) {
 		// Twelve Data APIからデータ取得
