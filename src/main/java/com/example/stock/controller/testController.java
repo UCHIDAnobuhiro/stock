@@ -24,7 +24,6 @@ public class testController {
 		StockCandleWithPrevCloseDto latest = stockService.getLatestStockWithPrevClose(symbol);
 
 		model.addAttribute("stock", latest); // ← 1件だけ渡す
-		model.addAttribute("symbol", symbol);
 
 		return "test";
 	}

@@ -105,10 +105,10 @@ const createCandleChart = (labels, data, volumeData) => {
 							const matchedVolume = volumeData.find(v => v.x === item.x);
 							const volume = matchedVolume ? matchedVolume.y.toLocaleString() : "N/A";
 							return [
-								`始値: ${item.o}`,
-								`高値: ${item.h}`,
-								`安値: ${item.l}`,
-								`終値: ${item.c}`,
+								`始値: ${item.o.toFixed(4)}`,
+								`高値: ${item.h.toFixed(4)}`,
+								`安値: ${item.l.toFixed(4)}`,
+								`終値: ${item.c.toFixed(4)}`,
 								`出来高: ${volume}`
 							];
 						}
@@ -154,7 +154,7 @@ const createVolumeChart = (labels, data) => {
 					position: "right",
 					ticks: {
 						// 1000単位で"K"表示
-						callback: v => v === 0 ? "0" : `${v / 1_000}K`
+						callback: v => v === 0 ? "0" : `${(v / 1_000).toLocaleString()}K`
 					},
 					afterFit: scale => {
 						scale.width = 70;
