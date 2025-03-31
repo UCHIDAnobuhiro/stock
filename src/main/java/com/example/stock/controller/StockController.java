@@ -2,7 +2,7 @@ package com.example.stock.controller;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -26,11 +26,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class StockController {
 
-	@Autowired
 	private final TickersService tickersService;
-	@Autowired
 	private final UsersService usersService;
-	@Autowired
 	private final FavoritesService favoritesService;
 
 	//stock.htmlを最初にallのtickersリストを表示
@@ -38,7 +35,7 @@ public class StockController {
 	public String stockPage(Model model) {
 		try {
 			//基本情報を取得
-			Users user = usersService.getLoggedInUser();
+			Users user = usersService.getLoggedInUserOrThrow();
 			List<Tickers> tickers = tickersService.getAllTickers();
 			List<Favorites> favorites = favoritesService.findFavoritesByUsers(user);
 
@@ -54,10 +51,10 @@ public class StockController {
 	}
 
 	//すべてとお気に入りボタンを押下時のリスト変換
-	@PatchMapping("/stock")
+	@GetMapping("/stockList")
 	public String updateTickers(@RequestParam String show, Model model) {
 		//TODO:エラーハンドリング
-		Users user = usersService.getLoggedInUser();
+		Users user = usersService.getLoggedInUserOrThrow();
 
 		//defaultはすべてのtickersを取得
 		List<Tickers> tickers = tickersService.getAllTickers();
@@ -78,20 +75,25 @@ public class StockController {
 		return "fragments/stock/stock-show.html :: stocksDetailsTR";
 	}
 
-	//各銘柄のお気に入りボタンを押下時のFAVORITESに追加と削除
 	@PatchMapping("/updateFavorites")
-	public ResponseEntity<String> updateFavorites(@RequestParam("isFavorite") boolean isFavorite,
-			@RequestParam("tickerId") Long tickerId, Model model) {
-		//TODO:エラーハンドリング
-		Tickers ticker = tickersService.getTickerById(tickerId);
-		Users user = usersService.getLoggedInUser();
-		if (isFavorite) {
-			favoritesService.addFavorite(user, ticker);
-		} else {
-			favoritesService.deleteFavorite(user, ticker);
-		}
+	public ResponseEntity<String> updateFavorites(@RequestParam boolean isFavorite,
+			@RequestParam Long tickerId, Model model) {
+		try {
+			Tickers ticker = tickersService.getTickerById(tickerId);
+			Users user = usersService.getLoggedInUserOrThrow();
+			// FAVORITEを更新
+			if (isFavorite) {
+				favoritesService.addFavorite(user, ticker);
+			} else {
+				favoritesService.deleteFavorite(user, ticker);
+			}
 
-		return ResponseEntity.ok("Favorite updated successfully");
+			return ResponseEntity.ok("Favorite updated successfully");
+		} catch (Exception e) {
+			// 他の異常を処理
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("An error occurred while updating favorite: " + e.getMessage());
+		}
 	}
 
 }

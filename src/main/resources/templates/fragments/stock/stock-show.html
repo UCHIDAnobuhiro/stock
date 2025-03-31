@@ -18,14 +18,13 @@
 	<div id="stocksDetailsList" class="px-4 whitespace-nowrap overflow-x-auto">
 		<table id="stocksDetails" class="text-left font-sans">
 			<thead>
-				<th>銘柄コード</th>
-				<th class="pl-5">銘柄名</th>
-				<th></th>
-			</thead>
-			<tbody id="stocksTB">
-				<!--テーブルrowは一部更新の対象になるため、分ける-->
-				<tr th:replace="~{fragments/stock/stock-show :: stocksDetailsTR}">
+				<tr>
+				    <th>銘柄コード</th>
+				    <th class="pl-5">銘柄名</th>
+				    <th></th>
 				</tr>
+			</thead>
+			<tbody id="stocksTB" th:insert="~{fragments/stock/stock-show :: stocksDetailsTR}">
 			</tbody>
 		</table>
 	</div>
@@ -34,7 +33,7 @@
 	<script src="/js/favorite-checker.js"></script>
 </div>
 
-<tr id="stocksTR" th:each="ticker : ${tickers}" th:fragment="stocksDetailsTR">
+<tr th:each="ticker : ${tickers}" th:fragment="stocksDetailsTR">
 	<td class="py-1 text-xl" th:text="${ticker.ticker}"></td>
 	<td class="py-1 text-xl pl-5" th:text="${ticker.brand}"></td>
 	<td>

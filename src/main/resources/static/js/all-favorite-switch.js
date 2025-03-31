@@ -10,8 +10,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			const selectedValue = event.target.value;
 
 			try {
-				const response = await fetch(`/stock?show=${selectedValue}`, {
-					method: 'PATCH'
+				const response = await fetch(`/stockList?show=${selectedValue}`, {
+					method: 'GET'
 				});
 				if (!response.ok) throw new Error("リクエスト失敗");
 
