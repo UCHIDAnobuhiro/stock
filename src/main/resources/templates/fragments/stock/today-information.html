@@ -3,24 +3,24 @@
 	<div class="flex border-2 rounded-lg border-gray-200 border-opacity-50 flex-col p-4">
 		<!--銘柄名＋銘柄コード-->
 		<div id="tickerNameAndCode" class="text-xl">
-			楽天証券(4755)
+			楽天証券<span th:text="${stock.symbol}"></span>
 		</div>
 		<!--現在値-->
 		<div id="currentPrice" class="text-3xl my-4">
-			現在値：179.00
+			現在値：<span th:text="${stock.close}"></span>
 		</div>
 		<!--四本値-->
 		<div class="w-full  overflow-auto">
 			<table id="fourPrice" class="text-left whitespace-no-wrap">
 				<tbody>
 					<tr>
-						<td class="py-1 text-xl">前日終値：160.00</td>
-						<td class="py-1 text-xl pl-10">高値：190.00</td>
+						<td class="py-1 text-xl">前日終値：<span th:text="${stock.prevClose}"></span></td>
+						<td class="py-1 text-xl pl-10">高値：<span th:text="${stock.high}"></span></td>
 						</td>
 					</tr>
 					<tr>
-						<td class="py-1 text-xl ">始値：180.00</td>
-						<td class="py-1 text-xl pl-10">安値：175.00</td>
+						<td class="py-1 text-xl ">始値：<span th:text="${stock.open}"></span></td>
+						<td class="py-1 text-xl pl-10">安値：<span th:text="${stock.low}"></span></td>
 					</tr>
 				</tbody>
 			</table>
