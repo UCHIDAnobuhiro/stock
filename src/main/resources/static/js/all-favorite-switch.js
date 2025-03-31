@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 			isFetching = true; // リクエスト中　制限加える
 			const selectedValue = event.target.value;
+			console.log(selectedValue);
 			try {
 				const response = await fetch(`/stock?show=${selectedValue}`, {
 					method: 'PATCH'

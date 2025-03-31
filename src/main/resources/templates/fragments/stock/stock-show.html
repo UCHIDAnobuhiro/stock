@@ -39,7 +39,7 @@
 	<td class="py-1 text-xl pl-5" th:text="${ticker.brand}"></td>
 	<td >
 		<input type="checkbox" id="favoriteCheckbox" 
-		 th:checked="${isFavorite}"  th:data-ticker-id="${ticker.id}" onclick="updateFavorite(this)"/>
+		 th:checked="${ticker.isFavorite}"  th:data-ticker-id="${ticker.id}" onclick="updateFavorite(this)"/>
 	</td>
 </tr>
 

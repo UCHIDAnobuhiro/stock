@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.example.stock.converter.TickersDTOConverter;
+import com.example.stock.dto.TickersWithFavoriteDTO;
 import com.example.stock.exception.TickersException;
 import com.example.stock.model.Favorites;
 import com.example.stock.model.Tickers;
@@ -31,13 +33,19 @@ public class StockController {
 	@Autowired
 	private final FavoritesService favoritesService;
 
+	//stock.htmlを最初にallのtickersリストを表示
 	@GetMapping("/stock")
 	public String stockPage(Model model) {
 		try {
+			//基本情報を取得
 			Users user = usersService.getLoggedInUser();
 			List<Tickers> tickers = tickersService.getAllTickers();
 			List<Favorites> favorites = favoritesService.findFavoritesByUsers(user);
-			model.addAttribute("tickers", tickers);
+
+			//tickersにisFavoriteを追加し、チェックボックスに使用される
+			List<TickersWithFavoriteDTO> tickersWithFavoriteDTOs = TickersDTOConverter
+					.convertToTickersWithFavoriteDTO(tickers, favorites);
+			model.addAttribute("tickers", tickersWithFavoriteDTOs);
 			model.addAttribute("favorites", favorites);
 		} catch (TickersException ex) {
 			model.addAttribute(ex.getFieldName(), ex.getMessage());
@@ -48,27 +56,44 @@ public class StockController {
 	//すべてとお気に入りボタンを押下時のリスト変換
 	@PatchMapping("/stock")
 	public String updateTickers(@RequestParam String show, Model model) {
-		List<Tickers> tickers;
-		if ("favorite".equals(show)) {
+		try {
 			Users user = usersService.getLoggedInUser();
-			tickers = tickersService.getFavoriteTickersByUser(user);
-		} else {
-			tickers = tickersService.getAllTickers();
+
+			//defaultはすべてのtickersを取得
+			List<Tickers> tickers = tickersService.getAllTickers();
+			List<Favorites> favorites = favoritesService.findFavoritesByUsers(user);
+
+			if ("favorite".equals(show)) {
+				//favoriteの場合はfavoriteに対応するtickersに変更
+				tickers = tickersService.getFavoriteTickersByUser(user);
+			}
+
+			List<TickersWithFavoriteDTO> tickersWithFavoriteDTOs = TickersDTOConverter
+					.convertToTickersWithFavoriteDTO(tickers, favorites);
+
+			//tickersをあげ直し、一部の画面だけを変更する
+			model.addAttribute("tickers", tickersWithFavoriteDTOs);
+		} catch (TickersException ex) {
+			model.addAttribute(ex.getFieldName(), ex.getMessage());
 		}
-		model.addAttribute("tickers", tickers);
+
 		return "fragments/stock/stock-show.html :: stocksDetailsTR";
 	}
 
 	//各銘柄のお気に入りボタンを押下時のFAVORITESに追加と削除
 	@PatchMapping("/updateFavorites")
 	public ResponseEntity<String> updateFavorites(@RequestParam("isFavorite") boolean isFavorite,
-			@RequestParam("tickerId") Long tickerId) {
-		Tickers ticker = tickersService.getTickerById(tickerId);
-		Users user = usersService.getLoggedInUser();
-		if (isFavorite) {
-			favoritesService.addFavorite(user, ticker);
-		} else {
-			favoritesService.deleteFavorite(user, ticker);
+			@RequestParam("tickerId") Long tickerId, Model model) {
+		try {
+			Tickers ticker = tickersService.getTickerById(tickerId);
+			Users user = usersService.getLoggedInUser();
+			if (isFavorite) {
+				favoritesService.addFavorite(user, ticker);
+			} else {
+				favoritesService.deleteFavorite(user, ticker);
+			}
+		} catch (TickersException ex) {
+			model.addAttribute(ex.getFieldName(), ex.getMessage());
 		}
 		return ResponseEntity.ok("Favorite updated successfully");
 	}

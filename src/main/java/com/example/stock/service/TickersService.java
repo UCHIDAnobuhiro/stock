@@ -49,6 +49,7 @@ public class TickersService {
 		return convertFavoritesToTickers(favorites);
 	}
 
+	//favoritesからticker_idを取得し対応するtickersを返す
 	private List<Tickers> convertFavoritesToTickers(List<Favorites> favorites) {
 		List<Tickers> tickersList = new ArrayList<>();
 		for (Favorites favorite : favorites) {
