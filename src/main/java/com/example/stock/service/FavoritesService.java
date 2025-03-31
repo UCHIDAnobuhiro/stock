@@ -2,6 +2,7 @@ package com.example.stock.service;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,17 +19,22 @@ public class FavoritesService {
 	@Autowired
 	private FavoritesRepository favoritesRepository;
 
-	// 根据用户和ticker创建或更新喜欢记录
+	//登録されたユーザのfavoritesをしゅとく
+	public List<Favorites> findFavoritesByUsers(Users user) {
+		//TODO:エラーハンドリング
+		return favoritesRepository.findByUser(user);
+	}
+
+	// Favoriteに追加もしくは更新
 	public Favorites addFavorite(Users user, Tickers ticker) {
-		// 查找是否已经存在喜欢记录
+		// 既存データあるかをチェック
 		Optional<Favorites> existingFavorite = favoritesRepository.findByUserAndTicker(user, ticker);
 
 		if (existingFavorite.isPresent()) {
-			// 如果已存在喜欢记录，返回该记录
 			return existingFavorite.get();
 		}
 
-		// 如果不存在，则创建新的喜欢记录
+		// ないなら追加
 		Favorites favorite = new Favorites();
 		favorite.setUser(user);
 		favorite.setTicker(ticker);
