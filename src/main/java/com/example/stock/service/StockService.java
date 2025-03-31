@@ -1,7 +1,6 @@
 package com.example.stock.service;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -13,6 +12,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.example.stock.dto.StockCandleDto;
 import com.example.stock.dto.StockCandleWithPrevCloseDto;
+import com.example.stock.exception.StockApiException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -71,7 +71,7 @@ public class StockService {
 			return objectMapper.readValue(response.getBody(), new TypeReference<>() {
 			});
 		} catch (Exception e) {
-			throw new RuntimeException("JSONの変換に失敗しました", e);
+			throw new StockApiException("株価のデータの取得に失敗しました", e);
 		}
 	}
 
@@ -90,16 +90,25 @@ public class StockService {
 		Map<String, Object> data = getStockTimeSeries(symbol, interval, outputsize);
 		// "values"キーに格納されたローソク足データを取り出す（List<Map<String, String>> 形式）
 		List<Map<String, String>> values = (List<Map<String, String>>) data.get("values");
+		if (values == null || values.isEmpty()) {
+			throw new StockApiException("APIから株価データが取得できませんでした（valuesが空）");
+		}
 
 		// 各データをStockCandleDtoに変換し、リストとして返却
 		return values.stream()
-				.map(v -> new StockCandleDto(
-						v.get("datetime"),
-						Double.parseDouble(v.get("open")),
-						Double.parseDouble(v.get("high")),
-						Double.parseDouble(v.get("low")),
-						Double.parseDouble(v.get("close")),
-						Long.parseLong(v.get("volume"))))
+				.map(v -> {
+					try {
+						return new StockCandleDto(
+								v.get("datetime"),
+								Double.parseDouble(v.get("open")),
+								Double.parseDouble(v.get("high")),
+								Double.parseDouble(v.get("low")),
+								Double.parseDouble(v.get("close")),
+								Long.parseLong(v.get("volume")));
+					} catch (NumberFormatException e) {
+						throw new StockApiException("数値の変換に失敗しました：不正なデータがあります", e);
+					}
+				})
 				.toList();
 	}
 
@@ -117,23 +126,33 @@ public class StockService {
 
 		// valuesだけを取り出す
 		List<Map<String, String>> raw = (List<Map<String, String>>) data.get("values");
+		if (raw == null || raw.isEmpty()) {
+			throw new StockApiException("APIから取得した株価データが空、または無効です（前日終値が取得できません）");
+		}
 
 		// 各データをStockCandleDtoに変換し、日付の昇順（古い順）にソート
-		List<StockCandleDto> baseList = raw.stream()
-				.map(v -> new StockCandleDto(
+		List<StockCandleDto> baseList = new ArrayList<>();
+		try {
+			for (Map<String, String> v : raw) {
+				baseList.add(new StockCandleDto(
 						v.get("datetime"),
 						Double.parseDouble(v.get("open")),
 						Double.parseDouble(v.get("high")),
 						Double.parseDouble(v.get("low")),
 						Double.parseDouble(v.get("close")),
-						Long.parseLong(v.get("volume"))))
-				.sorted(Comparator.comparing(StockCandleDto::getDatetime))
-				.toList();
+						Long.parseLong(v.get("volume"))));
+			}
+		} catch (NumberFormatException e) {
+			throw new StockApiException("株価データの数値変換に失敗しました（不正な値が含まれている可能性）", e);
+		}
 
 		// 前日終値を付加したDTOリストを作成
 		List<StockCandleWithPrevCloseDto> result = new ArrayList<>();
 		for (int i = 0; i < baseList.size(); i++) {
 			StockCandleDto current = baseList.get(i);
+			if (baseList.isEmpty()) {
+				throw new StockApiException("前日終値付き株価データの作成に失敗しました（データが空）");
+			}
 			double prevClose = (i > 0) ? baseList.get(i - 1).getClose() : current.getClose();
 
 			result.add(new StockCandleWithPrevCloseDto(
@@ -159,6 +178,10 @@ public class StockService {
 	 */
 	public StockCandleWithPrevCloseDto getLatestStockWithPrevClose(String symbol) {
 		List<StockCandleWithPrevCloseDto> list = getStockWithPrevClose(symbol);
+
+		if (list.isEmpty()) {
+			throw new StockApiException("最新の株価データが存在しませんでした");
+		}
 		return list.get(list.size() - 1); // 最新のデータ（リストは昇順）
 	}
 

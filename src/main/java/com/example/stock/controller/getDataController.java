@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.stock.dto.StockCandleDto;
+import com.example.stock.exception.StockApiException;
 import com.example.stock.service.StockService;
 
 @RestController
@@ -53,14 +54,18 @@ public class GetDataController {
 	 * @return 形済みのローソク足リスト
 	 */
 	@GetMapping("/time-series/values")
-	public ResponseEntity<List<StockCandleDto>> getFilteredTimeSeries(
+	public ResponseEntity<?> getFilteredTimeSeries(
 			@RequestParam String symbol,
 			@RequestParam String interval,
 			@RequestParam Integer outputsize) {
-
-		List<StockCandleDto> candles = stockService.getStockCandleDtoList(symbol, interval, outputsize);
-
-		return ResponseEntity.ok(candles);
+		try {
+			List<StockCandleDto> candles = stockService.getStockCandleDtoList(symbol, interval, outputsize);
+			return ResponseEntity.ok(candles);
+		} catch (StockApiException e) {
+			return ResponseEntity.status(502).body(Map.of(
+					"error", "データ取得エラー",
+					"message", e.getMessage()));
+		}
 
 	}
 
