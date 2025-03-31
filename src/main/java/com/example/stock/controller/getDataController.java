@@ -14,10 +14,10 @@ import com.example.stock.service.StockService;
 
 @RestController
 @RequestMapping("/api/stocks")
-public class getDataController {
+public class GetDataController {
 	private final StockService stockService;
 
-	public getDataController(StockService stockService) {
+	public GetDataController(StockService stockService) {
 		this.stockService = stockService;
 	}
 
@@ -52,7 +52,7 @@ public class getDataController {
 	 * 
 	 * @return 形済みのローソク足リスト
 	 */
-	@GetMapping("time-series/values")
+	@GetMapping("/time-series/values")
 	public ResponseEntity<List<StockCandleDto>> getFilteredTimeSeries(
 			@RequestParam String symbol,
 			@RequestParam String interval,
