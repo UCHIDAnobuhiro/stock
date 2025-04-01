@@ -1,12 +1,12 @@
 <!--当日の銘柄情報のテンプレート-->
 <div id="todayInformation" class="w-full" th:fragment="today-information-template">
-	<div class="flex border-2 rounded-lg border-gray-200 border-opacity-50 flex-col p-4">
+	<div class="flex border-2 rounded-lg border-gray-300 border-opacity-50 flex-col pt-2 pl-3">
 		<!--銘柄名＋銘柄コード-->
-		<div id="tickerNameAndCode" class="text-xl">
+		<div id="tickerNameAndCode" class="text-sm">
 			APPLE(AAPL)
 		</div>
 		<!--現在値-->
-		<div id="currentPrice" class="text-3xl my-4">
+		<div id="currentPrice" class="text-xl my-1">
 			現在値：<span th:text="${#numbers.formatDecimal(stock.close, 1, 4)}"></span>
 		</div>
 		<!--四本値-->
@@ -14,15 +14,15 @@
 			<table id="fourPrice" class="text-left whitespace-no-wrap">
 				<tbody>
 					<tr>
-						<td class="py-1 text-xl">前日終値：<span
+						<td class="py-1 text-sm">前日終値：<span
 								th:text="${#numbers.formatDecimal(stock.prevClose, 1, 4)}"></span></td>
-						<td class="py-1 text-xl pl-10">高値：<span
+						<td class="py-1 text-sm pl-10">高値：<span
 								th:text="${#numbers.formatDecimal(stock.high, 1, 4)}"></span></td>
 					</tr>
 					<tr>
-						<td class="py-1 text-xl ">始値：<span th:text="${#numbers.formatDecimal(stock.open, 1, 4)}"></span>
+						<td class="py-1 text-sm ">始値：<span th:text="${#numbers.formatDecimal(stock.open, 1, 4)}"></span>
 						</td>
-						<td class="py-1 text-xl pl-10">安値：<span
+						<td class="py-1 text-sm pl-10">安値：<span
 								th:text="${#numbers.formatDecimal(stock.low, 1, 4)}"></span></td>
 					</tr>
 				</tbody>
