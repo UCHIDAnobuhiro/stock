@@ -83,13 +83,13 @@ const createCandleChart = (labels, data, volumeData) => {
 						maxRotation: 0,
 						autoSkip: true,
 						maxTicksLimit: 10,
-						callback: (val, index) => labels[index],
+						callback: (val, index) => labels[index]
 					},
 				},
 				y: {
 					position: "right",
 					ticks: {
-						callback: (value) => value.toFixed(2), // 小数2桁で表示
+						callback: (value) => value.toFixed(2)// 小数2桁で表示
 					},
 					afterFit: scale => {
 						scale.width = 70; // Y軸幅を固定
@@ -147,7 +147,7 @@ const createVolumeChart = (labels, data) => {
 						maxRotation: 0,
 						autoSkip: true,
 						maxTicksLimit: 10,
-						callback: (val, index) => labels[index],
+						callback: (val, index) => labels[index]
 					},
 					grid: {
 						display: false // x軸のグリッド非表示
@@ -157,7 +157,7 @@ const createVolumeChart = (labels, data) => {
 					position: "right",
 					ticks: {
 						// 1000単位で"K"表示
-						callback: v => v === 0 ? "0" : `${(v / 1_000).toLocaleString()}K`,
+						callback: v => v === 0 ? "0" : `${(v / 1_000).toLocaleString()}K`
 					},
 					afterFit: scale => {
 						scale.width = 70;
