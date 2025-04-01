@@ -82,6 +82,7 @@ const createCandleChart = (labels, data, volumeData) => {
 		},
 		options: {
 			responsive: true,
+			maintainAspectRatio: false,
 			scales: {
 				x: {
 					type: "category",
@@ -96,7 +97,7 @@ const createCandleChart = (labels, data, volumeData) => {
 				y: {
 					position: "right",
 					ticks: {
-						callback: (value) => value.toFixed(2) // 小数2桁で表示
+						callback: (value) => value.toFixed(2)// 小数2桁で表示
 					},
 					afterFit: scale => {
 						scale.width = 70; // Y軸幅を固定
@@ -145,6 +146,7 @@ const createVolumeChart = (labels, data) => {
 		},
 		options: {
 			responsive: true,
+			maintainAspectRatio: false,
 			scales: {
 				x: {
 					type: "category",
