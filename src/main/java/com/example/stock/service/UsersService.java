@@ -1,6 +1,8 @@
 package com.example.stock.service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
 
 import jakarta.transaction.Transactional;
 
@@ -11,17 +13,19 @@ import org.springframework.stereotype.Service;
 
 import com.example.stock.exception.UserRegistrationException;
 import com.example.stock.model.Users;
+import com.example.stock.model.VerificationToken;
 import com.example.stock.repository.UsersRepository;
+import com.example.stock.repository.VerificationTokenRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class UsersService {
-	private final UsersRepository userssRepository;
+	private final UsersRepository usersRepository;
 	private final PasswordEncoder passwordEncoder;
-
-	public UsersService(UsersRepository userssRepository, PasswordEncoder passwordEncoder) {
-		this.userssRepository = userssRepository;
-		this.passwordEncoder = passwordEncoder;
-	}
+	private final VerificationTokenRepository tokenRepository;
+	private final MailService mailService;
 
 	public Users getLoggedInUser() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -49,7 +53,7 @@ public class UsersService {
 			throw new UserRegistrationException("mail", "メールアドレスを入力してください");
 		}
 
-		if (userssRepository.findByEmail(users.getEmail()).isPresent()) {
+		if (usersRepository.findByEmail(users.getEmail()).isPresent()) {
 			throw new UserRegistrationException("mail", "このメールアドレスは既に登録されています");
 		}
 
@@ -65,10 +69,40 @@ public class UsersService {
 		users.setCreateAt(LocalDateTime.now());
 		users.setUpdateAt(LocalDateTime.now());
 		users.setPassword(passwordEncoder.encode(users.getPassword()));
+		users.setEnabled(false);
 
 		// ユーザーをデータベースに保存
-		userssRepository.save(users);
+		usersRepository.save(users);
 
+		String token = UUID.randomUUID().toString();
+		VerificationToken verificationToken = new VerificationToken();
+		verificationToken.setToken(token);
+		verificationToken.setUser(users);
+		verificationToken.setExpiryDate(LocalDateTime.now().plusHours(24));
+		tokenRepository.save(verificationToken);
+
+		mailService.sendVerificationEmail(users.getEmail(), token);
+
+	}
+
+	@Transactional
+	public boolean verifyUser(String token) {
+		Optional<VerificationToken> optionalToken = tokenRepository.findByToken(token);
+		if (optionalToken.isEmpty())
+			return false;
+
+		VerificationToken verificationToken = optionalToken.get();
+
+		if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+			tokenRepository.delete(verificationToken);
+			return false;
+		}
+
+		Users user = verificationToken.getUser();
+		user.setEnabled(true);
+		usersRepository.save(user);
+		tokenRepository.delete(verificationToken);
+		return true;
 	}
 
 }
