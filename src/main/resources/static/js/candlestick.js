@@ -17,7 +17,7 @@ export const getSymbol = () => {
 
 // 株価データをAPIから取得する非同期関数
 const fetchStockData = async () => {
-	const url = `http://localhost:8080/api/stocks/time-series/values?symbol=${symbol}&interval=${interval}&outputsize=${outputsize}`;
+	const url = `/api/stocks/time-series/values?symbol=${symbol}&interval=${interval}&outputsize=${outputsize}`;
 	const res = await fetch(url);
 	const json = await res.json();
 
