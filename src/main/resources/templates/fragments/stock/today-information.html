@@ -1,26 +1,29 @@
 <!--当日の銘柄情報のテンプレート-->
-<div id="todayInformation" class="w-full" th:fragment="toady-information-template">
+<div id="todayInformation" class="w-full" th:fragment="today-information-template">
 	<div class="flex border-2 rounded-lg border-gray-200 border-opacity-50 flex-col p-4">
 		<!--銘柄名＋銘柄コード-->
 		<div id="tickerNameAndCode" class="text-xl">
-			楽天証券(4755)
+			APPLE(AAPL)
 		</div>
 		<!--現在値-->
 		<div id="currentPrice" class="text-3xl my-4">
-			現在値：179.00
+			現在値：<span th:text="${#numbers.formatDecimal(stock.close, 1, 4)}"></span>
 		</div>
 		<!--四本値-->
 		<div class="w-full  overflow-auto">
 			<table id="fourPrice" class="text-left whitespace-no-wrap">
 				<tbody>
 					<tr>
-						<td class="py-1 text-xl">前日終値：160.00</td>
-						<td class="py-1 text-xl pl-10">高値：190.00</td>
-						</td>
+						<td class="py-1 text-xl">前日終値：<span
+								th:text="${#numbers.formatDecimal(stock.prevClose, 1, 4)}"></span></td>
+						<td class="py-1 text-xl pl-10">高値：<span
+								th:text="${#numbers.formatDecimal(stock.high, 1, 4)}"></span></td>
 					</tr>
 					<tr>
-						<td class="py-1 text-xl ">始値：180.00</td>
-						<td class="py-1 text-xl pl-10">安値：175.00</td>
+						<td class="py-1 text-xl ">始値：<span th:text="${#numbers.formatDecimal(stock.open, 1, 4)}"></span>
+						</td>
+						<td class="py-1 text-xl pl-10">安値：<span
+								th:text="${#numbers.formatDecimal(stock.low, 1, 4)}"></span></td>
 					</tr>
 				</tbody>
 			</table>

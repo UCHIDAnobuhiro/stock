@@ -19,9 +19,9 @@
 		<table id="stocksDetails" class="text-left font-sans">
 			<thead>
 				<tr>
-				    <th>銘柄コード</th>
-				    <th class="pl-5">銘柄名</th>
-				    <th></th>
+					<th>銘柄コード</th>
+					<th class="pl-5">銘柄名</th>
+					<th></th>
 				</tr>
 			</thead>
 			<tbody id="stocksTB" th:insert="~{fragments/stock/stock-show :: stocksDetailsTR}">
@@ -33,11 +33,12 @@
 	<script src="/js/favorite-checker.js"></script>
 </div>
 
-<tr th:each="ticker : ${tickers}" th:fragment="stocksDetailsTR">
+<tr th:each="ticker : ${tickers}" th:fragment="stocksDetailsTR" th:data-ticker="${ticker.ticker}"
+	th:data-brand="${ticker.brand}" class="clickable-row cursor-pointer hover:bg-gray-100">
 	<td class="py-1 text-xl" th:text="${ticker.ticker}"></td>
 	<td class="py-1 text-xl pl-5" th:text="${ticker.brand}"></td>
 	<td>
 		<input type="checkbox" class="favoriteCheckbox" th:checked="${ticker.isFavorite}"
-			th:data-ticker-id="${ticker.id}" >
+			th:data-ticker-id="${ticker.id}">
 	</td>
 </tr>
