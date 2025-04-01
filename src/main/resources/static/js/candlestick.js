@@ -7,9 +7,17 @@ let outputsize = 100;
 let candleChart = null;
 let volumeChart = null;
 
+export const setSymbol = (newSymbol) => {
+	symbol = newSymbol;
+};
+
+export const getSymbol = () => {
+	return symbol;
+};
+
 // 株価データをAPIから取得する非同期関数
 const fetchStockData = async () => {
-	const url = `http://localhost:8080/api/stocks/time-series/values?symbol=${symbol}&interval=${interval}&outputsize=${outputsize}`;
+	const url = `/api/stocks/time-series/values?symbol=${symbol}&interval=${interval}&outputsize=${outputsize}`;
 	const res = await fetch(url);
 	const json = await res.json();
 
@@ -25,7 +33,7 @@ const fetchStockData = async () => {
 }
 
 // チャートの描画処理（ローソク足と出来高チャートの生成）
-const renderCharts = async () => {
+export const renderCharts = async () => {
 	const data = await fetchStockData(); // データ取得
 
 	// x軸用のラベル（日付）

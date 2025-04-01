@@ -11,12 +11,14 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.stock.converter.TickersDTOConverter;
+import com.example.stock.dto.StockCandleWithPrevCloseDto;
 import com.example.stock.dto.TickersWithFavoriteDTO;
 import com.example.stock.exception.TickersException;
 import com.example.stock.model.Favorites;
 import com.example.stock.model.Tickers;
 import com.example.stock.model.Users;
 import com.example.stock.service.FavoritesService;
+import com.example.stock.service.StockService;
 import com.example.stock.service.TickersService;
 import com.example.stock.service.UsersService;
 
@@ -29,6 +31,7 @@ public class StockController {
 	private final TickersService tickersService;
 	private final UsersService usersService;
 	private final FavoritesService favoritesService;
+	private final StockService stockService;
 
 	//stock.htmlを最初にallのtickersリストを表示
 	@GetMapping("/stock")
@@ -38,6 +41,11 @@ public class StockController {
 			Users user = usersService.getLoggedInUserOrThrow();
 			List<Tickers> tickers = tickersService.getAllTickers();
 			List<Favorites> favorites = favoritesService.findFavoritesByUsers(user);
+
+			// 銘柄の当日の情報を取得
+			String symbol = "AAPL";
+			StockCandleWithPrevCloseDto latest = stockService.getLatestStockWithPrevClose(symbol);
+			model.addAttribute("stock", latest);
 
 			//tickersにisFavoriteを追加し、チェックボックスに使用される
 			List<TickersWithFavoriteDTO> tickersWithFavoriteDTOs = TickersDTOConverter
@@ -94,6 +102,13 @@ public class StockController {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body("An error occurred while updating favorite: " + e.getMessage());
 		}
+	}
+
+	@GetMapping("/stock/table")
+	public String showStockTable(@RequestParam String symbol, Model model) {
+		StockCandleWithPrevCloseDto latest = stockService.getLatestStockWithPrevClose(symbol);
+		model.addAttribute("stock", latest);
+		return "fragments/stock/today-information :: today-information-template";
 	}
 
 }

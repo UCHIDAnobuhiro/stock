@@ -25,13 +25,14 @@
 		<!--右側の当日情報、グラフ、出来高-->
 		<section class="text-gray-600 body-font w-2/3 px-4 pt-4 pb-6 h-full flex flex-col">
 			<!--当日情報-->
-			<div th:insert="~{fragments/stock/today-information :: toady-information-template}"></div>
+			<div th:insert="~{fragments/stock/today-information :: today-information-template}"></div>
 			<!--ローソクと出来高-->
 			<div class="flex-grow" th:insert="~{fragments/stock/graph-volume-show :: graph-volume-show-template}"></div>
 		</section>
 	</main>
 	<div th:insert="~{fragments/common/footer :: footer-template}"></div>
-	<script src="/js/technical-dropdown.js" defer></script>
-	<script src="/js/candlestick.js" defer></script>
+	<script type="module" src="/js/technical-dropdown.js" defer></script>
+	<script type="module" src="/js/candlestick.js" defer></script>
+	<script type="module" src="/js/stocks-row-fetch.js" defer></script>
 </body>
 </html>
