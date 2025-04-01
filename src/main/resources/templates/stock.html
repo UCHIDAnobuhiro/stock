@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html xmlns:th="http://www.thymeleaf.org" style="width: 100vw;">
+<html xmlns:th="http://www.thymeleaf.org" class="m-0 p-0 w-full h-screen">
 
 <head>
 	<meta charset="UTF-8">
@@ -14,20 +14,20 @@
 	<link rel="stylesheet" href="css/stock-switch-style.css">
 </head>
 
-<body class="flex flex-col min-h-screen min-w-[980px] w-full overflow-x-auto">
+<body class="flex flex-col m-0 p-0 h-screen min-w-[980px] w-full overflow-x-auto">
 	<div th:insert="~{fragments/common/header :: header-template}" th:with="extraClass='min-w-[980px]'"></div>
-	<main class="flex-grow container mx-auto p-5 flex flex-row min-w-[980px] ">
+	<main class="container mx-auto px-5 flex flex-row flex-1 min-w-[980px] ">
 		<!--	左側のボタンと一覧リスト-->
-		<section class="text-gray-600 body-font w-1/3 my-4 border-2 rounded-lg border-gray-200 border-opacity-50">
+		<section class="text-gray-600 body-font w-1/3 my-4 border-2 rounded-lg border-gray-300 border-opacity-50">
 			<!--一覧リスト-->
 			<div th:insert="~{fragments/stock/stock-show :: stock-show-template}"></div>
 		</section>
 		<!--右側の当日情報、グラフ、出来高-->
-		<section class="text-gray-600 body-font w-2/3 pl-4 py-4">
+		<section class="text-gray-600 body-font w-2/3 px-4 pt-4 pb-6 h-full flex flex-col">
 			<!--当日情報-->
 			<div th:insert="~{fragments/stock/today-information :: toady-information-template}"></div>
 			<!--ローソクと出来高-->
-			<div th:insert="~{fragments/stock/graph-volume-show :: graph-volume-show-template}"></div>
+			<div class="flex-grow" th:insert="~{fragments/stock/graph-volume-show :: graph-volume-show-template}"></div>
 		</section>
 	</main>
 	<div th:insert="~{fragments/common/footer :: footer-template}"></div>

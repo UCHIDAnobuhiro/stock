@@ -1,12 +1,12 @@
 <!--当日の銘柄情報のテンプレート-->
 <div id="todayInformation" class="w-full" th:fragment="toady-information-template">
-	<div class="flex border-2 rounded-lg border-gray-200 border-opacity-50 flex-col p-4">
+	<div class="flex border-2 rounded-lg border-gray-300 border-opacity-50 flex-col pt-2 pl-3">
 		<!--銘柄名＋銘柄コード-->
-		<div id="tickerNameAndCode" class="text-xl">
+		<div id="tickerNameAndCode" class="text-sm">
 			楽天証券(4755)
 		</div>
 		<!--現在値-->
-		<div id="currentPrice" class="text-3xl my-4">
+		<div id="currentPrice" class="text-xl my-1">
 			現在値：179.00
 		</div>
 		<!--四本値-->
@@ -14,13 +14,13 @@
 			<table id="fourPrice" class="text-left whitespace-no-wrap">
 				<tbody>
 					<tr>
-						<td class="py-1 text-xl">前日終値：160.00</td>
-						<td class="py-1 text-xl pl-10">高値：190.00</td>
+						<td class="py-1 text-sm">前日終値：160.00</td>
+						<td class="py-1 text-sm pl-10">高値：190.00</td>
 						</td>
 					</tr>
 					<tr>
-						<td class="py-1 text-xl ">始値：180.00</td>
-						<td class="py-1 text-xl pl-10">安値：175.00</td>
+						<td class="py-1 text-sm ">始値：180.00</td>
+						<td class="py-1 text-sm pl-10">安値：175.00</td>
 					</tr>
 				</tbody>
 			</table>
