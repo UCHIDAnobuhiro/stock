@@ -1,15 +1,15 @@
 <!--ローソクなどのボタンとグラフと出来高のグラフのテンプレート-->
-<div th:fragment="graph-volume-show-template">
-	<div id="graphInformation" class="w-full mt-2">
-		<div class="flex border-2 rounded-lg border-gray-200 border-opacity-50 flex-col p-4">
-			<div class="flex items-center items-stretch mb-2 flex-row">
+<div th:fragment="graph-volume-show-template" class="h-full">
+	<div id="graphInformation" class="w-full h-full mt-2">
+		<div class="flex border-2 rounded-lg border-gray-300 border-opacity-50 flex-col px-2 w-full h-full">
+			<div class="flex items-center items-stretch flex-row mt-1">
 				<!--ローソク-->
 				<div class="relative">
-					<select id="candleSelector" class="rounded border appearance-none border-gray-300 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-200 
+					<select id="candleSelector" class="rounded border appearance-none border-gray-300 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-200 
 								focus:border-indigo-500 text-base pl-3 pr-10">
-						<option>日足</option>
-						<option>週足</option>
-						<option>月足</option>
+						<option value="1day">日足</option>
+						<option value="1week">週足</option>
+						<option value="1month">月足</option>
 					</select>
 					<span
 						class="absolute right-0 top-0 h-full w-10 text-center text-gray-600 pointer-events-none flex items-center justify-center">
@@ -22,7 +22,7 @@
 				<!--ローソクEND-->
 				<!--テクニカル-->
 				<div id="technicalDropdown" class="relative inline-block mx-2">
-					<button id="technicalDropdownButton" class="rounded border appearance-none border-gray-300 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-200 
+					<button id="technicalDropdownButton" class="rounded border appearance-none border-gray-300 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-200 
 							focus:border-indigo-500 text-base pl-3 pr-10">
 						テクニカル
 					</button>
@@ -53,15 +53,17 @@
 				<!--トレンドラインEND-->
 			</div>
 			<!--グラフ表示-->
-			<div class="charts-wrapper w-full flex flex-col">
-				<div class="graph w-full">
-					<canvas id="chart"></canvas>
+			<div id="chartContainer" class="charts-wrapper w-full flex flex-col h-full">
+				<div id='candlestick-chart-container' class="graph w-full">
+					<canvas id="candlestick-chart"></canvas>
 				</div>
-				<div class="graph w-full">
-					<canvas id="volume"></canvas>
+				<div id='volume-chart-container' class="graph w-full">
+					<canvas id="volume-chart"></canvas>
 				</div>
 			</div>
 			<!--グラフ表示END-->
 		</div>
 	</div>
+	<script src="/js/technical-dropdown.js" defer></script>
+	<script src="/js/graph-height-adjust.js" defer></script>
 </div>

@@ -1,10 +1,11 @@
 package com.example.stock.service;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.example.stock.dto.StockCandleDto;
 import com.example.stock.dto.StockCandleWithPrevCloseDto;
+import com.example.stock.exception.StockApiException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -20,6 +22,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class StockService {
 	private final RestTemplate restTemplate;
 	private final ObjectMapper objectMapper;
+
+	private static final Logger logger = LoggerFactory.getLogger(StockService.class);
 
 	// application.propertiesからAPIキーを読み込む。
 	@Value("${api.key}")
@@ -35,16 +39,17 @@ public class StockService {
 	 *
 	 * @param symbol   株のティッカーシンボル
 	 * @param interval データの間隔
+	 * @param outputsize データ数or ロウソク足の本数
 	 * @return 完成したAPI URL
 	 */
-	private String buildTimeSeriesUrl(String symbol, String interval) {
+	private String buildTimeSeriesUrl(String symbol, String interval, Integer outputsize) {
 		return UriComponentsBuilder.newInstance()
 				.scheme("https")
 				.host("api.twelvedata.com")
 				.path("/time_series")
 				.queryParam("symbol", symbol)
 				.queryParam("interval", interval)
-				.queryParam("outputsize", 100)
+				.queryParam("outputsize", outputsize)
 				.queryParam("apikey", apiKey)
 				.toUriString();
 	}
@@ -54,13 +59,16 @@ public class StockService {
 	 *
 	 * @param symbol 株のティッカーシンボル（例：AAPL）
 	 * @param interval データの間隔（例：1day, 1week, 1month)
-	 * @return Alpha Vantage API から返されたJSONデータ（文字列）
+	 * @param outputsize データ数or ロウソク足の本数 (例: 50, 100) min:1 max:5000
+	 *
+	 * @return API から返されたJSONデータ（文字列）
 	 */
-	public Map<String, Object> getStockTimeSeries(String symbol, String interval) {
+	public Map<String, Object> getStockTimeSeries(String symbol, String interval, Integer outputsize) {
 		// Twelve Data APIからデータ取得
-		String url = buildTimeSeriesUrl(symbol, interval);
+		String url = buildTimeSeriesUrl(symbol, interval, outputsize);
 
 		try {
+			logger.info("Fetching stock data from API: {}", url);
 			// APIへGETリクエストを送信し、レスポンスを取得
 			ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
@@ -68,7 +76,8 @@ public class StockService {
 			return objectMapper.readValue(response.getBody(), new TypeReference<>() {
 			});
 		} catch (Exception e) {
-			throw new RuntimeException("JSONの変換に失敗しました", e);
+			logger.error("API取得失敗: {}", e.getMessage(), e);
+			throw new StockApiException("株価のデータの取得に失敗しました", e);
 		}
 	}
 
@@ -78,23 +87,35 @@ public class StockService {
 	 *
 	 * @param symbol 銘柄コード（例: "AAPL"）
 	 * @param interval データの間隔（例: "1day", "1week", "1month"）
+	 * @param outputsize データ数or ロウソク足の本数 (例: 50, 100) min:1 max:5000
+	 * 
 	 * @return 株価データのリスト（StockCandleDto形式）
 	 */
-	public List<StockCandleDto> getStockCandleDtoList(String symbol, String interval) {
+	public List<StockCandleDto> getStockCandleDtoList(String symbol, String interval, Integer outputsize) {
 		// Twelve Data APIから指定された銘柄・間隔の時系列データを取得
-		Map<String, Object> data = getStockTimeSeries(symbol, interval);
+		Map<String, Object> data = getStockTimeSeries(symbol, interval, outputsize);
 		// "values"キーに格納されたローソク足データを取り出す（List<Map<String, String>> 形式）
 		List<Map<String, String>> values = (List<Map<String, String>>) data.get("values");
+		if (values == null || values.isEmpty()) {
+			throw new StockApiException("APIから株価データが取得できませんでした（valuesが空）");
+		}
 
 		// 各データをStockCandleDtoに変換し、リストとして返却
 		return values.stream()
-				.map(v -> new StockCandleDto(
-						v.get("datetime"),
-						Double.parseDouble(v.get("open")),
-						Double.parseDouble(v.get("high")),
-						Double.parseDouble(v.get("low")),
-						Double.parseDouble(v.get("close")),
-						Long.parseLong(v.get("volume"))))
+				.map(v -> {
+					try {
+						return new StockCandleDto(
+								v.get("datetime"),
+								Double.parseDouble(v.get("open")),
+								Double.parseDouble(v.get("high")),
+								Double.parseDouble(v.get("low")),
+								Double.parseDouble(v.get("close")),
+								Long.parseLong(v.get("volume")));
+					} catch (NumberFormatException e) {
+						logger.error("数値変換エラー: {}", v, e);
+						throw new StockApiException("数値の変換に失敗しました：不正なデータがあります", e);
+					}
+				})
 				.toList();
 	}
 
@@ -103,26 +124,36 @@ public class StockService {
 	 * データは古い順（昇順）に並んでいます。
 	 *
 	 * @param symbol 銘柄コード（例: "AAPL"）
+	 * 
 	 * @return 前日終値付きのローソク足データのリスト
 	 */
 	public List<StockCandleWithPrevCloseDto> getStockWithPrevClose(String symbol) {
 		// Twelve Data APIからデータ取得
-		Map<String, Object> data = getStockTimeSeries(symbol, "1day");
+		Map<String, Object> data = getStockTimeSeries(symbol, "1day", 2);
 
 		// valuesだけを取り出す
 		List<Map<String, String>> raw = (List<Map<String, String>>) data.get("values");
+		if (raw == null || raw.isEmpty()) {
+			logger.warn("取得されたデータが空でした（symbol={}）", symbol);
+			throw new StockApiException("APIから取得した株価データが空、または無効です（前日終値が取得できません）");
+		}
 
 		// 各データをStockCandleDtoに変換し、日付の昇順（古い順）にソート
-		List<StockCandleDto> baseList = raw.stream()
-				.map(v -> new StockCandleDto(
+		List<StockCandleDto> baseList = new ArrayList<>();
+		try {
+			for (Map<String, String> v : raw) {
+				baseList.add(new StockCandleDto(
 						v.get("datetime"),
 						Double.parseDouble(v.get("open")),
 						Double.parseDouble(v.get("high")),
 						Double.parseDouble(v.get("low")),
 						Double.parseDouble(v.get("close")),
-						Long.parseLong(v.get("volume"))))
-				.sorted(Comparator.comparing(StockCandleDto::getDatetime))
-				.toList();
+						Long.parseLong(v.get("volume"))));
+			}
+		} catch (NumberFormatException e) {
+			logger.error("数値変換エラー:", e);
+			throw new StockApiException("株価データの数値変換に失敗しました（不正な値が含まれている可能性）", e);
+		}
 
 		// 前日終値を付加したDTOリストを作成
 		List<StockCandleWithPrevCloseDto> result = new ArrayList<>();
@@ -153,6 +184,11 @@ public class StockService {
 	 */
 	public StockCandleWithPrevCloseDto getLatestStockWithPrevClose(String symbol) {
 		List<StockCandleWithPrevCloseDto> list = getStockWithPrevClose(symbol);
+
+		if (list.isEmpty()) {
+			logger.warn("symbol={} のデータが空です（前日終値付き）", symbol);
+			throw new StockApiException("最新の株価データが存在しませんでした");
+		}
 		return list.get(list.size() - 1); // 最新のデータ（リストは昇順）
 	}
 
