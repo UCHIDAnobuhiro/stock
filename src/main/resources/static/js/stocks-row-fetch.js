@@ -24,7 +24,6 @@ const onRowClick = (event) => {
 	fetch(`/stock/table?symbol=${encodeURIComponent(ticker)}`)
 		.then(res => res.text())
 		.then(html => {
-			console.log('取得したHTML:', html); // ← ここで確認！
 			document.getElementById('todayInformation').innerHTML = html;
 			document.getElementById('tickerNameAndCode').innerText = `${brand} (${ticker})`;
 		})
