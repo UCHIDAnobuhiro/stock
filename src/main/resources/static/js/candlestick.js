@@ -186,8 +186,14 @@ const createVolumeChart = (labels, data) => {
 }
 
 // セレクタ変更時に interval を更新してチャート再描画
-document.getElementById("candleSelector").addEventListener("change", (e) => {
-	interval = e.target.value;
+document.getElementById("candleSelector").addEventListener("change", (event) => {
+	interval = event.target.value;
+	renderCharts();
+});
+
+// 本数変更時に outputsize を更新してチャート再描画
+document.getElementById("rowSelector").addEventListener("change", (event) => {
+	outputsize = event.target.value;
 	renderCharts();
 });
 
