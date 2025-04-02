@@ -45,62 +45,100 @@ public class UsersService {
 
 	@Transactional
 	public void registerUser(Users users) {
+		validateUser(users);
+		saveUserAndSendVerification(users);
+	}
+
+	/**
+	 * ユーザー登録時の入力値バリデーションを行う。
+	 * 問題があれば UserRegistrationException をスローする。
+	 */
+	private void validateUser(Users users) {
+		// ユーザー名が空かどうかをチェック
 		if (users.getUsername() == null || users.getUsername().isBlank()) {
 			throw new UserRegistrationException("name", "名前を入力してください");
 		}
 
+		// メールアドレスが空かどうかをチェック
 		if (users.getEmail() == null || users.getEmail().isBlank()) {
 			throw new UserRegistrationException("email", "メールアドレスを入力してください");
 		}
 
+		// メールアドレスが既に登録されていないかをチェック
 		if (usersRepository.findByEmail(users.getEmail()).isPresent()) {
 			throw new UserRegistrationException("email", "このメールアドレスは既に登録されています");
 		}
 
+		// パスワードまたは確認用パスワードが未入力かどうかをチェック
 		if (users.getPassword() == null || users.getConfirmPassword() == null) {
 			throw new UserRegistrationException("password", "パスワードを入力してください");
 		}
 
+		// パスワードと確認用パスワードが一致するかをチェック
 		if (!users.getPassword().equals(users.getConfirmPassword())) {
 			throw new UserRegistrationException("confirmPassword", "パスワードが一致しません");
 		}
+	}
 
-		// ユーザー情報をセット
+	/**
+	 * ユーザー情報を保存し、メール認証用のトークンを生成・送信する処理。
+	 */
+	private void saveUserAndSendVerification(Users users) {
+		// ユーザーの作成日時・更新日時を現在時刻でセット
 		users.setCreateAt(LocalDateTime.now());
 		users.setUpdateAt(LocalDateTime.now());
+		// パスワードをハッシュ化して保存（セキュリティのため）
 		users.setPassword(passwordEncoder.encode(users.getPassword()));
+		// アカウントの有効化状態を false に（メール認証後に有効化される）
 		users.setEnabled(false);
 
 		// ユーザーをデータベースに保存
 		usersRepository.save(users);
 
+		// 認証トークンを生成
 		String token = UUID.randomUUID().toString();
 		VerificationToken verificationToken = new VerificationToken();
 		verificationToken.setToken(token);
 		verificationToken.setUser(users);
 		verificationToken.setExpiryDate(LocalDateTime.now().plusHours(24));
+
+		// トークンをデータベースに保存
 		tokenRepository.save(verificationToken);
 
+		// 認証用メールを送信
 		mailService.sendVerificationEmail(users.getEmail(), token);
-
 	}
 
+	/**
+	 * トークンを使ってユーザーの認証を行う。
+	 * - トークンが有効であればユーザーを有効化し、トークンを削除する。
+	 * - トークンが無効または期限切れの場合は false を返す。
+	 *
+	 * @param token メール認証用のトークン
+	 * @return 認証成功なら true、失敗なら false
+	 */
 	@Transactional
 	public boolean verifyUser(String token) {
+		// トークンが存在するかデータベースから検索
 		Optional<VerificationToken> optionalToken = tokenRepository.findByToken(token);
+		// トークンが見つからなければ認証失敗
 		if (optionalToken.isEmpty())
 			return false;
 
 		VerificationToken verificationToken = optionalToken.get();
 
+		// トークンの有効期限が切れている場合はトークンを削除し、認証失敗
 		if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
 			tokenRepository.delete(verificationToken);
 			return false;
 		}
 
+		// トークンに紐づくユーザーを取得し、有効化（enabled = true）に設定
 		Users user = verificationToken.getUser();
 		user.setEnabled(true);
+		// ユーザー情報を更新して保存
 		usersRepository.save(user);
+		// トークンを削除（再利用を防ぐため）
 		tokenRepository.delete(verificationToken);
 		return true;
 	}
