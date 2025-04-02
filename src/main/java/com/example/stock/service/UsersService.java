@@ -86,12 +86,16 @@ public class UsersService {
 	 * ユーザー情報を保存し、メール認証用のトークンを生成・送信する処理。
 	 */
 	private void saveUserAndSendVerification(Users users) {
+		// 現在の時刻を表示
 		LocalDateTime now = LocalDateTime.now();
+
 		// ユーザーの作成日時・更新日時を現在時刻でセット
 		users.setCreateAt(now);
 		users.setUpdateAt(now);
+
 		// パスワードをハッシュ化して保存（セキュリティのため）
 		users.setPassword(passwordEncoder.encode(users.getPassword()));
+
 		// アカウントの有効化状態を false に（メール認証後に有効化される）
 		users.setEnabled(false);
 
