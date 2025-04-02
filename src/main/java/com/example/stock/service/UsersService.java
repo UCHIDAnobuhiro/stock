@@ -65,12 +65,14 @@ public class UsersService {
 		}
 
 		// メールアドレスが既に登録されていないかをチェック
-		if (usersRepository.findByEmail(users.getEmail()).isPresent()) {
+		String email = users.getEmail().trim();
+		if (usersRepository.findByEmail(email).isPresent()) {
 			throw new UserRegistrationException("email", "このメールアドレスは既に登録されています");
 		}
 
 		// パスワードまたは確認用パスワードが未入力かどうかをチェック
-		if (users.getPassword() == null || users.getConfirmPassword() == null) {
+		if (users.getPassword() == null || users.getConfirmPassword().isBlank() || users.getConfirmPassword() == null
+				|| users.getConfirmPassword().isBlank()) {
 			throw new UserRegistrationException("password", "パスワードを入力してください");
 		}
 
@@ -84,9 +86,10 @@ public class UsersService {
 	 * ユーザー情報を保存し、メール認証用のトークンを生成・送信する処理。
 	 */
 	private void saveUserAndSendVerification(Users users) {
+		LocalDateTime now = LocalDateTime.now();
 		// ユーザーの作成日時・更新日時を現在時刻でセット
-		users.setCreateAt(LocalDateTime.now());
-		users.setUpdateAt(LocalDateTime.now());
+		users.setCreateAt(now);
+		users.setUpdateAt(now);
 		// パスワードをハッシュ化して保存（セキュリティのため）
 		users.setPassword(passwordEncoder.encode(users.getPassword()));
 		// アカウントの有効化状態を false に（メール認証後に有効化される）
@@ -100,7 +103,7 @@ public class UsersService {
 		VerificationToken verificationToken = new VerificationToken();
 		verificationToken.setToken(token);
 		verificationToken.setUser(users);
-		verificationToken.setExpiryDate(LocalDateTime.now().plusHours(24));
+		verificationToken.setExpiryDate(now.plusHours(24));
 
 		// トークンをデータベースに保存
 		tokenRepository.save(verificationToken);
