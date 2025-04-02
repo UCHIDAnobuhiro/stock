@@ -100,7 +100,7 @@ const createCandleChart = (labels, data, volumeData) => {
 						callback: (value) => value.toFixed(2)// 小数2桁で表示
 					},
 					afterFit: scale => {
-						scale.width = 70; // Y軸幅を固定
+						scale.width = 90; // Y軸幅を固定
 					}
 				}
 			},
@@ -168,7 +168,7 @@ const createVolumeChart = (labels, data) => {
 						callback: v => v === 0 ? "0" : `${(v / 1_000).toLocaleString()}K`
 					},
 					afterFit: scale => {
-						scale.width = 70;
+						scale.width = 90;
 					}
 				}
 			},
