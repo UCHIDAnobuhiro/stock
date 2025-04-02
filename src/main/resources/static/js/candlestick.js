@@ -124,6 +124,25 @@ const createCandleChart = (labels, data, volumeData) => {
 						}
 					}
 				},
+				zoom: {
+					pan: {
+						enabled: true,
+						threshold: 10,
+						mode: 'x'
+					},
+					zoom: {
+						wheel: {
+							enabled: true,
+						},
+						pinch: {
+							enabled: true
+						},
+						mode: 'x',
+					},
+					limits: {
+//						x: {min: 5, max: 20}
+					}
+				},
 				legend: { display: false } // 凡例は非表示
 			}
 		}
