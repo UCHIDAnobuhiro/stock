@@ -191,5 +191,11 @@ document.getElementById("candleSelector").addEventListener("change", (e) => {
 	renderCharts();
 });
 
+// 本数変更時に outputsize を更新してチャート再描画
+document.getElementById("rowSelector").addEventListener("change", (e) => {
+	outputsize = e.target.value;
+	renderCharts();
+});
+
 // ページ読み込み完了後にチャートを初期描画
 document.addEventListener("DOMContentLoaded", renderCharts);
