@@ -26,7 +26,7 @@ public class SecurityConfig {
 		// ログインフォームの設定
 		http.formLogin(login -> login
 				.loginPage("/login") // カスタムログインページ
-				.usernameParameter("mail") // フォームの `name="mail"` に対応
+				.usernameParameter("email") // フォームの `name="email"` に対応
 				.defaultSuccessUrl("/stock", true) // ログイン成功後の遷移先
 				.failureHandler(authenticationFailureHandler()) // 認証失敗時のハンドラーを適用
 				.permitAll());

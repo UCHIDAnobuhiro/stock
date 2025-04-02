@@ -50,11 +50,11 @@ public class UsersService {
 		}
 
 		if (users.getEmail() == null || users.getEmail().isBlank()) {
-			throw new UserRegistrationException("mail", "メールアドレスを入力してください");
+			throw new UserRegistrationException("email", "メールアドレスを入力してください");
 		}
 
 		if (usersRepository.findByEmail(users.getEmail()).isPresent()) {
-			throw new UserRegistrationException("mail", "このメールアドレスは既に登録されています");
+			throw new UserRegistrationException("email", "このメールアドレスは既に登録されています");
 		}
 
 		if (users.getPassword() == null || users.getConfirmPassword() == null) {
