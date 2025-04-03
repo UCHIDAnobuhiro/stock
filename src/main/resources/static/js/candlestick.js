@@ -87,12 +87,12 @@ const createCandleChart = (labels, data, volumeData) => {
 				x: {
 					type: "category",
 					labels: labels,
+					display: false,
 					ticks: {
 						maxRotation: 0,
 						autoSkip: true,
-						maxTicksLimit: 10,
 						callback: (val, index) => labels[index]
-					},
+					}
 				},
 				y: {
 					position: "right",
@@ -127,8 +127,9 @@ const createCandleChart = (labels, data, volumeData) => {
 				zoom: {
 					pan: {
 						enabled: true,
-						threshold: 10,
-						mode: 'x'
+						mode: 'x',
+						speed: 2,
+						onPan: ({ chart }) => syncChange(chart),
 					},
 					zoom: {
 						wheel: {
@@ -138,10 +139,12 @@ const createCandleChart = (labels, data, volumeData) => {
 							enabled: true
 						},
 						mode: 'x',
+						speed: 2,
+						onZoom: ({ chart }) => syncChange(chart),
 					},
 					limits: {
-//						x: {min: 5, max: 20}
-					}
+					},
+
 				},
 				legend: { display: false } // 凡例は非表示
 			}
@@ -203,6 +206,16 @@ const createVolumeChart = (labels, data) => {
 		}
 	});
 }
+
+const syncChange = (sourceChart) => {
+	if (!candleChart || !volumeChart) return;  // 防止未定义错误
+
+	const newScale = sourceChart.scales.x;  // 获取缩放后的 X 轴范围
+	volumeChart.options.scales.x.min = newScale.min;
+	volumeChart.options.scales.x.max = newScale.max;
+	volumeChart.update("none");  // 更新出来高图表
+	console.log("Zoom完成，X轴同步");
+};
 
 // セレクタ変更時に interval を更新してチャート再描画
 document.getElementById("candleSelector").addEventListener("change", (event) => {
