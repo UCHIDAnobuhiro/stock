@@ -94,4 +94,18 @@ public class Users implements UserDetails {
 		return this.enabled;
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		Users users = (Users) o;
+		return id != null && id.equals(users.id);
+	}
+
+	@Override
+	public int hashCode() {
+		return getClass().hashCode();
+	}
 }

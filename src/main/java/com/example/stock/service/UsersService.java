@@ -150,4 +150,32 @@ public class UsersService {
 		return true;
 	}
 
+	@Transactional
+	public void resendVerificationEmail(String email) {
+		// emailをトリムする
+		String trimmedEmail = email.trim();
+		Users user = usersRepository.findByEmail(trimmedEmail)
+				.orElseThrow(() -> new UserRegistrationException("email", "このメールアドレスは登録されていません"));
+
+		if (user.isEnabled()) {
+			throw new UserRegistrationException("email", "このメールアドレスは既に認証されています");
+		}
+
+		// 古いトークンがある場合は削除する
+		tokenRepository.deleteByUser(user);
+
+		// 新しいトークンを発行
+		String token = UUID.randomUUID().toString();
+		LocalDateTime expiryDate = LocalDateTime.now().plusHours(24);
+
+		VerificationToken newToken = new VerificationToken();
+		newToken.setToken(token);
+		newToken.setUser(user);
+		newToken.setExpiryDate(expiryDate);
+
+		tokenRepository.save(newToken);
+
+		// 認証メールを再送信
+		mailService.sendVerificationEmail(user.getEmail(), token);
+	}
 }
