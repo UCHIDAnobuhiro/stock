@@ -129,7 +129,7 @@ const createCandleChart = (labels, data, volumeData) => {
 						enabled: true,
 						mode: 'x',
 						speed: 2,
-						onPan: ({ chart }) => syncChange(chart),
+						onPan: ({ chart }) => { syncChangeScale(chart, chart === candleChart ? volumeChart : candleChart); },
 					},
 					zoom: {
 						wheel: {
@@ -140,11 +140,10 @@ const createCandleChart = (labels, data, volumeData) => {
 						},
 						mode: 'x',
 						speed: 2,
-						onZoom: ({ chart }) => syncChange(chart),
+						onZoom: ({ chart }) => { syncChangeScale(chart, chart === candleChart ? volumeChart : candleChart); },
 					},
 					limits: {
 					},
-
 				},
 				legend: { display: false } // 凡例は非表示
 			}
@@ -201,21 +200,50 @@ const createVolumeChart = (labels, data) => {
 						label: ctx => `出来高: ${ctx.raw.y.toLocaleString()}`
 					}
 				},
+				zoom: {
+					pan: {
+						enabled: true,
+						mode: 'x',
+						speed: 2,
+						onPan: ({ chart }) => { syncChangeScale(chart, chart === candleChart ? volumeChart : candleChart); },
+					},
+					zoom: {
+						wheel: {
+							enabled: true,
+						},
+						pinch: {
+							enabled: true
+						},
+						mode: 'x',
+						speed: 2,
+						onZoom: ({ chart }) => { syncChangeScale(chart, chart === candleChart ? volumeChart : candleChart); },
+					},
+					limits: {
+					},
+				},
 				legend: { display: false }
 			}
 		}
 	});
 }
 
-const syncChange = (sourceChart) => {
-	if (!candleChart || !volumeChart) return;  // 防止未定义错误
+const syncChangeScale = (sourceChart, targetChart) => {
+	if (!sourceChart || !targetChart) return; // 防止未定义错误
 
-	const newScale = sourceChart.scales.x;  // 获取缩放后的 X 轴范围
-	volumeChart.options.scales.x.min = newScale.min;
-	volumeChart.options.scales.x.max = newScale.max;
-	volumeChart.update("none");  // 更新出来高图表
-	console.log("Zoom完成，X轴同步");
+	const newScale = sourceChart.scales.x;
+
+	// 避免重复更新，检查是否已经是相同的 min/max
+	if (
+		targetChart.options.scales.x.min !== newScale.min ||
+		targetChart.options.scales.x.max !== newScale.max
+	) {
+		targetChart.options.scales.x.min = newScale.min;
+		targetChart.options.scales.x.max = newScale.max;
+		targetChart.update("none"); // ✅ 只更新数据，不触发动画
+		console.log(`Zoom/Pan 同步: ${sourceChart.canvas.id} → ${targetChart.canvas.id}`);
+	}
 };
+
 
 // セレクタ変更時に interval を更新してチャート再描画
 document.getElementById("candleSelector").addEventListener("change", (event) => {
