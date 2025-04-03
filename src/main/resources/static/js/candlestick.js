@@ -228,19 +228,20 @@ const createVolumeChart = (labels, data) => {
 }
 
 const syncChangeScale = (sourceChart, targetChart) => {
-	if (!sourceChart || !targetChart) return; // 防止未定义错误
+	if (!sourceChart || !targetChart) return; // null check
 
+	//現在操作中のChartのXの左と右lableを取得（表示されている範囲）
 	const newScale = sourceChart.scales.x;
 
-	// 避免重复更新，检查是否已经是相同的 min/max
+	// すでに同じscaleなら更新しない
 	if (
 		targetChart.options.scales.x.min !== newScale.min ||
 		targetChart.options.scales.x.max !== newScale.max
 	) {
+		//目標chartのｘ軸の表示範囲を同期
 		targetChart.options.scales.x.min = newScale.min;
 		targetChart.options.scales.x.max = newScale.max;
-		targetChart.update("none"); // ✅ 只更新数据，不触发动画
-		console.log(`Zoom/Pan 同步: ${sourceChart.canvas.id} → ${targetChart.canvas.id}`);
+		targetChart.update("none"); // アニメーション更新はしない、データだけの更新をする
 	}
 };
 
