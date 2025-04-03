@@ -162,7 +162,7 @@ const createVolumeChart = (labels, data) => {
 				data,
 				backgroundColor: "rgba(100, 149, 237, 0.4)", // 柔らかい青色
 				borderColor: "rgba(100, 149, 237, 1)",
-				barThickness: 5 // 棒の太さ
+				barThickness: 'flex' // 棒の太さ
 			}]
 		},
 		options: {
