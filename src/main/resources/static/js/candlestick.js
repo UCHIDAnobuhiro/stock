@@ -1,7 +1,7 @@
 // 初期設定：表示する銘柄とローソク足の時間軸
 let symbol = 'AAPL';
 let interval = '1day';
-let outputsize = 100;
+let outputsize = 200;
 
 // グローバル変数：チャートインスタンスを保持しておく
 let candleChart = null;
@@ -11,6 +11,8 @@ let volumeChart = null;
 let minTicks = 5; //表示するticksの最小限
 let adjustSpeed = 2; //拡大・移動のスビー;
 let ticksSkipPadding = 40;//x軸のタブをスキップする距離　広いならタブが少ない
+let dataLength = outputsize; //dataの最後のデータの位置を把握し、最後のデータから表示するためです。
+let showAmount = document.getElementById("rowSelector").value; //同時に表示するデータ数 本数selectorのdefault値をとる
 
 
 export const setSymbol = (newSymbol) => {
@@ -75,6 +77,7 @@ export const renderCharts = async () => {
 
 // ローソク足チャートの作成関数
 const createCandleChart = (labels, data, volumeData) => {
+	dataLength = data.length;
 	return new Chart(document.getElementById("candlestick-chart").getContext("2d"), {
 		type: "candlestick",
 		data: {
@@ -94,10 +97,12 @@ const createCandleChart = (labels, data, volumeData) => {
 					type: "category",
 					labels: labels,
 					display: true,
+					//いくつのデータを最初に表示する設定
+					min: dataLength - showAmount,//何個を表示するのか
+					max: dataLength - 1,//データの最後から表示
 					ticks: {
-						color: 'rgba(0,0,0,0)',
+						color: 'rgba(0,0,0,0)',//x軸のずれがないように、x軸を保留し透明化することで表示させない
 						maxRotation: 0,
-						autoSkip: true,
 						autoSkipPadding: ticksSkipPadding,
 						callback: (index) => labels[index]
 					},
@@ -143,16 +148,7 @@ const createCandleChart = (labels, data, volumeData) => {
 						onPan: ({ chart }) => { syncChangeScale(chart, chart === candleChart ? volumeChart : candleChart); },
 					},
 					zoom: {
-						enable: true,
-						wheel: {
-							enabled: true,
-						},
-						pinch: {
-							enabled: true
-						},
-						mode: 'x',
-						speed: adjustSpeed,
-						onZoom: ({ chart }) => { syncChangeScale(chart, chart === candleChart ? volumeChart : candleChart); },
+						enable: false,
 					},
 					limits: {
 						x: {
@@ -187,13 +183,15 @@ const createVolumeChart = (labels, data) => {
 				x: {
 					type: "category",
 					labels: labels,
+					min: dataLength - showAmount,
+					max: dataLength - 1,
 					ticks: {
 						maxRotation: 0,
 						autoSkipPadding: ticksSkipPadding,
 						callback: (index) => labels[index],
 					},
 					grid: {
-						offset: false,
+						offset: false,//グリードを棒の中央に設置
 					}
 				},
 				y: {
@@ -222,15 +220,7 @@ const createVolumeChart = (labels, data) => {
 						onPan: ({ chart }) => { syncChangeScale(chart, chart === candleChart ? volumeChart : candleChart); },
 					},
 					zoom: {
-						wheel: {
-							enabled: true,
-						},
-						pinch: {
-							enabled: true
-						},
-						mode: 'x',
-						speed: adjustSpeed,
-						onZoom: ({ chart }) => { syncChangeScale(chart, chart === candleChart ? volumeChart : candleChart); },
+						enable: false,
 					},
 					limits: {
 						x: {
@@ -284,7 +274,7 @@ document.getElementById("candleSelector").addEventListener("change", (event) => 
 
 // 本数変更時に outputsize を更新してチャート再描画
 document.getElementById("rowSelector").addEventListener("change", (event) => {
-	outputsize = event.target.value;
+	showAmount = event.target.value;
 	renderCharts();
 });
 
