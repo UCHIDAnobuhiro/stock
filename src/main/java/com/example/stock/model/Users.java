@@ -52,9 +52,11 @@ public class Users implements UserDetails {
 	@Column(name = "update_at", nullable = false)
 	private LocalDateTime updateAt;
 
-	@NotEmpty(message = "確認用パスワードを入力してください")
+	// @NotEmpty(message = "確認用パスワードを入力してください")
 	@Transient
 	private String confirmPassword; // データベースに保存しない
+
+	private boolean enabled = false;
 
 	// 権限情報（簡単に空リストを返す）
 	@Override
@@ -89,7 +91,21 @@ public class Users implements UserDetails {
 
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return this.enabled;
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		Users users = (Users) o;
+		return id != null && id.equals(users.id);
+	}
+
+	@Override
+	public int hashCode() {
+		return getClass().hashCode();
+	}
 }

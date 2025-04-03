@@ -41,7 +41,7 @@ public class SignupController {
 			usersService.registerUser(users);
 
 			// 成功メッセージをフラッシュ属性で送る
-			redirectAttributes.addFlashAttribute("success", "登録が完了しました！ログインしてください。");
+			redirectAttributes.addFlashAttribute("success", "仮登録が完了しました。認証メールをご確認ください。");
 
 			// ログインページにリダイレクト
 			return "redirect:/login";
