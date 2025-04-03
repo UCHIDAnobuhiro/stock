@@ -44,6 +44,9 @@ const fetchStockData = async () => {
 export const renderCharts = async () => {
 	const data = await fetchStockData(); // データ取得
 
+	//データの長さを更新
+	dataLength = data.length;
+	
 	// x軸用のラベル（日付）
 	const labels = data.map(d => d.datetime);
 
@@ -77,7 +80,6 @@ export const renderCharts = async () => {
 
 // ローソク足チャートの作成関数
 const createCandleChart = (labels, data, volumeData) => {
-	dataLength = data.length;
 	return new Chart(document.getElementById("candlestick-chart").getContext("2d"), {
 		type: "candlestick",
 		data: {
@@ -96,14 +98,15 @@ const createCandleChart = (labels, data, volumeData) => {
 				x: {
 					type: "category",
 					labels: labels,
-					display: true,
+					display: true, //表示しますが透明化にする
+
 					//いくつのデータを最初に表示する設定
 					min: dataLength - showAmount,//何個を表示するのか
 					max: dataLength - 1,//データの最後から表示
 					ticks: {
 						color: 'rgba(0,0,0,0)',//x軸のずれがないように、x軸を保留し透明化することで表示させない
 						maxRotation: 0,
-						autoSkipPadding: ticksSkipPadding,
+						autoSkipPadding: ticksSkipPadding,//autoSkip:trueなら二つの表のskipされるタブは違う（理由不明）
 						callback: (index) => labels[index]
 					},
 					grid: {
@@ -272,7 +275,7 @@ document.getElementById("candleSelector").addEventListener("change", (event) => 
 	renderCharts();
 });
 
-// 本数変更時に outputsize を更新してチャート再描画
+// 本数変更時に showAmount を更新してチャート再描画
 document.getElementById("rowSelector").addEventListener("change", (event) => {
 	showAmount = event.target.value;
 	renderCharts();
