@@ -7,6 +7,12 @@ let outputsize = 100;
 let candleChart = null;
 let volumeChart = null;
 
+//表に関する設定
+let minTicks = 5; //表示するticksの最小限
+let adjustSpeed = 2; //拡大・移動のスビー;
+let ticksSkipPadding = 40;//x軸のタブをスキップする距離　広いならタブが少ない
+
+
 export const setSymbol = (newSymbol) => {
 	symbol = newSymbol;
 };
@@ -87,12 +93,17 @@ const createCandleChart = (labels, data, volumeData) => {
 				x: {
 					type: "category",
 					labels: labels,
-					display: false,
+					display: true,
 					ticks: {
+						color: 'rgba(0,0,0,0)',
 						maxRotation: 0,
 						autoSkip: true,
-						callback: (val, index) => labels[index]
-					}
+						autoSkipPadding: ticksSkipPadding,
+						callback: (index) => labels[index]
+					},
+					grid: {
+						offset: false,
+					},
 				},
 				y: {
 					position: "right",
@@ -128,10 +139,11 @@ const createCandleChart = (labels, data, volumeData) => {
 					pan: {
 						enabled: true,
 						mode: 'x',
-						speed: 2,
+						speed: adjustSpeed,
 						onPan: ({ chart }) => { syncChangeScale(chart, chart === candleChart ? volumeChart : candleChart); },
 					},
 					zoom: {
+						enable: true,
 						wheel: {
 							enabled: true,
 						},
@@ -139,10 +151,13 @@ const createCandleChart = (labels, data, volumeData) => {
 							enabled: true
 						},
 						mode: 'x',
-						speed: 2,
+						speed: adjustSpeed,
 						onZoom: ({ chart }) => { syncChangeScale(chart, chart === candleChart ? volumeChart : candleChart); },
 					},
 					limits: {
+						x: {
+							minRange: minTicks,
+						},
 					},
 				},
 				legend: { display: false } // 凡例は非表示
@@ -174,12 +189,11 @@ const createVolumeChart = (labels, data) => {
 					labels: labels,
 					ticks: {
 						maxRotation: 0,
-						autoSkip: true,
-						maxTicksLimit: 10,
-						callback: (val, index) => labels[index]
+						autoSkipPadding: ticksSkipPadding,
+						callback: (index) => labels[index],
 					},
 					grid: {
-						display: false // x軸のグリッド非表示
+						offset: false,
 					}
 				},
 				y: {
@@ -204,7 +218,7 @@ const createVolumeChart = (labels, data) => {
 					pan: {
 						enabled: true,
 						mode: 'x',
-						speed: 2,
+						speed: adjustSpeed,
 						onPan: ({ chart }) => { syncChangeScale(chart, chart === candleChart ? volumeChart : candleChart); },
 					},
 					zoom: {
@@ -215,10 +229,13 @@ const createVolumeChart = (labels, data) => {
 							enabled: true
 						},
 						mode: 'x',
-						speed: 2,
+						speed: adjustSpeed,
 						onZoom: ({ chart }) => { syncChangeScale(chart, chart === candleChart ? volumeChart : candleChart); },
 					},
 					limits: {
+						x: {
+							minRange: minTicks,
+						},
 					},
 				},
 				legend: { display: false }
@@ -227,6 +244,19 @@ const createVolumeChart = (labels, data) => {
 	});
 }
 
+/**
+ * 2つのチャートのX軸の表示範囲を同期します（ズームやパン操作時）。
+ * このメソッドは、ソースチャートのX軸の最小値（min）と最大値（max）をターゲットチャートに同期させ、
+ * 両方のチャートが同じ時間範囲を表示するようにします。
+ * ズームやパン操作時に複数のチャートの表示範囲を一致させる場合に使用します。
+ * 
+ * @param {Chart} sourceChart - ズームまたはパン操作を行うソースチャート（通常は操作中のチャート）。
+ * @param {Chart} targetChart - 表示範囲を同期させるターゲットチャート（通常は別のチャート）。
+ * 
+ * @example
+ * // ろうそく足チャートと出来高チャートのズーム範囲を同期させる
+ * syncChangeScale(candleChart, volumeChart);
+ */
 const syncChangeScale = (sourceChart, targetChart) => {
 	if (!sourceChart || !targetChart) return; // null check
 
