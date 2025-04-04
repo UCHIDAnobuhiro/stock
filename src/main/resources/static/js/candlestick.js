@@ -1,60 +1,10 @@
+import { fetchStockData, fetchSMAData } from './stock-api.js';//chart.jsに使うデータをとってくる
 import stockConfig from './config/stock-config.js';//銘柄に関する変数配置ファイルをimport
 import chartStyleConfig from './config/chart-style-config.js';//グラフに関する変数配置ファイルをimport
 
 // グローバル変数：チャートインスタンスを保持しておく
 let candleChart = null;
 let volumeChart = null;
-// 株価データをAPIから取得する非同期関数
-const fetchStockData = async () => {
-	const url = `/api/stocks/time-series/values?
-	symbol=${stockConfig.symbol}&interval=${stockConfig.interval}&outputsize=${stockConfig.outputsize}`;
-	const res = await fetch(url);
-	const json = await res.json();
-
-	// APIエラーがあればログに出力して中断
-	if (json.status === "error") {
-		console.error("API error:", json.message);
-		return;
-	}
-
-	// データは時系列の降順で返ってくる想定 → 昇順に直す
-	const rawData = json.reverse();
-	return rawData;
-}
-
-const fetchSMAData = async () => {
-	const interval = stockConfig.interval;
-	const timePeriods = stockConfig.getSMAPeriods();
-
-	if (!timePeriods.length) {
-		console.warn("No SMA periods found for interval:", interval);
-		return [];
-	}
-
-	// 获取一个 timePeriod 的 SMA 数据
-	const fetchOneSMA = async (period) => {
-		const url = `/api/stocks/technical/SMA?symbol=${stockConfig.symbol}&interval=${interval}&timeperiod=${period}&outputsize=${stockConfig.outputsize}`;
-		const res = await fetch(url);
-		const json = await res.json();
-
-		if (json.status === "error") {
-			console.error(`SMA(${period}) API error:`, json.message);
-			return null;
-		}
-
-		return {
-			timeperiod: period,
-			values: json.values.reverse()
-		};
-	};
-
-	// 并行请求所有 timeperiod 的数据
-	const results = await Promise.all(timePeriods.map(fetchOneSMA));
-
-	// 过滤掉失败请求
-	return results.filter(Boolean);
-};
-
 
 // チャートの描画処理（ローソク足と出来高チャートの生成）
 export const renderCharts = async () => {
