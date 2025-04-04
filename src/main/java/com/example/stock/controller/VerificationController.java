@@ -1,7 +1,5 @@
 package com.example.stock.controller;
 
-import java.util.Optional;
-
 import jakarta.validation.Valid;
 
 import org.springframework.stereotype.Controller;
@@ -16,7 +14,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.example.stock.dto.ResetPasswordForm;
 import com.example.stock.enums.TokenType;
 import com.example.stock.exception.UserRegistrationException;
-import com.example.stock.model.Users;
 import com.example.stock.service.UsersService;
 
 import lombok.RequiredArgsConstructor;
@@ -90,7 +87,6 @@ public class VerificationController {
 	@GetMapping("/password/reset")
 	public String verifyPasswordUser(@RequestParam("token") String token,
 			RedirectAttributes redirectAttributes, Model model) {
-		Optional<Users> userOpt = usersService.getUserFromResetToken(token);
 		// serviceでtokenの有効性を確認
 		boolean isValid = usersService.validateResetPasswordToken(token);
 
@@ -99,7 +95,8 @@ public class VerificationController {
 			return "redirect:/login";
 		}
 
-		model.addAttribute("users", userOpt.get()); // ← tokenから取得したユーザーを渡す
+		model.addAttribute("form", new ResetPasswordForm()); // ← formバインディング用
+		model.addAttribute("token", token); // ← hiddenで使う
 		// 有効なトークンなのでリセット画面へ遷移
 		return "/password/reset";
 
