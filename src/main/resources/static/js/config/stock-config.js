@@ -1,6 +1,6 @@
 class StockConfig {
   #symbol = 'AAPL'; // ＃symbolはsymbolをprivateに設定
-  #interval = '1month';
+  #interval = '1day';
   #outputsize = 100;
   //移動平均線の設定、日足の場合は5,25,75の三本を表示する
   #smaPeriodMap={

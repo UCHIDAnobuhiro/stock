@@ -8,8 +8,8 @@ let volumeChart = null;
 
 // チャートの描画処理（ローソク足と出来高チャートの生成）
 export const renderCharts = async () => {
+	const isSmaChecked = document.querySelector('input[value="sma"]').checked;
 	const data = await fetchStockData(); // データ取得
-	const SMAResults = await fetchSMAData();
 
 	// x軸用のラベル（日付）
 	const labels = data.map(d => d.datetime);
@@ -29,17 +29,20 @@ export const renderCharts = async () => {
 		y: d.volume
 	}));
 
+	let SMADatasets = [];
 	//SMAのデータsetを
-	const SMADatasets = SMAResults.map(sma => ({
-		type: "line",
-		label: `SMA (${sma.timeperiod})`,
-		data: sma.values.map(d => ({ x: d.datetime, y: d.sma })),
-		borderColor: chartStyleConfig.getSMAColor(sma.timeperiod),
-		borderWidth: 2,
-		pointRadius: 0,
-		fill: false
-	}));
-
+	if (isSmaChecked) {
+		const SMAResults = await fetchSMAData();
+		SMADatasets = SMAResults.map(sma => ({
+			type: "line",
+			label: `SMA (${sma.timeperiod})`,
+			data: sma.values.map(d => ({ x: d.datetime, y: d.sma })),
+			borderColor: chartStyleConfig.getSMAColor(sma.timeperiod),
+			borderWidth: 2,
+			pointRadius: 0,
+			fill: false
+		}));
+	}
 	console.log(SMADatasets);
 
 	// チャートが既にあれば破棄してから再生成（再描画時に必要）
@@ -191,6 +194,13 @@ document.getElementById("candleSelector").addEventListener("change", (event) => 
 document.getElementById("rowSelector").addEventListener("change", (event) => {
 	stockConfig.outputsize = event.target.value;
 	renderCharts();
+});
+
+// テクニカルのチェック状態が変わったら再描画
+document.querySelectorAll('#technicalDropdownMenu input[type="checkbox"]').forEach(event => {
+	event.addEventListener("change", () => {
+		renderCharts(); 
+	});
 });
 
 // ページ読み込み完了後にチャートを初期描画
