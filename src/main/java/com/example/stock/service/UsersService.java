@@ -143,6 +143,12 @@ public class UsersService {
 		return true;
 	}
 
+	/**
+	 * パスワード再設定用トークンの有効性を検証するメソッド。
+	 *
+	 * @param tokenStr 検証対象のトークン文字列
+	 * @return トークンが存在し、かつ期限内かどうか（有効なら true、無効なら false）
+	 */
 	@Transactional
 	public boolean validateResetPasswordToken(String tokenStr) {
 		Optional<UserToken> verificationToken = userTokenService.validateToken(tokenStr, TokenType.RESET_PASSWORD);
@@ -162,6 +168,13 @@ public class UsersService {
 
 	}
 
+	/**
+	 * ユーザーに認証／パスワード再設定用のメールを再送信する。
+	 *
+	 * @param email 対象ユーザーのメールアドレス
+	 * @param tokenType トークンの種別（VERIFY_EMAIL or RESET_PASSWORD）
+	 * @throws UserRegistrationException 条件に合わない場合にスロー
+	 */
 	@Transactional
 	public void resendVerificationEmail(String email, TokenType tokenType) {
 		// emailをトリムする
@@ -183,6 +196,12 @@ public class UsersService {
 		mailService.sendVerificationEmail(user.getEmail(), token.getToken(), tokenType);
 	}
 
+	/**
+	 * パスワード再設定トークンからユーザー情報を取得する。
+	 *
+	 * @param token トークン文字列
+	 * @return 有効なトークンに紐づくユーザー（トークンが無効または期限切れの場合は empty）
+	 */
 	@Transactional
 	public Optional<Users> getUserFromResetToken(String token) {
 		Optional<UserToken> verificationToken = userTokenService.validateToken(token, TokenType.RESET_PASSWORD);
@@ -199,6 +218,13 @@ public class UsersService {
 		return Optional.of(userToken.getUser());
 	}
 
+	/**
+	 * トークンを使ってユーザーのパスワードをリセットする。
+	 *
+	 * @param token パスワード再設定用トークン
+	 * @param rawPassword ユーザーが新たに入力したパスワード（平文）
+	 * @return パスワードの更新が成功した場合は true、トークンが無効または期限切れなら false
+	 */
 	@Transactional
 	public boolean resetPassword(String token, String rawPassword) {
 		// トークンの取得＆有効性チェック
