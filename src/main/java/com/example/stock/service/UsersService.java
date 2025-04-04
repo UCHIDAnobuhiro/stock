@@ -182,4 +182,47 @@ public class UsersService {
 		// 認証メールを再送信
 		mailService.sendVerificationEmail(user.getEmail(), token.getToken(), tokenType);
 	}
+
+	@Transactional
+	public Optional<Users> getUserFromResetToken(String token) {
+		Optional<UserToken> verificationToken = userTokenService.validateToken(token, TokenType.RESET_PASSWORD);
+
+		if (verificationToken.isEmpty()) {
+			return Optional.empty();
+		}
+
+		UserToken userToken = verificationToken.get();
+		if (userToken.isExpired()) {
+			return Optional.empty();
+		}
+
+		return Optional.of(userToken.getUser());
+	}
+
+	@Transactional
+	public boolean resetPassword(String token, String rawPassword) {
+		// トークンの取得＆有効性チェック
+		Optional<UserToken> tokenOpt = userTokenService.validateToken(token, TokenType.RESET_PASSWORD);
+
+		if (tokenOpt.isEmpty() || tokenOpt.get().isExpired()) {
+			return false;
+		}
+
+		UserToken userToken = tokenOpt.get();
+		Users user = userToken.getUser();
+
+		// パスワードをエンコードして保存
+		String encodedPassword = passwordEncoder.encode(rawPassword);
+		user.setPassword(encodedPassword);
+
+		// update_at を更新
+		user.setUpdateAt(LocalDateTime.now());
+		usersRepository.save(user);
+
+		// トークンを削除または無効化
+		userTokenService.deleteToken(user, TokenType.RESET_PASSWORD);
+
+		return true;
+	}
+
 }
