@@ -48,9 +48,9 @@ public class MailService {
 
 		// プレーンテキスト版（シンプルにそのままリンク）
 		if (tokenType == TokenType.VERIFY_EMAIL) {
-			link = "http://localhost:8080/verify?token=" + token;
+			link = "http://localhost:8080/verify/activate?token=" + token;
 			context.setVariable("verificationLink", link);
-			htmlBody = templateEngine.process("mail/verification", context);
+			htmlBody = templateEngine.process("mail/verification-user", context);
 			textBody = "以下のリンクをブラウザで開いて、認証を完了してください:\n" + link;
 			logger.info("認証メールを送信します: to={}, link={}", toEmail, link);
 		} else if (tokenType == TokenType.RESET_PASSWORD) {
