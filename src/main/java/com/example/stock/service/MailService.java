@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import com.example.stock.enums.TokenType;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -23,6 +25,7 @@ public class MailService {
 
 	// 件名を定数化
 	private static final String SUBJECT_VERIFICATION = "アカウント認証のご案内";
+	private static final String SUBJECT_RESET_PASSWORD = "パスワード再設定のご案内";
 
 	/**
 	 * 認証メールを送信する（HTML+プレーンテキストのマルチパート対応）
@@ -30,25 +33,45 @@ public class MailService {
 	 * @param toEmail 送信先メールアドレス
 	 * @param token 認証トークン
 	 */
-	public void sendVerificationEmail(String toEmail, String token) {
-		String link = "http://localhost:8080/verify?token=" + token;
-		logger.info("認証メールを送信します: to={}, link={}", toEmail, link);
+	public void sendVerificationEmail(String toEmail, String token, TokenType tokenType) {
+		// リンクの初期化
+		String link;
 
 		// Thymleafのコンテキストに変数をセット
 		Context context = new Context();
-		context.setVariable("verificationLink", link);
 
-		// テンプレートを処理してHTML文字列を生成
-		String htmlBody = templateEngine.process("mail/verification", context);
+		// テンプレートを処理してHTML文字列を初期化
+		String htmlBody;
+
+		// プレーンテキストの本文を初期化
+		String textBody;
 
 		// プレーンテキスト版（シンプルにそのままリンク）
-		String textBody = "以下のリンクをブラウザで開いて、認証を完了してください:\n" + link;
+		if (tokenType == TokenType.VERIFY_EMAIL) {
+			link = "http://localhost:8080/verify?token=" + token;
+			context.setVariable("verificationLink", link);
+			htmlBody = templateEngine.process("mail/verification", context);
+			textBody = "以下のリンクをブラウザで開いて、認証を完了してください:\n" + link;
+			logger.info("認証メールを送信します: to={}, link={}", toEmail, link);
+		} else if (tokenType == TokenType.RESET_PASSWORD) {
+			link = "http://localhost:8080/password/reset?token=" + token;
+			context.setVariable("resetPasswordLink", link);
+			htmlBody = templateEngine.process("mail/verification-password", context);
+			textBody = "以下のリンクをブラウザで開いて、パスワードの再設定を完了してください:\n" + link;
+			logger.info("パスワード再設定メールを送信します: to={}, link={}", toEmail, link);
+		} else {
+			throw new IllegalArgumentException("不正なTokenTypeです: " + tokenType);
+		}
 
 		try {
-			sendHtmlEmail(toEmail, SUBJECT_VERIFICATION, htmlBody, textBody);
-			logger.info("認証メール送信成功: to={}", toEmail);
+			if (tokenType == TokenType.VERIFY_EMAIL) {
+				sendHtmlEmail(toEmail, SUBJECT_VERIFICATION, htmlBody, textBody);
+			} else if (tokenType == TokenType.RESET_PASSWORD) {
+				sendHtmlEmail(toEmail, SUBJECT_RESET_PASSWORD, htmlBody, textBody);
+			}
+			logger.info("メール送信成功: to={}", toEmail);
 		} catch (MessagingException e) {
-			logger.error("認証メール送信失敗: to={}, エラー={}", toEmail, e.getMessage(), e);
+			logger.error("メール送信失敗: to={}, エラー={}", toEmail, e.getMessage(), e);
 			throw new RuntimeException("メール送信に失敗しました", e);
 		}
 

@@ -106,7 +106,7 @@ public class UsersService {
 		UserToken token = userTokenService.createToken(user, TokenType.VERIFY_EMAIL, Duration.ofHours(24));
 
 		// 認証用メールを送信
-		mailService.sendVerificationEmail(user.getEmail(), token.getToken());
+		mailService.sendVerificationEmail(user.getEmail(), token.getToken(), TokenType.VERIFY_EMAIL);
 	}
 
 	/**
@@ -144,23 +144,42 @@ public class UsersService {
 	}
 
 	@Transactional
-	public void resendVerificationEmail(String email) {
+	public boolean validateResetPasswordToken(String tokenStr) {
+		Optional<UserToken> verificationToken = userTokenService.validateToken(tokenStr, TokenType.RESET_PASSWORD);
+		if (verificationToken.isEmpty()) {
+			return false;
+		}
+
+		UserToken token = verificationToken.get();
+
+		// トークンが期限切れだったら false
+		if (token.isExpired()) {
+			return false;
+		}
+
+		// ここまで来たら有効なRESET_PASSWORDトークン
+		return true;
+
+	}
+
+	@Transactional
+	public void resendVerificationEmail(String email, TokenType tokenType) {
 		// emailをトリムする
 		String trimmedEmail = email.trim();
 		Users user = usersRepository.findByEmail(trimmedEmail)
 				.orElseThrow(() -> new UserRegistrationException("email", "このメールアドレスは登録されていません"));
 
-		if (user.isEnabled()) {
+		if (user.isEnabled() && tokenType == TokenType.VERIFY_EMAIL) {
 			throw new UserRegistrationException("email", "このメールアドレスは既に認証されています");
 		}
 
 		// 古いトークンがある場合は削除する
-		userTokenService.deleteToken(user, TokenType.VERIFY_EMAIL);
+		userTokenService.deleteToken(user, tokenType);
 
 		// 新しいトークンを発行
-		UserToken token = userTokenService.createToken(user, TokenType.VERIFY_EMAIL, Duration.ofHours(24));
+		UserToken token = userTokenService.createToken(user, tokenType, Duration.ofHours(24));
 
 		// 認証メールを再送信
-		mailService.sendVerificationEmail(user.getEmail(), token.getToken());
+		mailService.sendVerificationEmail(user.getEmail(), token.getToken(), tokenType);
 	}
 }
