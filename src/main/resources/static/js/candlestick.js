@@ -1,8 +1,9 @@
 import stockConfig from './config/stock-config.js';//銘柄に関する変数配置ファイルをimport
+import chartStyleConfig from './config/chart-style-config.js';//グラフに関する変数配置ファイルをimport
+
 // グローバル変数：チャートインスタンスを保持しておく
 let candleChart = null;
 let volumeChart = null;
-
 // 株価データをAPIから取得する非同期関数
 const fetchStockData = async () => {
 	const url = `/api/stocks/time-series/values?
@@ -22,27 +23,43 @@ const fetchStockData = async () => {
 }
 
 const fetchSMAData = async () => {
-	const url = `/api/stocks/technical/SMA?
-	symbol=${stockConfig.symbol}&interval=${stockConfig.interval}&timeperiod=9&outputsize=${stockConfig.outputsize}`;
-	const res = await fetch(url);
-	const json = await res.json();
+	const interval = stockConfig.interval;
+	const timePeriods = stockConfig.getSMAPeriods();
 
-	// APIエラーがあればログに出力して中断
-	if (json.status === "error") {
-		console.error("API error:", json.message);
-		return;
+	if (!timePeriods.length) {
+		console.warn("No SMA periods found for interval:", interval);
+		return [];
 	}
 
-	// jsonのままのためJSON.VALUESが必須
-	const rawData = json.values.reverse();
-	return rawData;
-}
+	// 获取一个 timePeriod 的 SMA 数据
+	const fetchOneSMA = async (period) => {
+		const url = `/api/stocks/technical/SMA?symbol=${stockConfig.symbol}&interval=${interval}&timeperiod=${period}&outputsize=${stockConfig.outputsize}`;
+		const res = await fetch(url);
+		const json = await res.json();
+
+		if (json.status === "error") {
+			console.error(`SMA(${period}) API error:`, json.message);
+			return null;
+		}
+
+		return {
+			timeperiod: period,
+			values: json.values.reverse()
+		};
+	};
+
+	// 并行请求所有 timeperiod 的数据
+	const results = await Promise.all(timePeriods.map(fetchOneSMA));
+
+	// 过滤掉失败请求
+	return results.filter(Boolean);
+};
+
 
 // チャートの描画処理（ローソク足と出来高チャートの生成）
 export const renderCharts = async () => {
 	const data = await fetchStockData(); // データ取得
-	const SMAJsonData = await fetchSMAData();
-
+	const SMAResults = await fetchSMAData();
 
 	// x軸用のラベル（日付）
 	const labels = data.map(d => d.datetime);
@@ -62,12 +79,18 @@ export const renderCharts = async () => {
 		y: d.volume
 	}));
 
-	const SMAData = SMAJsonData.map(d => ({
-		x: d.datetime,
-		y: d.sma
+	//SMAのデータsetを
+	const SMADatasets = SMAResults.map(sma => ({
+		type: "line",
+		label: `SMA (${sma.timeperiod})`,
+		data: sma.values.map(d => ({ x: d.datetime, y: d.sma })),
+		borderColor: chartStyleConfig.getSMAColor(sma.timeperiod),
+		borderWidth: 2,
+		pointRadius: 0,
+		fill: false
 	}));
 
-	console.log(SMAData);
+	console.log(SMADatasets);
 
 	// チャートが既にあれば破棄してから再生成（再描画時に必要）
 	if (candleChart) {
@@ -78,12 +101,12 @@ export const renderCharts = async () => {
 	}
 
 	// チャートを生成・描画
-	candleChart = createCandleChart(labels, candleData, volumeData,SMAData);
+	candleChart = createCandleChart(labels, candleData, volumeData, SMADatasets);
 	volumeChart = createVolumeChart(labels, volumeData);
 }
 
 // ローソク足チャートの作成関数
-const createCandleChart = (labels, data, volumeData,SMAData) => {
+const createCandleChart = (labels, data, volumeData, SMADatasets) => {
 	return new Chart(document.getElementById("candlestick-chart").getContext("2d"), {
 		type: "candlestick",
 		data: {
@@ -94,15 +117,7 @@ const createCandleChart = (labels, data, volumeData,SMAData) => {
 				borderColor: { up: "#26a69a", down: "#ef5350" }, // 緑＝上昇、赤＝下落
 				backgroundColor: { up: "#26a69a", down: "#ef5350" }
 			},
-			{
-				type: "line", // 追加部分：SMA折线图
-				label: "SMA (9)",
-				data: SMAData.map(d => ({ x: d.x, y: d.y })),
-				borderColor: "#42a5f5", // 蓝色线
-				borderWidth: 2,
-				pointRadius: 0,
-				fill: false
-			}
+			...SMADatasets
 			]
 		},
 		options: {
@@ -139,8 +154,9 @@ const createCandleChart = (labels, data, volumeData,SMAData) => {
 							const item = context.raw;
 							if (context.dataset.type === "line") {
 								const item = context.raw;
-								const value = Number(item.y); // 转换为数字
-								return isNaN(value) ? "SMA: N/A" : `SMA: ${value.toFixed(4)}`;
+								const value = Number(item.y);
+								const label = context.dataset.label;
+								return isNaN(value) ? `${label}: N/A` : `${label}: ${value.toFixed(4)}`;
 							}
 							const matchedVolume = volumeData.find(v => v.x === item.x);
 							const volume = matchedVolume ? matchedVolume.y.toLocaleString() : "N/A";
