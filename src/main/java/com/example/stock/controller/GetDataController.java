@@ -66,7 +66,23 @@ public class GetDataController {
 					"error", "データ取得エラー",
 					"message", e.getMessage()));
 		}
+	}
 
+	@GetMapping("/technical/SMA")
+	public ResponseEntity<?> getSMA(
+			@RequestParam String symbol,
+			@RequestParam String interval,
+			@RequestParam Integer timeperiod,
+			@RequestParam Integer outputsize) {
+		try {
+			Map<String, Object> smaData = stockService.getSMATechnicalIndicator(symbol, interval, timeperiod,
+					outputsize);
+			return (ResponseEntity.ok(smaData));
+		} catch (StockApiException e) {
+			return ResponseEntity.status(502).body(Map.of(
+					"error", "データ取得エラー",
+					"message", e.getMessage()));
+		}
 	}
 
 }

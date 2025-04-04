@@ -2,7 +2,6 @@ class StockConfig {
   #symbol = 'AAPL'; // ＃symbolはsymbolをprivateに設定
   #interval = '1day';
   #outputsize = 100;
-  #apiBaseUrl = '/api/stocks/time-series/values';
 
   get symbol() {
     return this.#symbol;
@@ -28,9 +27,6 @@ class StockConfig {
     this.#outputsize = value;
   }
 
-  get apiBaseUrl() {
-    return this.#apiBaseUrl;
-  }
 }
 
 export default new StockConfig();

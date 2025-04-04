@@ -5,7 +5,7 @@ let volumeChart = null;
 
 // 株価データをAPIから取得する非同期関数
 const fetchStockData = async () => {
-	const url = `${stockConfig.apiBaseUrl}?
+	const url = `/api/stocks/time-series/values?
 	symbol=${stockConfig.symbol}&interval=${stockConfig.interval}&outputsize=${stockConfig.outputsize}`;
 	const res = await fetch(url);
 	const json = await res.json();
@@ -21,9 +21,28 @@ const fetchStockData = async () => {
 	return rawData;
 }
 
+const fetchSMAData = async () => {
+	const url = `/api/stocks/technical/SMA?
+	symbol=${stockConfig.symbol}&interval=${stockConfig.interval}&timeperiod=9&outputsize=${stockConfig.outputsize}`;
+	const res = await fetch(url);
+	const json = await res.json();
+
+	// APIエラーがあればログに出力して中断
+	if (json.status === "error") {
+		console.error("API error:", json.message);
+		return;
+	}
+
+	// jsonのままのためJSON.VALUESが必須
+	const rawData = json.values.reverse();
+	return rawData;
+}
+
 // チャートの描画処理（ローソク足と出来高チャートの生成）
 export const renderCharts = async () => {
 	const data = await fetchStockData(); // データ取得
+	const SMAJsonData = await fetchSMAData();
+
 
 	// x軸用のラベル（日付）
 	const labels = data.map(d => d.datetime);
@@ -43,6 +62,13 @@ export const renderCharts = async () => {
 		y: d.volume
 	}));
 
+	const SMAData = SMAJsonData.map(d => ({
+		x: d.datetime,
+		y: d.sma
+	}));
+
+	console.log(SMAData);
+
 	// チャートが既にあれば破棄してから再生成（再描画時に必要）
 	if (candleChart) {
 		candleChart.destroy();
@@ -52,12 +78,12 @@ export const renderCharts = async () => {
 	}
 
 	// チャートを生成・描画
-	candleChart = createCandleChart(labels, candleData, volumeData);
+	candleChart = createCandleChart(labels, candleData, volumeData,SMAData);
 	volumeChart = createVolumeChart(labels, volumeData);
 }
 
 // ローソク足チャートの作成関数
-const createCandleChart = (labels, data, volumeData) => {
+const createCandleChart = (labels, data, volumeData,SMAData) => {
 	return new Chart(document.getElementById("candlestick-chart").getContext("2d"), {
 		type: "candlestick",
 		data: {
@@ -67,7 +93,17 @@ const createCandleChart = (labels, data, volumeData) => {
 				data,
 				borderColor: { up: "#26a69a", down: "#ef5350" }, // 緑＝上昇、赤＝下落
 				backgroundColor: { up: "#26a69a", down: "#ef5350" }
-			}]
+			},
+			{
+				type: "line", // 追加部分：SMA折线图
+				label: "SMA (9)",
+				data: SMAData.map(d => ({ x: d.x, y: d.y })),
+				borderColor: "#42a5f5", // 蓝色线
+				borderWidth: 2,
+				pointRadius: 0,
+				fill: false
+			}
+			]
 		},
 		options: {
 			responsive: true,
@@ -101,6 +137,11 @@ const createCandleChart = (labels, data, volumeData) => {
 						// ツールチップ内容（OHLC + 出来高）
 						label: (context) => {
 							const item = context.raw;
+							if (context.dataset.type === "line") {
+								const item = context.raw;
+								const value = Number(item.y); // 转换为数字
+								return isNaN(value) ? "SMA: N/A" : `SMA: ${value.toFixed(4)}`;
+							}
 							const matchedVolume = volumeData.find(v => v.x === item.x);
 							const volume = matchedVolume ? matchedVolume.y.toLocaleString() : "N/A";
 							return [

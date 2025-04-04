@@ -192,4 +192,37 @@ public class StockService {
 		return list.get(list.size() - 1); // 最新のデータ（リストは昇順）
 	}
 
+	private String buildSMATechnicalUrl(String symbol, String interval,
+			Integer timePeriod, Integer outputsize) {
+		return UriComponentsBuilder.newInstance()
+				.scheme("https") // 设置协议为 https
+				.host("api.twelvedata.com") // 设置主机部分
+				.path("sma") // 设置动态路径部分（根据不同的技术指标）
+				.queryParam("symbol", symbol) // 设置查询参数 symbol
+				.queryParam("interval", interval) // 设置查询参数 interval
+				.queryParam("time_period", timePeriod) // 设置查询参数 time_period
+				.queryParam("outputsize", outputsize) // 设置查询参数 outputsize
+				.queryParam("apikey", apiKey)
+				.toUriString(); // 构建并返回最终的 URL 字符串
+	}
+
+	public Map<String, Object> getSMATechnicalIndicator(String symbol, String interval,
+			int timePeriod, int outputsize) {
+		// Twelve Data APIからデータ取得
+		String url = buildSMATechnicalUrl(symbol, interval, timePeriod, outputsize);
+
+		try {
+			logger.info("Fetching stock data from API: {}", url);
+			// APIへGETリクエストを送信し、レスポンスを取得
+			ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+
+			// JSON文字列をMap<String, Object>形式に変換して返す
+			return objectMapper.readValue(response.getBody(), new TypeReference<>() {
+			});
+		} catch (Exception e) {
+			logger.error("API取得失敗: {}", e.getMessage(), e);
+			throw new StockApiException("株価のデータの取得に失敗しました", e);
+		}
+	}
+
 }
