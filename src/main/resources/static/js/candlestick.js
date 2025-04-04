@@ -1,23 +1,12 @@
-// 初期設定：表示する銘柄とローソク足の時間軸
-let symbol = 'AAPL';
-let interval = '1day';
-let outputsize = 100;
-
+import stockConfig from './config/stock-config.js';//銘柄に関する変数配置ファイルをimport
 // グローバル変数：チャートインスタンスを保持しておく
 let candleChart = null;
 let volumeChart = null;
 
-export const setSymbol = (newSymbol) => {
-	symbol = newSymbol;
-};
-
-export const getSymbol = () => {
-	return symbol;
-};
-
 // 株価データをAPIから取得する非同期関数
 const fetchStockData = async () => {
-	const url = `/api/stocks/time-series/values?symbol=${symbol}&interval=${interval}&outputsize=${outputsize}`;
+	const url = `${stockConfig.apiBaseUrl}?
+	symbol=${stockConfig.symbol}&interval=${stockConfig.interval}&outputsize=${stockConfig.outputsize}`;
 	const res = await fetch(url);
 	const json = await res.json();
 
@@ -187,13 +176,13 @@ const createVolumeChart = (labels, data) => {
 
 // セレクタ変更時に interval を更新してチャート再描画
 document.getElementById("candleSelector").addEventListener("change", (event) => {
-	interval = event.target.value;
+	stockConfig.interval = event.target.value;
 	renderCharts();
 });
 
 // 本数変更時に outputsize を更新してチャート再描画
 document.getElementById("rowSelector").addEventListener("change", (event) => {
-	outputsize = event.target.value;
+	stockConfig.outputsize = event.target.value;
 	renderCharts();
 });
 
