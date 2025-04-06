@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<title>アカウント認証</title>
+</head>
+
+<body>
+	<p>以下のリンクをクリックしてアカウント認証を完了してください：</p>
+	<p>
+		<a th:href="${verificationLink}" target="_blank" rel="noopener noreferrer">アカウントを認証する</a>
+	</p>
+</body>
+
+</html>
