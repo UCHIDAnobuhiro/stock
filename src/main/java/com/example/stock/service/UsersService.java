@@ -224,6 +224,13 @@ public class UsersService {
 		String encodedPassword = passwordEncoder.encode(rawPassword);
 		user.setPassword(encodedPassword);
 
+		// アカウントロック解除
+		if (user.isAccountLocked()) {
+			user.setAccountLocked(false);
+			user.setFailedLoginAttempts(0);
+			user.setLockTime(null);
+		}
+
 		// update_at を更新
 		user.setUpdateAt(LocalDateTime.now());
 		usersRepository.save(user);
