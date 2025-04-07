@@ -231,6 +231,11 @@ public class UsersService {
 			user.setLockTime(null);
 		}
 
+		// もしアカウント有効化してない場合は有効化
+		if (!user.isEnabled()) {
+			user.setEnabled(true);
+		}
+
 		// update_at を更新
 		user.setUpdateAt(LocalDateTime.now());
 		usersRepository.save(user);
