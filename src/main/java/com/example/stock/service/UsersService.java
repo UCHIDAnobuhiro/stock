@@ -6,8 +6,6 @@ import java.util.Optional;
 
 import jakarta.transaction.Transactional;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,26 +20,11 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class UsersService {
+
 	private final UsersRepository usersRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final UserTokenService userTokenService;
 	private final MailService mailService;
-
-	public Users getLoggedInUser() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (authentication != null && authentication.getPrincipal() instanceof Users) {
-			return (Users) authentication.getPrincipal();
-		}
-		return null;
-	}
-
-	public Users getLoggedInUserOrThrow() {
-		Users users = getLoggedInUser();
-		if (users == null) {
-			throw new IllegalStateException("ログインユーザが取得できません");
-		}
-		return users;
-	}
 
 	@Transactional
 	public void registerUser(Users user) {
@@ -249,6 +232,13 @@ public class UsersService {
 		userTokenService.deleteToken(user, TokenType.RESET_PASSWORD);
 
 		return true;
+	}
+
+	public boolean isLockExpired(Users user) {
+		if (user.getLockTime() == null)
+			return true;
+		LocalDateTime lockTime = user.getLockTime();
+		return lockTime.plusMinutes(5).isBefore(LocalDateTime.now());
 	}
 
 }

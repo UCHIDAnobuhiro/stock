@@ -6,11 +6,15 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+
+import com.example.stock.repository.UsersRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
+	private final UsersRepository usersRepository;
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -27,8 +31,8 @@ public class SecurityConfig {
 		http.formLogin(login -> login
 				.loginPage("/login") // カスタムログインページ
 				.usernameParameter("email") // フォームの `name="email"` に対応
-				.defaultSuccessUrl("/stock", true) // ログイン成功後の遷移先
-				.failureHandler(authenticationFailureHandler()) // 認証失敗時のハンドラーを適用
+				.failureHandler(customLoginFailureHandler()) // 認証失敗時のハンドラーを適用
+				.successHandler(customLoginSuccessHandler()) // 認証成功時のハンドラーを適用
 				.permitAll());
 
 		// ログアウトの設定
@@ -41,13 +45,18 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	AuthenticationFailureHandler authenticationFailureHandler() {
-		return new SimpleUrlAuthenticationFailureHandler("/login?error=true");
+	PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder(); // BCryptでハッシュ化
 	}
 
 	@Bean
-	PasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder(); // BCryptでハッシュ化
+	CustomLoginSuccessHandler customLoginSuccessHandler() {
+		return new CustomLoginSuccessHandler(usersRepository);
+	}
+
+	@Bean
+	CustomLoginFailureHandler customLoginFailureHandler() {
+		return new CustomLoginFailureHandler(usersRepository);
 	}
 
 }
