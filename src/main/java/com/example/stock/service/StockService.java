@@ -192,20 +192,39 @@ public class StockService {
 		return list.get(list.size() - 1); // 最新のデータ（リストは昇順）
 	}
 
+	/**
+	 * 指定されたパラメータを元に、SMA（単純移動平均）テクニカル指標の取得用URLを構築します。
+	 *
+	 * @param symbol 株式のシンボル（例：AAPL）
+	 * @param interval データの間隔（例：1min、5min、1dayなど）
+	 * @param timePeriod 移動平均を計算する期間
+	 * @param outputsize 出力されるデータのサイズ（例：30, 500など）
+	 * @return SMAテクニカル指標を取得するためのURL文字列
+	 */
 	private String buildSMATechnicalUrl(String symbol, String interval,
 			Integer timePeriod, Integer outputsize) {
 		return UriComponentsBuilder.newInstance()
-				.scheme("https") // 设置协议为 https
-				.host("api.twelvedata.com") // 设置主机部分
-				.path("sma") // 设置动态路径部分（根据不同的技术指标）
-				.queryParam("symbol", symbol) // 设置查询参数 symbol
-				.queryParam("interval", interval) // 设置查询参数 interval
-				.queryParam("time_period", timePeriod) // 设置查询参数 time_period
-				.queryParam("outputsize", outputsize) // 设置查询参数 outputsize
+				.scheme("https")
+				.host("api.twelvedata.com")
+				.path("sma")
+				.queryParam("symbol", symbol)
+				.queryParam("interval", interval)
+				.queryParam("time_period", timePeriod)
+				.queryParam("outputsize", outputsize)
 				.queryParam("apikey", apiKey)
-				.toUriString(); // 构建并返回最终的 URL 字符串
+				.toUriString();
 	}
 
+	/**
+	 * SMA（単純移動平均）テクニカル指標のデータをTwelve Data APIから取得します。
+	 *
+	 * @param symbol 株式のシンボル（例：AAPL）
+	 * @param interval データの間隔（例：1min、5min、1dayなど）
+	 * @param timePeriod 移動平均を計算する期間
+	 * @param outputsize 出力されるデータのサイズ（例：30, 500など）
+	 * @return 取得したSMAテクニカル指標データ（Map形式）
+	 * @throws StockApiException API呼び出し時にエラーが発生した場合にスローされます
+	 */
 	public Map<String, Object> getSMATechnicalIndicator(String symbol, String interval,
 			int timePeriod, int outputsize) {
 		// Twelve Data APIからデータ取得
