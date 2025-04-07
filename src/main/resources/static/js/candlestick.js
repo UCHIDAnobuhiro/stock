@@ -1,6 +1,7 @@
 import { fetchStockData, fetchSMAData } from './stock-api.js';//chart.jsに使うデータをとってくる
 import stockConfig from './config/stock-config.js';//銘柄に関する変数配置ファイルをimport
 import chartStyleConfig from './config/chart-style-config.js';//グラフに関する変数配置ファイルをimport
+import { trendlineAnnotations, enableTrendlineDrawing } from './trendline.js';
 
 // グローバル変数：チャートインスタンスを保持しておく
 let candleChart = null;
@@ -56,6 +57,7 @@ export const renderCharts = async () => {
 	// チャートを生成・描画
 	candleChart = createCandleChart(labels, candleData, volumeData, SMADatasets);
 	volumeChart = createVolumeChart(labels, volumeData);
+	setTimeout(() => enableTrendlineDrawing(candleChart), 100);
 }
 
 // ローソク足チャートの作成関数
@@ -123,7 +125,15 @@ const createCandleChart = (labels, data, volumeData, SMADatasets) => {
 						}
 					}
 				},
-				legend: { display: false } // 凡例は非表示
+				legend: { display: false }, // 凡例は非表示
+				annotation: {
+					draggable: true,
+					annotations: trendlineAnnotations, // トレンドラインを追加
+					interaction: {
+						mode: 'nearest',
+						intersect: true,
+					},
+				}
 			}
 		}
 	});
@@ -199,7 +209,7 @@ document.getElementById("rowSelector").addEventListener("change", (event) => {
 // テクニカルのチェック状態が変わったら再描画
 document.querySelectorAll('#technicalDropdownMenu input[type="checkbox"]').forEach(event => {
 	event.addEventListener("change", () => {
-		renderCharts(); 
+		renderCharts();
 	});
 });
 
