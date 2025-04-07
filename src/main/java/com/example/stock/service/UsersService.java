@@ -1,8 +1,8 @@
 package com.example.stock.service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 import jakarta.transaction.Transactional;
 
@@ -11,11 +11,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.stock.enums.TokenType;
 import com.example.stock.exception.UserRegistrationException;
+import com.example.stock.model.UserToken;
 import com.example.stock.model.Users;
-import com.example.stock.model.VerificationToken;
 import com.example.stock.repository.UsersRepository;
-import com.example.stock.repository.VerificationTokenRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class UsersService {
 	private final UsersRepository usersRepository;
 	private final PasswordEncoder passwordEncoder;
-	private final VerificationTokenRepository tokenRepository;
+	private final UserTokenService userTokenService;
 	private final MailService mailService;
 
 	public Users getLoggedInUser() {
@@ -44,40 +44,40 @@ public class UsersService {
 	}
 
 	@Transactional
-	public void registerUser(Users users) {
-		validateUser(users);
-		saveUserAndSendVerification(users);
+	public void registerUser(Users user) {
+		validateUser(user);
+		saveUserAndSendVerification(user);
 	}
 
 	/**
 	 * ユーザー登録時の入力値バリデーションを行う。
 	 * 問題があれば UserRegistrationException をスローする。
 	 */
-	private void validateUser(Users users) {
+	private void validateUser(Users user) {
 		// ユーザー名が空かどうかをチェック
-		if (users.getUsername() == null || users.getUsername().isBlank()) {
+		if (user.getUsername() == null || user.getUsername().isBlank()) {
 			throw new UserRegistrationException("name", "名前を入力してください");
 		}
 
 		// メールアドレスが空かどうかをチェック
-		if (users.getEmail() == null || users.getEmail().isBlank()) {
+		if (user.getEmail() == null || user.getEmail().isBlank()) {
 			throw new UserRegistrationException("email", "メールアドレスを入力してください");
 		}
 
 		// メールアドレスが既に登録されていないかをチェック
-		String email = users.getEmail().trim();
+		String email = user.getEmail().trim();
 		if (usersRepository.findByEmail(email).isPresent()) {
 			throw new UserRegistrationException("email", "このメールアドレスは既に登録されています");
 		}
 
 		// パスワードまたは確認用パスワードが未入力かどうかをチェック
-		if (users.getPassword() == null || users.getConfirmPassword().isBlank() || users.getConfirmPassword() == null
-				|| users.getConfirmPassword().isBlank()) {
+		if (user.getPassword() == null || user.getConfirmPassword().isBlank() || user.getConfirmPassword() == null
+				|| user.getConfirmPassword().isBlank()) {
 			throw new UserRegistrationException("password", "パスワードを入力してください");
 		}
 
 		// パスワードと確認用パスワードが一致するかをチェック
-		if (!users.getPassword().equals(users.getConfirmPassword())) {
+		if (!user.getPassword().equals(user.getConfirmPassword())) {
 			throw new UserRegistrationException("confirmPassword", "パスワードが一致しません");
 		}
 	}
@@ -85,35 +85,28 @@ public class UsersService {
 	/**
 	 * ユーザー情報を保存し、メール認証用のトークンを生成・送信する処理。
 	 */
-	private void saveUserAndSendVerification(Users users) {
+	private void saveUserAndSendVerification(Users user) {
 		// 現在の時刻を表示
 		LocalDateTime now = LocalDateTime.now();
 
 		// ユーザーの作成日時・更新日時を現在時刻でセット
-		users.setCreateAt(now);
-		users.setUpdateAt(now);
+		user.setCreateAt(now);
+		user.setUpdateAt(now);
 
 		// パスワードをハッシュ化して保存（セキュリティのため）
-		users.setPassword(passwordEncoder.encode(users.getPassword()));
+		user.setPassword(passwordEncoder.encode(user.getPassword()));
 
 		// アカウントの有効化状態を false に（メール認証後に有効化される）
-		users.setEnabled(false);
+		user.setEnabled(false);
 
 		// ユーザーをデータベースに保存
-		usersRepository.save(users);
+		usersRepository.save(user);
 
-		// 認証トークンを生成
-		String token = UUID.randomUUID().toString();
-		VerificationToken verificationToken = new VerificationToken();
-		verificationToken.setToken(token);
-		verificationToken.setUser(users);
-		verificationToken.setExpiryDate(now.plusHours(24));
-
-		// トークンをデータベースに保存
-		tokenRepository.save(verificationToken);
+		// 認証トークンを作成
+		UserToken token = userTokenService.createToken(user, TokenType.VERIFY_EMAIL, Duration.ofHours(24));
 
 		// 認証用メールを送信
-		mailService.sendVerificationEmail(users.getEmail(), token);
+		mailService.sendVerificationEmail(user.getEmail(), token.getToken(), TokenType.VERIFY_EMAIL);
 	}
 
 	/**
@@ -125,57 +118,137 @@ public class UsersService {
 	 * @return 認証成功なら true、失敗なら false
 	 */
 	@Transactional
-	public boolean verifyUser(String token) {
+	public boolean verifyUser(String tokenStr) {
 		// トークンが存在するかデータベースから検索
-		Optional<VerificationToken> optionalToken = tokenRepository.findByToken(token);
+		Optional<UserToken> optionalToken = userTokenService.validateToken(tokenStr, TokenType.VERIFY_EMAIL);
 		// トークンが見つからなければ認証失敗
 		if (optionalToken.isEmpty())
 			return false;
 
-		VerificationToken verificationToken = optionalToken.get();
+		UserToken token = optionalToken.get();
+		Users user = token.getUser();
 
-		// トークンの有効期限が切れている場合はトークンを削除し、認証失敗
-		if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
-			tokenRepository.delete(verificationToken);
-			return false;
+		// 既に有効化済みなら何もしない
+		if (user.isEnabled()) {
+			userTokenService.deleteToken(user, TokenType.VERIFY_EMAIL);
+			return true;
 		}
 
 		// トークンに紐づくユーザーを取得し、有効化（enabled = true）に設定
-		Users user = verificationToken.getUser();
 		user.setEnabled(true);
 		// ユーザー情報を更新して保存
 		usersRepository.save(user);
 		// トークンを削除（再利用を防ぐため）
-		tokenRepository.delete(verificationToken);
+		userTokenService.deleteToken(user, TokenType.VERIFY_EMAIL);
 		return true;
 	}
 
+	/**
+	 * パスワード再設定用トークンの有効性を検証するメソッド。
+	 *
+	 * @param tokenStr 検証対象のトークン文字列
+	 * @return トークンが存在し、かつ期限内かどうか（有効なら true、無効なら false）
+	 */
 	@Transactional
-	public void resendVerificationEmail(String email) {
+	public boolean validateResetPasswordToken(String tokenStr) {
+		Optional<UserToken> verificationToken = userTokenService.validateToken(tokenStr, TokenType.RESET_PASSWORD);
+		if (verificationToken.isEmpty()) {
+			return false;
+		}
+
+		UserToken token = verificationToken.get();
+
+		// トークンが期限切れだったら false
+		if (token.isExpired()) {
+			return false;
+		}
+
+		// ここまで来たら有効なRESET_PASSWORDトークン
+		return true;
+
+	}
+
+	/**
+	 * ユーザーに認証／パスワード再設定用のメールを再送信する。
+	 *
+	 * @param email 対象ユーザーのメールアドレス
+	 * @param tokenType トークンの種別（VERIFY_EMAIL or RESET_PASSWORD）
+	 * @throws UserRegistrationException 条件に合わない場合にスロー
+	 */
+	@Transactional
+	public void resendVerificationEmail(String email, TokenType tokenType) {
 		// emailをトリムする
 		String trimmedEmail = email.trim();
 		Users user = usersRepository.findByEmail(trimmedEmail)
 				.orElseThrow(() -> new UserRegistrationException("email", "このメールアドレスは登録されていません"));
 
-		if (user.isEnabled()) {
+		if (user.isEnabled() && tokenType == TokenType.VERIFY_EMAIL) {
 			throw new UserRegistrationException("email", "このメールアドレスは既に認証されています");
 		}
 
 		// 古いトークンがある場合は削除する
-		tokenRepository.deleteByUser(user);
+		userTokenService.deleteToken(user, tokenType);
 
 		// 新しいトークンを発行
-		String token = UUID.randomUUID().toString();
-		LocalDateTime expiryDate = LocalDateTime.now().plusHours(24);
-
-		VerificationToken newToken = new VerificationToken();
-		newToken.setToken(token);
-		newToken.setUser(user);
-		newToken.setExpiryDate(expiryDate);
-
-		tokenRepository.save(newToken);
+		UserToken token = userTokenService.createToken(user, tokenType, Duration.ofHours(24));
 
 		// 認証メールを再送信
-		mailService.sendVerificationEmail(user.getEmail(), token);
+		mailService.sendVerificationEmail(user.getEmail(), token.getToken(), tokenType);
 	}
+
+	/**
+	 * パスワード再設定トークンからユーザー情報を取得する。
+	 *
+	 * @param token トークン文字列
+	 * @return 有効なトークンに紐づくユーザー（トークンが無効または期限切れの場合は empty）
+	 */
+	@Transactional
+	public Optional<Users> getUserFromResetToken(String token) {
+		Optional<UserToken> verificationToken = userTokenService.validateToken(token, TokenType.RESET_PASSWORD);
+
+		if (verificationToken.isEmpty()) {
+			return Optional.empty();
+		}
+
+		UserToken userToken = verificationToken.get();
+		if (userToken.isExpired()) {
+			return Optional.empty();
+		}
+
+		return Optional.of(userToken.getUser());
+	}
+
+	/**
+	 * トークンを使ってユーザーのパスワードをリセットする。
+	 *
+	 * @param token パスワード再設定用トークン
+	 * @param rawPassword ユーザーが新たに入力したパスワード（平文）
+	 * @return パスワードの更新が成功した場合は true、トークンが無効または期限切れなら false
+	 */
+	@Transactional
+	public boolean resetPassword(String token, String rawPassword) {
+		// トークンの取得＆有効性チェック
+		Optional<UserToken> tokenOpt = userTokenService.validateToken(token, TokenType.RESET_PASSWORD);
+
+		if (tokenOpt.isEmpty() || tokenOpt.get().isExpired()) {
+			return false;
+		}
+
+		UserToken userToken = tokenOpt.get();
+		Users user = userToken.getUser();
+
+		// パスワードをエンコードして保存
+		String encodedPassword = passwordEncoder.encode(rawPassword);
+		user.setPassword(encodedPassword);
+
+		// update_at を更新
+		user.setUpdateAt(LocalDateTime.now());
+		usersRepository.save(user);
+
+		// トークンを削除または無効化
+		userTokenService.deleteToken(user, TokenType.RESET_PASSWORD);
+
+		return true;
+	}
+
 }

@@ -18,11 +18,9 @@ public class SecurityConfig {
 		http.csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/css/**", "/js/**", "/images/**").permitAll() // 静的リソースは常に許可
-						.requestMatchers("/", "/login", "/signup", "/verify", "/resend-form",
-								"/resend-verification")
+						.requestMatchers("/", "/login", "/signup", "/verify/**", "/password/**")
 						.permitAll() // 全ユーザーに開放するUR
 						.requestMatchers("/admin/**").hasRole("ADMIN") // 管理者ロールにのみ許可
-						.requestMatchers("/worktime/**").authenticated() // `worktime` を認証必須にする
 						.anyRequest().authenticated() // 他のエンドポイントは認証が必要
 				);
 		// ログインフォームの設定

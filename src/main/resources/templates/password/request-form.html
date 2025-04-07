@@ -5,7 +5,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>認証メール再送</title>
+	<title>パスワードリセット</title>
 	<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
 
@@ -22,9 +22,11 @@
 						Access up-to-date stock prices, historical trends, and key market indicators — everything you need to stay informed and invest smarter.
 					</p>
 				</div>
-				<form th:action="@{/resend-verification}" method="post"
+				<form th:action="@{/password/email}" method="post"
 					class="lg:w-2/6 md:w-1/2 bg-gray-100 rounded-lg p-8 flex flex-col md:ml-auto w-full mt-10 md:mt-0">
-					<h2 class="text-gray-900 text-lg font-medium title-font mb-5"> Resend Verification Email</h2>
+					<!-- TokenType を送る -->
+					<input type="hidden" name="type" value="RESET_PASSWORD">
+					<h2 class="text-gray-900 text-lg font-medium title-font mb-5">Reset Password</h2>
 					<div class="relative mb-4">
 						<label for="email" class="leading-7 text-sm text-gray-600">Mail</label>
 						<input type="email" id="email" name="email" placeholder="Registered email address" required
@@ -32,9 +34,8 @@
 							focus:ring-indigo-200 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out">
 					</div>
 					<div th:if="${error}" class="text-red-500">[[${error}]]</div>
-
 					<button type="submit"
-						class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg">Resend</button>
+						class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg">Reset</button>
 					<p class="text-sm text-gray-600 mt-4">
 						Already have an account?
 						<a th:href="@{/login}" class="text-indigo-500 hover:underline">Log in here</a>.
