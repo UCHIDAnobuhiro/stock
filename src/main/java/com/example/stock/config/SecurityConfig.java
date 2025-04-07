@@ -7,14 +7,16 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-import com.example.stock.repository.UsersRepository;
+import com.example.stock.service.CustomUserDetailsService;
 
 import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
-	private final UsersRepository usersRepository;
+	private final CustomUserDetailsService customUserDetailsService;
+	private final CustomLoginSuccessHandler customLoginSuccessHandler;
+	private final CustomLoginFailureHandler customLoginFailureHandler;
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -27,12 +29,16 @@ public class SecurityConfig {
 						.requestMatchers("/admin/**").hasRole("ADMIN") // 管理者ロールにのみ許可
 						.anyRequest().authenticated() // 他のエンドポイントは認証が必要
 				);
+
+		// カスタムハンドラーによるログイン成功・失敗処理
+		http.userDetailsService(customUserDetailsService);
+
 		// ログインフォームの設定
 		http.formLogin(login -> login
 				.loginPage("/login") // カスタムログインページ
 				.usernameParameter("email") // フォームの `name="email"` に対応
-				.failureHandler(customLoginFailureHandler()) // 認証失敗時のハンドラーを適用
-				.successHandler(customLoginSuccessHandler()) // 認証成功時のハンドラーを適用
+				.failureHandler(customLoginFailureHandler) // 認証失敗時のハンドラーを適用
+				.successHandler(customLoginSuccessHandler) // 認証成功時のハンドラーを適用
 				.permitAll());
 
 		// ログアウトの設定
@@ -47,16 +53,6 @@ public class SecurityConfig {
 	@Bean
 	PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder(); // BCryptでハッシュ化
-	}
-
-	@Bean
-	CustomLoginSuccessHandler customLoginSuccessHandler() {
-		return new CustomLoginSuccessHandler(usersRepository);
-	}
-
-	@Bean
-	CustomLoginFailureHandler customLoginFailureHandler() {
-		return new CustomLoginFailureHandler(usersRepository);
 	}
 
 }
