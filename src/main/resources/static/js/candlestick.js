@@ -7,6 +7,11 @@ import chartStyleConfig from './config/chart-style-config.js';//グラフに関�
 let candleChart = null;
 let volumeChart = null;
 
+let showAmount= 100;
+let adjustSpeed= 20;
+let minTicks= 10;
+let ticksSkipPadding= 5;
+let dataLength;
 // チャートの描画処理（ローソク足と出来高チャートの生成）
 export const renderCharts = async () => {
 	const isSmaChecked = document.querySelector('input[value="sma"]').checked;
