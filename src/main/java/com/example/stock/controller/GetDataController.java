@@ -66,7 +66,35 @@ public class GetDataController {
 					"error", "データ取得エラー",
 					"message", e.getMessage()));
 		}
+	}
 
+	/**
+	 * SMA（単純移動平均）テクニカル指標データを取得するAPIエンドポイント。
+	 * 
+	 * クエリパラメータとして株式シンボル、時間間隔、期間、出力サイズを受け取り、
+	 * Twelve Data APIを通じてSMAデータを取得します。
+	 *
+	 * @param symbol 対象の株式シンボル（例：AAPL）
+	 * @param interval データの時間間隔（例：1min, 5min, 1day など）
+	 * @param timeperiod 移動平均を算出する期間（例：10, 20など）
+	 * @param outputsize 出力されるデータの件数（例：30, 500など）
+	 * @return SMAデータを含むHTTPレスポンス（成功時は200 OK, 失敗時は502 Bad Gateway）
+	 */
+	@GetMapping("/technical/SMA")
+	public ResponseEntity<?> getSMA(
+			@RequestParam String symbol,
+			@RequestParam String interval,
+			@RequestParam Integer timeperiod,
+			@RequestParam Integer outputsize) {
+		try {
+			Map<String, Object> smaData = stockService.getSMATechnicalIndicator(symbol, interval, timeperiod,
+					outputsize);
+			return (ResponseEntity.ok(smaData));
+		} catch (StockApiException e) {
+			return ResponseEntity.status(502).body(Map.of(
+					"error", "データ取得エラー",
+					"message", e.getMessage()));
+		}
 	}
 
 }
