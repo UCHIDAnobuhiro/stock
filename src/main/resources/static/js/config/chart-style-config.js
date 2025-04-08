@@ -12,11 +12,17 @@ class ChartStyleConfig {
 	};
 	#trendLineBorderColor = "rgba(0, 0, 0, 1)";
 	#trendLineBorderWidth = 2;
+	#showAmount =100;
+	#ticksSkipPadding =5;
 
 	get trendLineBorderColor() { return this.#trendLineBorderColor; }
 	set trendLineBorderColor(v) { this.#trendLineBorderColor = v; }
 	get trendLineBorderWidth() { return this.#trendLineBorderWidth; }
 	set trendLineBorderWidth(v) { this.#trendLineBorderWidth = v; }
+	get showAmount() { return this.#showAmount; }
+	set showAmount(v) { this.#showAmount = v; }
+	get ticksSkipPadding() { return this.#ticksSkipPadding; }
+	set ticksSkipPadding(v) { this.#ticksSkipPadding = v; }
 
 
 	getSMAColor(period) {

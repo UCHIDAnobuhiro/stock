@@ -1,7 +1,7 @@
 class StockConfig {
 	#symbol = 'AAPL'; // ＃symbolはsymbolをprivateに設定
 	#interval = '1day';
-	#outputsize = 100;
+	#outputsize = 200;
 	//移動平均線の設定、日足の場合は5,25,75の三本を表示する
 	#smaPeriodMap = {
 		"1day": [5, 25, 75],
@@ -15,7 +15,7 @@ class StockConfig {
 	set interval(v) { this.#interval = v; }
 	get outputsize() { return this.#outputsize; }
 	set outputsize(v) { this.#outputsize = v; }
-
+	
 	getSMAPeriods() {
 		return this.#smaPeriodMap[this.#interval] || [];
 	}

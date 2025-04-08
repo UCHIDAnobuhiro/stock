@@ -8,11 +8,8 @@ import { trendlineAnnotations, enableTrendlineDrawing } from './trendline.js';�
 let candleChart = null;
 let volumeChart = null;
 
-let showAmount= 100;
-let adjustSpeed= 20;
-let minTicks= 10;
-let ticksSkipPadding= 5;
-let dataLength;
+stockConfig.showAmount = document.getElementById("rowSelector").value; //同時に表示するデータ数 本数selectorのdefault値をとる
+
 // チャートの描画処理（ローソク足と出来高チャートの生成）
 export const renderCharts = async () => {
 	//既存のトレンドラインを削除
@@ -21,9 +18,8 @@ export const renderCharts = async () => {
 	}
 	const isSmaChecked = document.querySelector('input[value="sma"]').checked;
 	const data = await fetchStockData(); // データ取得
-
 	//データの長さを更新
-	dataLength = data.length;
+	stockConfig.outputsize = data.length;
 	
 	// x軸用のラベル（日付）
 	const labels = data.map(d => d.datetime);
@@ -57,7 +53,6 @@ export const renderCharts = async () => {
 			fill: false
 		}));
 	}
-	console.log(SMADatasets);
 
 	// チャートが既にあれば破棄してから再生成（再描画時に必要）
 	if (candleChart) {
@@ -101,12 +96,12 @@ const createCandleChart = (labels, data, volumeData, SMADatasets) => {
 					display: true, //表示しますが透明化にする
 
 					//いくつのデータを最初に表示する設定
-					min: dataLength - showAmount,//何個を表示するのか
-					max: dataLength - 1,//データの最後から表示
+					min: stockConfig.outputsize - chartStyleConfig.showAmount,
+					max: stockConfig.outputsize - 1,
 					ticks: {
 						color: 'rgba(0,0,0,0)',//x軸のずれがないように、x軸を保留し透明化することで表示させない
 						maxRotation: 0,
-						autoSkipPadding: ticksSkipPadding,//autoSkip:trueなら二つの表のskipされるタブは違う（理由不明）
+						autoSkipPadding: chartStyleConfig.ticksSkipPadding,//autoSkip:trueなら二つの表のskipされるタブは違う（理由不明）
 						callback: (index) => labels[index]
 					},
 					grid: {
@@ -150,7 +145,6 @@ const createCandleChart = (labels, data, volumeData, SMADatasets) => {
 					}
 				},
 				annotation: {
-					draggable: true,
 					annotations: trendlineAnnotations, // トレンドラインを追加
 					interaction: {
 						mode: 'nearest',
@@ -161,7 +155,6 @@ const createCandleChart = (labels, data, volumeData, SMADatasets) => {
 					pan: {
 						enabled: true,
 						mode: 'x',
-						speed: adjustSpeed,
 						onPan: ({ chart }) => { syncChangeScale(chart, chart === candleChart ? volumeChart : candleChart); },
 					},
 					zoom: {
@@ -169,7 +162,7 @@ const createCandleChart = (labels, data, volumeData, SMADatasets) => {
 					},
 					limits: {
 						x: {
-							minRange: minTicks,
+							minRange: 5,
 						},
 					},
 				},
@@ -200,11 +193,11 @@ const createVolumeChart = (labels, data) => {
 				x: {
 					type: "category",
 					labels: labels,
-					min: dataLength - showAmount,
-					max: dataLength - 1,
+					min: stockConfig.outputsize - chartStyleConfig.showAmount,
+					max: stockConfig.outputsize - 1,
 					ticks: {
 						maxRotation: 0,
-						autoSkipPadding: ticksSkipPadding,
+						autoSkipPadding: chartStyleConfig.ticksSkipPadding,
 						callback: (index) => labels[index],
 					},
 					grid: {
@@ -233,7 +226,6 @@ const createVolumeChart = (labels, data) => {
 					pan: {
 						enabled: true,
 						mode: 'x',
-						speed: adjustSpeed,
 						onPan: ({ chart }) => { syncChangeScale(chart, chart === candleChart ? volumeChart : candleChart); },
 					},
 					zoom: {
@@ -241,7 +233,7 @@ const createVolumeChart = (labels, data) => {
 					},
 					limits: {
 						x: {
-							minRange: minTicks,
+							minRange: 5,
 						},
 					},
 				},
@@ -291,7 +283,7 @@ document.getElementById("candleSelector").addEventListener("change", (event) => 
 
 // 本数変更時に showAmount を更新してチャート再描画
 document.getElementById("rowSelector").addEventListener("change", (event) => {
-	stockConfig.outputsize = event.target.value;
+	chartStyleConfig.showAmount = event.target.value;
 	renderCharts();
 });
 
