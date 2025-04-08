@@ -59,7 +59,7 @@ export const renderCharts = async () => {
 	volumeChart = createVolumeChart(labels, volumeData);
 	setTimeout(() => {
 		console.log(candleChart.canvas);
-	    enableTrendlineDrawing(candleChart);
+		enableTrendlineDrawing(candleChart);
 	}, 100);
 }
 
