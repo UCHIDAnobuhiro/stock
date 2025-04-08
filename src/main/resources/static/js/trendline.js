@@ -1,37 +1,52 @@
-import chartStyleConfig from './config/chart-style-config.js';//グラフに関する変数配置ファイルをimport
+import chartStyleConfig from './config/chart-style-config.js'; // グラフのスタイル設定ファイルをインポート
+
 export const trendlineAnnotations = {}; // すべてのトレンドラインを保存するオブジェクト
 
-let start = null; // 描画開始点
+let start = null; // 描画の開始点
 let lineId = 0; // ラインIDカウンター
-const getPenChecked = () => document.getElementById('trendLinePen').checked;//checkboxの状態を取得
-const getEraserChecked = () => document.getElementById('trendLineEraser').checked;//checkboxの状態を取得
+const getPenChecked = () => document.getElementById('trendLinePen').checked; // ペン（描画）モードのチェック状態を取得
+const getEraserChecked = () => document.getElementById('trendLineEraser').checked; // 消しゴムモードのチェック状態を取得
+
+let mouseDownHandler = null;
+let mouseUpHandler = null;
 
 export const enableTrendlineDrawing = (chart) => {
 	const canvas = chart.canvas;
 	const xScale = chart.scales.x;
 	const yScale = chart.scales.y;
 
-	// 鉛筆が選択されたら左ドラッグで線を描画開始
-	canvas.addEventListener('mousedown', (e) => {
-		if (e.button !== 0 || !getPenChecked()) return; // 左クリックのみ処理
+	// 既存のイベントリスナーを削除（存在すれば）chart.destoryしてもリスナー削除されないため
+	if (mouseDownHandler) canvas.removeEventListener('mousedown', mouseDownHandler);
+	if (mouseUpHandler) canvas.removeEventListener('mouseup', mouseUpHandler);
 
-		// マウス座標を取得
+	// 左クリックの押下時処理（penの場合は線のstartポイントを作成、eraserの場合は線を削除）
+	mouseDownHandler = (e) => {
 		const rect = canvas.getBoundingClientRect();
 		const mouseX = e.clientX - rect.left;
 		const mouseY = e.clientY - rect.top;
 
-		// データ座標に変換して開始点を記録
-		start = {
-			x: xScale.getValueForPixel(mouseX),
-			y: yScale.getValueForPixel(mouseY)
-		};
-	});
+		if (e.button !== 0) return; // 左クリックのみ処理
 
-	// 左クリックを離して線描画完了
-	canvas.addEventListener('mouseup', (e) => {
-		if (!start || e.button !== 0) return; // 開始点がない場合や右クリックは無視
+		if (getPenChecked()) {
+			// ペンモード：線を描く
+			start = {
+				x: xScale.getValueForPixel(mouseX),
+				y: yScale.getValueForPixel(mouseY)
+			};
+		} else if (getEraserChecked()) {
+			// 消しゴムモード：線を削除
+			const clickedLineId = findClickedLine(chart, mouseX, mouseY);
+			if (clickedLineId) {
+				delete trendlineAnnotations[clickedLineId]; // アノテーションから削除
+				chart.update(); // グラフ更新
+			}
+		}
+	};
 
-		// 終了点座標を取得
+	// 左クリックを離す時の処理（線のendポイントを決まり、線のデータを設定）
+	mouseUpHandler = (e) => {
+		if (!start || e.button !== 0) return;
+
 		const rect = canvas.getBoundingClientRect();
 		const mouseX = e.clientX - rect.left;
 		const mouseY = e.clientY - rect.top;
@@ -41,7 +56,7 @@ export const enableTrendlineDrawing = (chart) => {
 			y: yScale.getValueForPixel(mouseY)
 		};
 
-		// ラインIDを生成し、アノテーションを追加
+		// 一意なIDでトレンドラインを登録
 		const id = `trendline-${lineId++}`;
 		trendlineAnnotations[id] = {
 			type: 'line',
@@ -54,31 +69,13 @@ export const enableTrendlineDrawing = (chart) => {
 			borderCapStyle: 'round',
 		};
 
-		// チャートを更新し、開始点をリセット
-		chart.update();
-		console.log(id + "作成されました");
-		start = null;
-	});
+		chart.update(); // グラフ更新
+		start = null; // 開始点リセット
+	};
 
-	// 消しゴムが選択されたら左クリックで線を消す
-	canvas.addEventListener('mousedown', (e) => {
-			console.log(getEraserChecked());
-			if (e.button !== 0 || !getEraserChecked()) return; 
-
-		// クリック位置を取得
-		const rect = canvas.getBoundingClientRect();
-		const mouseX = e.clientX - rect.left;
-		const mouseY = e.clientY - rect.top;
-
-		// クリックされたラインを検索
-		const clickedLineId = findClickedLine(chart, mouseX, mouseY);
-		if (clickedLineId) {
-			delete trendlineAnnotations[clickedLineId]; // ラインを削除
-
-			//チャートを更新
-			chart.update();
-		}
-	});
+	// 新しいイベントリスナーを追加
+	canvas.addEventListener('mousedown', mouseDownHandler);
+	canvas.addEventListener('mouseup', mouseUpHandler);
 };
 
 // クリックされたラインを検出する関数
@@ -93,9 +90,9 @@ const findClickedLine = (chart, mouseX, mouseY) => {
 		const y1 = yScale.getPixelForValue(line.yMin);
 		const y2 = yScale.getPixelForValue(line.yMax);
 
-		// マウス位置とラインの距離を計算
+		// マウス位置とラインとの距離を計算
 		const distance = distanceToLine(mouseX, mouseY, x1, y1, x2, y2);
-		if (distance < 10) { // 10ピクセル以内ならクリックと判定
+		if (distance < 10) { // 10ピクセル以内ならヒットと判定
 			return lineId;
 		}
 	}

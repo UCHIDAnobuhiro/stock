@@ -57,7 +57,10 @@ export const renderCharts = async () => {
 	// チャートを生成・描画
 	candleChart = createCandleChart(labels, candleData, volumeData, SMADatasets);
 	volumeChart = createVolumeChart(labels, volumeData);
-	setTimeout(() => enableTrendlineDrawing(candleChart), 100);
+	setTimeout(() => {
+		console.log(candleChart.canvas);
+	    enableTrendlineDrawing(candleChart);
+	}, 100);
 }
 
 // ローソク足チャートの作成関数
