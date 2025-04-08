@@ -1,4 +1,5 @@
-import { setSymbol, renderCharts } from './candlestick.js';
+import stockConfig from './config/stock-config.js';
+import { renderCharts } from './candlestick.js'; 
 //お気に入りボタンを押下時　TRはinnerHTMLで一部更新され、DOMがリセットされeventlistenerがなくなる
 //そのために　TRの親TBにlistenerを追加する
 document.addEventListener('DOMContentLoaded', () => {
@@ -17,7 +18,7 @@ const onRowClick = (event) => {
 	const ticker = row.dataset.ticker;
 	const brand = row.dataset.brand;
 	console.log('クリックされた銘柄:', ticker, brand);
-	setSymbol(ticker);
+	stockConfig.symbol=ticker;
 	renderCharts();
 
 	// 銘柄情報を非同期で取得して挿入

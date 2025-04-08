@@ -1,47 +1,20 @@
-// 初期設定：表示する銘柄とローソク足の時間軸
-let symbol = 'AAPL';
-let interval = '1day';
-let outputsize = 200;
+import { fetchStockData, fetchSMAData } from './stock-api.js';//chart.jsに使うデータをとってくる
+import stockConfig from './config/stock-config.js';//銘柄に関する変数配置ファイルをimport
+import chartStyleConfig from './config/chart-style-config.js';//グラフに関する変数配置ファイルをimport
+
 
 // グローバル変数：チャートインスタンスを保持しておく
 let candleChart = null;
 let volumeChart = null;
 
-//表に関する設定
-let minTicks = 5; //表示するticksの最小限
-let adjustSpeed = 2; //拡大・移動のスビー;
-let ticksSkipPadding = 40;//x軸のタブをスキップする距離　広いならタブが少ない
-let dataLength = outputsize; //dataの最後のデータの位置を把握し、最後のデータから表示するためです。
-let showAmount = document.getElementById("rowSelector").value; //同時に表示するデータ数 本数selectorのdefault値をとる
-
-
-export const setSymbol = (newSymbol) => {
-	symbol = newSymbol;
-};
-
-export const getSymbol = () => {
-	return symbol;
-};
-
-// 株価データをAPIから取得する非同期関数
-const fetchStockData = async () => {
-	const url = `/api/stocks/time-series/values?symbol=${symbol}&interval=${interval}&outputsize=${outputsize}`;
-	const res = await fetch(url);
-	const json = await res.json();
-
-	// APIエラーがあればログに出力して中断
-	if (json.status === "error") {
-		console.error("API error:", json.message);
-		return;
-	}
-
-	// データは時系列の降順で返ってくる想定 → 昇順に直す
-	const rawData = json.reverse();
-	return rawData;
-}
-
+let showAmount= 100;
+let adjustSpeed= 20;
+let minTicks= 10;
+let ticksSkipPadding= 5;
+let dataLength;
 // チャートの描画処理（ローソク足と出来高チャートの生成）
 export const renderCharts = async () => {
+	const isSmaChecked = document.querySelector('input[value="sma"]').checked;
 	const data = await fetchStockData(); // データ取得
 
 	//データの長さを更新
@@ -65,6 +38,22 @@ export const renderCharts = async () => {
 		y: d.volume
 	}));
 
+	let SMADatasets = [];
+	//SMAのデータsetを
+	if (isSmaChecked) {
+		const SMAResults = await fetchSMAData();
+		SMADatasets = SMAResults.map(sma => ({
+			type: "line",
+			label: `SMA (${sma.timeperiod})`,
+			data: sma.values.map(d => ({ x: d.datetime, y: d.sma })),
+			borderColor: chartStyleConfig.getSMAColor(sma.timeperiod),
+			borderWidth: 2,
+			pointRadius: 0,
+			fill: false
+		}));
+	}
+	console.log(SMADatasets);
+
 	// チャートが既にあれば破棄してから再生成（再描画時に必要）
 	if (candleChart) {
 		candleChart.destroy();
@@ -74,12 +63,12 @@ export const renderCharts = async () => {
 	}
 
 	// チャートを生成・描画
-	candleChart = createCandleChart(labels, candleData, volumeData);
+	candleChart = createCandleChart(labels, candleData, volumeData, SMADatasets);
 	volumeChart = createVolumeChart(labels, volumeData);
 }
 
 // ローソク足チャートの作成関数
-const createCandleChart = (labels, data, volumeData) => {
+const createCandleChart = (labels, data, volumeData, SMADatasets) => {
 	return new Chart(document.getElementById("candlestick-chart").getContext("2d"), {
 		type: "candlestick",
 		data: {
@@ -89,7 +78,9 @@ const createCandleChart = (labels, data, volumeData) => {
 				data,
 				borderColor: { up: "#26a69a", down: "#ef5350" }, // 緑＝上昇、赤＝下落
 				backgroundColor: { up: "#26a69a", down: "#ef5350" }
-			}]
+			},
+			...SMADatasets
+			]
 		},
 		options: {
 			responsive: true,
@@ -131,6 +122,12 @@ const createCandleChart = (labels, data, volumeData) => {
 						// ツールチップ内容（OHLC + 出来高）
 						label: (context) => {
 							const item = context.raw;
+							if (context.dataset.type === "line") {
+								const item = context.raw;
+								const value = Number(item.y);
+								const label = context.dataset.label;
+								return isNaN(value) ? `${label}: N/A` : `${label}: ${value.toFixed(4)}`;
+							}
 							const matchedVolume = volumeData.find(v => v.x === item.x);
 							const volume = matchedVolume ? matchedVolume.y.toLocaleString() : "N/A";
 							return [
@@ -271,14 +268,21 @@ const syncChangeScale = (sourceChart, targetChart) => {
 
 // セレクタ変更時に interval を更新してチャート再描画
 document.getElementById("candleSelector").addEventListener("change", (event) => {
-	interval = event.target.value;
+	stockConfig.interval = event.target.value;
 	renderCharts();
 });
 
 // 本数変更時に showAmount を更新してチャート再描画
 document.getElementById("rowSelector").addEventListener("change", (event) => {
-	showAmount = event.target.value;
+	stockConfig.outputsize = event.target.value;
 	renderCharts();
+});
+
+// テクニカルのチェック状態が変わったら再描画
+document.querySelectorAll('#technicalDropdownMenu input[type="checkbox"]').forEach(event => {
+	event.addEventListener("change", () => {
+		renderCharts(); 
+	});
 });
 
 // ページ読み込み完了後にチャートを初期描画

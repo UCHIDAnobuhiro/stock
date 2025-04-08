@@ -17,10 +17,10 @@ import com.example.stock.exception.TickersException;
 import com.example.stock.model.Favorites;
 import com.example.stock.model.Tickers;
 import com.example.stock.model.Users;
+import com.example.stock.security.SecurityUtils;
 import com.example.stock.service.FavoritesService;
 import com.example.stock.service.StockService;
 import com.example.stock.service.TickersService;
-import com.example.stock.service.UsersService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,16 +29,16 @@ import lombok.RequiredArgsConstructor;
 public class StockController {
 
 	private final TickersService tickersService;
-	private final UsersService usersService;
 	private final FavoritesService favoritesService;
 	private final StockService stockService;
+	private final SecurityUtils securityUtils;
 
 	//stock.htmlを最初にallのtickersリストを表示
 	@GetMapping("/stock")
 	public String stockPage(Model model) {
 		try {
 			//基本情報を取得
-			Users user = usersService.getLoggedInUserOrThrow();
+			Users user = securityUtils.getLoggedInUserOrThrow();
 			List<Tickers> tickers = tickersService.getAllTickers();
 			List<Favorites> favorites = favoritesService.findFavoritesByUsers(user);
 
@@ -62,7 +62,7 @@ public class StockController {
 	@GetMapping("/stock-list")
 	public String updateTickers(@RequestParam String show, Model model) {
 		//TODO:エラーハンドリング
-		Users user = usersService.getLoggedInUserOrThrow();
+		Users user = securityUtils.getLoggedInUserOrThrow();
 
 		//defaultはすべてのtickersを取得
 		List<Tickers> tickers = tickersService.getAllTickers();
@@ -88,7 +88,7 @@ public class StockController {
 			@RequestParam Long tickerId, Model model) {
 		try {
 			Tickers ticker = tickersService.getTickerById(tickerId);
-			Users user = usersService.getLoggedInUserOrThrow();
+			Users user = securityUtils.getLoggedInUserOrThrow();
 			// FAVORITEを更新
 			if (isFavorite) {
 				favoritesService.addFavorite(user, ticker);
