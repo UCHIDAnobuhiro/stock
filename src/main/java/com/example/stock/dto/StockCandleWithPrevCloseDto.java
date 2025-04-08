@@ -1,10 +1,12 @@
 package com.example.stock.dto;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class StockCandleWithPrevCloseDto extends StockCandleDto {
 	private double prevClose;
 	private String symbol;
