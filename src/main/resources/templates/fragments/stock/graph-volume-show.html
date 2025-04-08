@@ -62,11 +62,21 @@
 				<!--テクニカルEND-->
 				<!--トレンドライン-->
 				<div id="trendLine" class="relative flex flex-row">
-					<label for="trendLineCheckbox" id="trendLineLabel"
-						class="rounded border appearance-none border-gray-300 transition peer-checked:border-blue-500
-							hover:outline-none hover:ring-2 hover:ring-indigo-200 hover:border-indigo-500 text-base px-2 h-full flex items-center">
-						トレンドライン
-						<input type="checkbox" id="trendLineCheckbox" class="mx-2">
+					<input type="checkbox" id="trendLinePen" name="trendLineTool" class="hidden">
+					<label for="trendLinePen" id="trendLinePenLabel" 
+						class="rounded border appearance-none border-gray-300 transition
+							hover:outline-none hover:ring-2 hover:ring-indigo-200 hover:border-indigo-500 text-base px-2 h-full flex items-center cursor-pointer">
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+								<path d="M21.7 7.3l-5-5a1 1 0 00-1.4 0l-11 11a1 1 0 00-.3.6l-1 5a1 1 0 001.2 1.2l5-1a1 1 0 00.6-.3l11-11a1 1 0 000-1.4zM17 4.4l2.6 2.6-1.3 1.3L15.7 5.7 17 4.4zM5 17l.7-3.3L14 5.4l2.6 2.6-8.3 8.3L5 17z"/>
+							</svg>
+					</label>
+					<input type="checkbox" id="trendLineEraser" name="trendLineTool" class="hidden">
+					<label for="trendLineEraser" id="trendLineEraserLabel"
+						class="rounded border appearance-none border-gray-300 transition
+							hover:outline-none hover:ring-2 hover:ring-indigo-200 hover:border-indigo-500 text-base px-2 ml-1 h-full flex items-center cursor-pointer">
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+							  <path d="M20.3 7.7l-4-4a1 1 0 00-1.4 0l-9.6 9.6a2 2 0 000 2.8l4 4a2 2 0 002.8 0l9.6-9.6a1 1 0 000-1.4zM10.1 18.3L6.7 14.9l2.8-2.8 3.4 3.4-2.8 2.8zm4.2-4.2l-3.4-3.4 3.8-3.8 3.4 3.4-3.8 3.8zM4 21h12a1 1 0 000-2H4a1 1 0 000 2z"/>
+							</svg>
 					</label>
 				</div>
 				<!--トレンドラインEND-->

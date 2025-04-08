@@ -1,7 +1,7 @@
 import { fetchStockData, fetchSMAData } from './stock-api.js';//chart.jsに使うデータをとってくる
 import stockConfig from './config/stock-config.js';//銘柄に関する変数配置ファイルをimport
 import chartStyleConfig from './config/chart-style-config.js';//グラフに関する変数配置ファイルをimport
-import { trendlineAnnotations, enableTrendlineDrawing } from './trendline.js';
+import { trendlineAnnotations, enableTrendlineDrawing } from './trendline.js';　//トレンドラインのファイルを導入
 
 // グローバル変数：チャートインスタンスを保持しておく
 let candleChart = null;
@@ -78,7 +78,7 @@ const createCandleChart = (labels, data, volumeData, SMADatasets) => {
 		options: {
 			responsive: true,
 			maintainAspectRatio: false,
-			animation: false, // ✅ 关闭所有动画
+			animation: false, // 動画を消す
 			scales: {
 				x: {
 					type: "category",

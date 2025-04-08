@@ -1,18 +1,19 @@
-// trendline.js
+import chartStyleConfig from './config/chart-style-config.js';//グラフに関する変数配置ファイルをimport
 export const trendlineAnnotations = {}; // すべてのトレンドラインを保存するオブジェクト
 
 let start = null; // 描画開始点
 let lineId = 0; // ラインIDカウンター
-const getIsChecked = () => document.getElementById('trendLineCheckbox').checked;//checkboxの状態を取得
+const getPenChecked = () => document.getElementById('trendLinePen').checked;//checkboxの状態を取得
+const getEraserChecked = () => document.getElementById('trendLineEraser').checked;//checkboxの状態を取得
 
 export const enableTrendlineDrawing = (chart) => {
 	const canvas = chart.canvas;
 	const xScale = chart.scales.x;
 	const yScale = chart.scales.y;
 
-	// 左ドラッグで線を描画開始
+	// 鉛筆が選択されたら左ドラッグで線を描画開始
 	canvas.addEventListener('mousedown', (e) => {
-		if (e.button !== 0 || !getIsChecked()) return; // 左クリックのみ処理
+		if (e.button !== 0 || !getPenChecked()) return; // 左クリックのみ処理
 
 		// マウス座標を取得
 		const rect = canvas.getBoundingClientRect();
@@ -48,8 +49,8 @@ export const enableTrendlineDrawing = (chart) => {
 			xMax: end.x,
 			yMin: start.y,
 			yMax: end.y,
-			borderColor: 'rgba(0, 150, 136, 0.8)',
-			borderWidth: 2,
+			borderColor: chartStyleConfig.trendLineBorderColor,
+			borderWidth: chartStyleConfig.trendLineBorderWidth,
 			borderCapStyle: 'round',
 		};
 
@@ -59,9 +60,10 @@ export const enableTrendlineDrawing = (chart) => {
 		start = null;
 	});
 
-	// 右クリックでライン削除
-	canvas.addEventListener('contextmenu', (e) => {
-		e.preventDefault(); // コンテキストメニューを防止
+	// 消しゴムが選択されたら左クリックで線を消す
+	canvas.addEventListener('mousedown', (e) => {
+			console.log(getEraserChecked());
+			if (e.button !== 0 || !getEraserChecked()) return; 
 
 		// クリック位置を取得
 		const rect = canvas.getBoundingClientRect();
