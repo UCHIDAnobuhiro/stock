@@ -25,7 +25,7 @@ public class GetDataController {
 	/**
 	 * 指定した銘柄と期間の株価データ（時系列）を取得します
 	 * 
-	 * 例: /api/stocks/time-series?symbol=AAPL&interval=1day
+	 * 例: /api/stocks/time-series?symbol=AAPL&interval=1day&outputsize=100
 	 *
 	 * @param symbol ティッカーシンボル(例: AAPL)
 	 * @param interval データ間隔(例: 1day, 1week 1month)
@@ -45,7 +45,7 @@ public class GetDataController {
 	/**
 	 * chart.jsなどで利用するための、整形済みローソク足データを取得します。
 	 * 
-	 * 例: /api/stocks/time-series/values?symbol=AAPL&interval=1day
+	 * 例: /api/stocks/time-series/values?symbol=AAPL&interval=1day&outputsize=100
 	 *
 	 * @param symbol ティッカーシンボル(例: AAPL)
 	 * @param interval データ間隔(例: 1day, 1week 1month)
