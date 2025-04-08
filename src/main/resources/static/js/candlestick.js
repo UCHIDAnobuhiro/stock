@@ -9,6 +9,10 @@ let volumeChart = null;
 
 // チャートの描画処理（ローソク足と出来高チャートの生成）
 export const renderCharts = async () => {
+	//既存のトレンドラインを削除
+	for (const key in trendlineAnnotations) {
+		delete trendlineAnnotations[key];
+	}
 	const isSmaChecked = document.querySelector('input[value="sma"]').checked;
 	const data = await fetchStockData(); // データ取得
 
@@ -58,7 +62,6 @@ export const renderCharts = async () => {
 	candleChart = createCandleChart(labels, candleData, volumeData, SMADatasets);
 	volumeChart = createVolumeChart(labels, volumeData);
 	setTimeout(() => {
-		console.log(candleChart.canvas);
 		enableTrendlineDrawing(candleChart);
 	}, 100);
 }
