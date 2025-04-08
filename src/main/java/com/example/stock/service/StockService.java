@@ -213,6 +213,11 @@ public class StockService {
 		return entity;
 	}
 
+	// StockCandleService.java
+	public List<StockCandle> getSavedCandles(String symbol, String interval) {
+		return stockCandleRepository.findAllBySymbolAndIntervalOrderByDatetimeDesc(symbol, interval);
+	}
+
 	/**
 	 * 指定されたパラメータを元に、SMA（単純移動平均）テクニカル指標の取得用URLを構築します。
 	 *

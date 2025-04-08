@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.stock.dto.StockCandleWithPrevCloseDto;
 import com.example.stock.exception.StockApiException;
+import com.example.stock.model.StockCandle;
 import com.example.stock.service.StockService;
 
 import lombok.RequiredArgsConstructor;
@@ -89,6 +90,20 @@ public class GetDataController {
 			@RequestParam(defaultValue = "100") int outputsize) {
 		stockService.saveStockCandles(symbol, interval, outputsize);
 		return ResponseEntity.ok("保存完了！");
+	}
+
+	// StockCandleController.java
+	@GetMapping("/list")
+	public ResponseEntity<?> getSavedCandles(
+			@RequestParam(defaultValue = "AAPL") String symbol,
+			@RequestParam(defaultValue = "1day") String interval) {
+		List<StockCandle> candles = stockService.getSavedCandles(symbol, interval);
+		if (candles.isEmpty()) {
+			return ResponseEntity.status(404).body(Map.of(
+					"error", "データなし",
+					"message", "指定された条件のデータが見つかりませんでした"));
+		}
+		return ResponseEntity.ok(candles);
 	}
 
 	/**
