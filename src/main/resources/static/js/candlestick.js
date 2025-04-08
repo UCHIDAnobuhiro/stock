@@ -78,6 +78,7 @@ const createCandleChart = (labels, data, volumeData, SMADatasets) => {
 		options: {
 			responsive: true,
 			maintainAspectRatio: false,
+			animation: false, // ✅ 关闭所有动画
 			scales: {
 				x: {
 					type: "category",
