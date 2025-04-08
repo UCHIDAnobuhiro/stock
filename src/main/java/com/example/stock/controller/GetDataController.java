@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.stock.dto.StockCandleDto;
+import com.example.stock.dto.StockCandleWithPrevCloseDto;
 import com.example.stock.exception.StockApiException;
 import com.example.stock.service.StockService;
 
@@ -59,7 +59,9 @@ public class GetDataController {
 			@RequestParam String interval,
 			@RequestParam Integer outputsize) {
 		try {
-			List<StockCandleDto> candles = stockService.getStockCandleDtoList(symbol, interval, outputsize);
+			List<StockCandleWithPrevCloseDto> candles = stockService.getStockCandleWithPrevCloseDtoList(symbol,
+					interval,
+					outputsize);
 			return ResponseEntity.ok(candles);
 		} catch (StockApiException e) {
 			return ResponseEntity.status(502).body(Map.of(

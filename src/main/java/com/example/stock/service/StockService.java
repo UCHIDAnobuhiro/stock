@@ -1,6 +1,7 @@
 package com.example.stock.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.example.stock.dto.StockCandleDto;
 import com.example.stock.dto.StockCandleWithPrevCloseDto;
 import com.example.stock.exception.StockApiException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -82,98 +82,65 @@ public class StockService {
 	}
 
 	/**
-	 * 指定された銘柄とインターバル（日足・週足など）に基づいて、
-	 * ローソク足形式の株価データ（日時、4本値、出来高）をDTOリストとして返却します。
+	 * 指定された銘柄・間隔・出力数に基づいて、Twelve Data APIからローソク足データを取得し、
+	 * 各データに前日終値（prevClose）と銘柄シンボル（symbol）を付与したDTOのリストを返します。
 	 *
-	 * @param symbol 銘柄コード（例: "AAPL"）
-	 * @param interval データの間隔（例: "1day", "1week", "1month"）
-	 * @param outputsize データ数or ロウソク足の本数 (例: 50, 100) min:1 max:5000
-	 * 
-	 * @return 株価データのリスト（StockCandleDto形式）
+	 * @param symbol     銘柄コード（例: "AAPL"）
+	 * @param interval   データの間隔（例: "1day", "1week"）
+	 * @param outputsize 取得するデータの件数（例: 30）
+	 * @return StockCandleWithPrevCloseDtoのリスト（新しい順に並んでいる）
+	 * @throws StockApiException APIレスポンスに異常がある場合（nullやパースエラーなど）
 	 */
-	public List<StockCandleDto> getStockCandleDtoList(String symbol, String interval, Integer outputsize) {
-		// Twelve Data APIから指定された銘柄・間隔の時系列データを取得
+	public List<StockCandleWithPrevCloseDto> getStockCandleWithPrevCloseDtoList(String symbol, String interval,
+			Integer outputsize) {
+		// Twelve Data APIからデータ取得
 		Map<String, Object> data = getStockTimeSeries(symbol, interval, outputsize);
-		// "values"キーに格納されたローソク足データを取り出す（List<Map<String, String>> 形式）
 		List<Map<String, String>> values = (List<Map<String, String>>) data.get("values");
+
+		// 2. データが存在しない場合は例外をスロー
 		if (values == null || values.isEmpty()) {
 			throw new StockApiException("APIから株価データが取得できませんでした（valuesが空）");
 		}
 
-		// 各データをStockCandleDtoに変換し、リストとして返却
-		return values.stream()
-				.map(v -> {
-					try {
-						return new StockCandleDto(
-								v.get("datetime"),
-								Double.parseDouble(v.get("open")),
-								Double.parseDouble(v.get("high")),
-								Double.parseDouble(v.get("low")),
-								Double.parseDouble(v.get("close")),
-								Long.parseLong(v.get("volume")));
-					} catch (NumberFormatException e) {
-						logger.error("数値変換エラー: {}", v, e);
-						throw new StockApiException("数値の変換に失敗しました：不正なデータがあります", e);
-					}
-				})
-				.toList();
-	}
+		// 「前日終値」を紐づけるため、古い順に並び替え
+		Collections.reverse(values);
 
-	/**
-	 * 指定された銘柄のローソク足データ（日足）に、前日の終値を追加したDTOのリストを取得します。
-	 * データは古い順（昇順）に並んでいます。
-	 *
-	 * @param symbol 銘柄コード（例: "AAPL"）
-	 * 
-	 * @return 前日終値付きのローソク足データのリスト
-	 */
-	public List<StockCandleWithPrevCloseDto> getStockWithPrevClose(String symbol) {
-		// Twelve Data APIからデータ取得
-		Map<String, Object> data = getStockTimeSeries(symbol, "1day", 2);
+		List<StockCandleWithPrevCloseDto> dtoList = new ArrayList<>();
+		Double prevClose = 0.0;
 
-		// valuesだけを取り出す
-		List<Map<String, String>> raw = (List<Map<String, String>>) data.get("values");
-		if (raw == null || raw.isEmpty()) {
-			logger.warn("取得されたデータが空でした（symbol={}）", symbol);
-			throw new StockApiException("APIから取得した株価データが空、または無効です（前日終値が取得できません）");
-		}
+		// 各データをDTOに変換し、前日終値を付加
+		for (Map<String, String> v : values) {
+			try {
+				double open = Double.parseDouble(v.get("open"));
+				double high = Double.parseDouble(v.get("high"));
+				double low = Double.parseDouble(v.get("low"));
+				double close = Double.parseDouble(v.get("close"));
+				long volume = Long.parseLong(v.get("volume"));
 
-		// 各データをStockCandleDtoに変換し、日付の昇順（古い順）にソート
-		List<StockCandleDto> baseList = new ArrayList<>();
-		try {
-			for (Map<String, String> v : raw) {
-				baseList.add(new StockCandleDto(
+				// 1件分のローソク足データと前日終値をDTOに詰める
+				StockCandleWithPrevCloseDto dto = new StockCandleWithPrevCloseDto(
+						symbol,
 						v.get("datetime"),
-						Double.parseDouble(v.get("open")),
-						Double.parseDouble(v.get("high")),
-						Double.parseDouble(v.get("low")),
-						Double.parseDouble(v.get("close")),
-						Long.parseLong(v.get("volume"))));
+						open,
+						high,
+						low,
+						close,
+						volume,
+						prevClose);
+
+				dtoList.add(dto);
+
+				// 次のループ用に現在の終値を保存（これが次の「前日終値」になる）
+				prevClose = close;
+			} catch (NumberFormatException e) {
+				logger.error("数値変換エラー: {}", v, e);
+				throw new StockApiException("数値の変換に失敗しました：不正なデータがあります", e);
 			}
-		} catch (NumberFormatException e) {
-			logger.error("数値変換エラー:", e);
-			throw new StockApiException("株価データの数値変換に失敗しました（不正な値が含まれている可能性）", e);
 		}
+		// 結果リストを「新しい順」に戻して返却
+		Collections.reverse(dtoList);
 
-		// 前日終値を付加したDTOリストを作成
-		List<StockCandleWithPrevCloseDto> result = new ArrayList<>();
-		for (int i = 0; i < baseList.size(); i++) {
-			StockCandleDto current = baseList.get(i);
-			double prevClose = (i > 0) ? baseList.get(i - 1).getClose() : current.getClose();
-
-			result.add(new StockCandleWithPrevCloseDto(
-					symbol,
-					current.getDatetime(),
-					current.getOpen(),
-					current.getHigh(),
-					current.getLow(),
-					current.getClose(),
-					current.getVolume(),
-					prevClose));
-		}
-
-		return result;
-
+		return dtoList;
 	}
 
 	/**
@@ -183,13 +150,13 @@ public class StockService {
 	 * @return 最新のローソク足データ（前日終値付き）
 	 */
 	public StockCandleWithPrevCloseDto getLatestStockWithPrevClose(String symbol) {
-		List<StockCandleWithPrevCloseDto> list = getStockWithPrevClose(symbol);
+		List<StockCandleWithPrevCloseDto> list = getStockCandleWithPrevCloseDtoList(symbol, "1day", 2);
 
 		if (list.isEmpty()) {
 			logger.warn("symbol={} のデータが空です（前日終値付き）", symbol);
 			throw new StockApiException("最新の株価データが存在しませんでした");
 		}
-		return list.get(list.size() - 1); // 最新のデータ（リストは昇順）
+		return list.get(0); // 最新のデータ（リストは昇順）
 	}
 
 	/**
