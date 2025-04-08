@@ -13,14 +13,13 @@ import com.example.stock.dto.StockCandleWithPrevCloseDto;
 import com.example.stock.exception.StockApiException;
 import com.example.stock.service.StockService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/stocks")
+@RequiredArgsConstructor
 public class GetDataController {
 	private final StockService stockService;
-
-	public GetDataController(StockService stockService) {
-		this.stockService = stockService;
-	}
 
 	/**
 	 * 指定した銘柄と期間の株価データ（時系列）を取得します
@@ -68,6 +67,28 @@ public class GetDataController {
 					"error", "データ取得エラー",
 					"message", e.getMessage()));
 		}
+	}
+
+	/**
+	 * 指定されたクエリパラメータに基づいて株価ローソク足データを取得し、保存処理を実行します。
+	 * デフォルトでは、AAPL（Apple）の1日足データを100件取得・保存します。
+	 *
+	 * 処理が正常に完了した場合、「保存完了！」というメッセージを含むHTTP 200レスポンスを返します。
+	 * 
+	 * 例: /api/stocks/fetch
+	 * 
+	 * @param symbol     銘柄コード（例：AAPL、MSFTなど） ※デフォルトは"AAPL"
+	 * @param interval   時間足の種類（例：1day、1minなど） ※デフォルトは"1day"
+	 * @param outputsize 取得件数（例：100） ※デフォルトは100
+	 * @return 保存成功時のレスポンスメッセージ
+	 */
+	@GetMapping("/fetch")
+	public ResponseEntity<String> fetchAndSave(
+			@RequestParam(defaultValue = "AAPL") String symbol,
+			@RequestParam(defaultValue = "1day") String interval,
+			@RequestParam(defaultValue = "100") int outputsize) {
+		stockService.saveStockCandles(symbol, interval, outputsize);
+		return ResponseEntity.ok("保存完了！");
 	}
 
 	/**

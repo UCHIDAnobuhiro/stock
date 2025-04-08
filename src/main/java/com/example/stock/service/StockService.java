@@ -1,9 +1,13 @@
 package com.example.stock.service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import jakarta.transaction.Transactional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,24 +19,25 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.example.stock.dto.StockCandleWithPrevCloseDto;
 import com.example.stock.exception.StockApiException;
+import com.example.stock.model.StockCandle;
+import com.example.stock.repository.StockCandleRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class StockService {
 	private final RestTemplate restTemplate;
 	private final ObjectMapper objectMapper;
+	private final StockCandleRepository stockCandleRepository;
 
 	private static final Logger logger = LoggerFactory.getLogger(StockService.class);
 
 	// application.propertiesからAPIキーを読み込む。
 	@Value("${api.key}")
 	private String apiKey;
-
-	public StockService(RestTemplate restTemplate, ObjectMapper objectMapper) {
-		this.restTemplate = restTemplate;
-		this.objectMapper = objectMapper;
-	}
 
 	/**
 	 * Twelve Data API のURLを構築する
@@ -120,6 +125,7 @@ public class StockService {
 				// 1件分のローソク足データと前日終値をDTOに詰める
 				StockCandleWithPrevCloseDto dto = new StockCandleWithPrevCloseDto(
 						symbol,
+						interval,
 						v.get("datetime"),
 						open,
 						high,
@@ -157,6 +163,54 @@ public class StockService {
 			throw new StockApiException("最新の株価データが存在しませんでした");
 		}
 		return list.get(0); // 最新のデータ（リストは昇順）
+	}
+
+	/**
+	 * 指定された銘柄（symbol）、時間足（interval）、出力サイズ（outputsize）に基づいて、
+	 * 株価ローソク足データ（前日終値付き）を取得し、データベースに保存します。
+	 * 既に同じ日時のデータが存在する場合は保存をスキップします。
+	 *
+	 * このメソッドはトランザクション内で実行され、途中で例外が発生した場合はロールバックされます。
+	 *
+	 * @param symbol     銘柄コード（例：AAPL、GOOGLなど）
+	 * @param interval   時間足の種類（例：1min、5min、1dayなど）
+	 * @param outputsize 取得するローソク足データの件数
+	 */
+	@Transactional
+	public void saveStockCandles(String symbol, String interval, int outputsize) {
+		List<StockCandleWithPrevCloseDto> dtoList = getStockCandleWithPrevCloseDtoList(symbol, interval, outputsize);
+
+		for (StockCandleWithPrevCloseDto dto : dtoList) {
+			LocalDateTime datetime = LocalDate.parse(dto.getDatetime()).atStartOfDay();
+			boolean exists = stockCandleRepository
+					.findBySymbolAndIntervalAndDatetime(symbol, interval, datetime)
+					.isPresent();
+
+			if (!exists) {
+				stockCandleRepository.save(toEntity(dto));
+			}
+		}
+	}
+
+	/**
+	 * DTO（StockCandleWithPrevCloseDto）からエンティティ（StockCandle）への変換を行います。
+	 * 日付は文字列から {@link LocalDateTime} に変換され、時間は00:00として設定されます。
+	 *
+	 * @param dto 前日終値付きの株価ローソク足データDTO
+	 * @return エンティティ形式の {@link StockCandle} オブジェクト
+	 */
+	private StockCandle toEntity(StockCandleWithPrevCloseDto dto) {
+		StockCandle entity = new StockCandle();
+		entity.setSymbol(dto.getSymbol());
+		entity.setInterval(dto.getInterval()); // "1day" など
+		entity.setDatetime(LocalDate.parse(dto.getDatetime()).atStartOfDay());
+		entity.setOpen(dto.getOpen());
+		entity.setHigh(dto.getHigh());
+		entity.setLow(dto.getLow());
+		entity.setClose(dto.getClose());
+		entity.setVolume(dto.getVolume());
+		entity.setPreviousClose(dto.getPrevClose());
+		return entity;
 	}
 
 	/**
