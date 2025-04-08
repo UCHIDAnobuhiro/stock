@@ -58,6 +58,18 @@ public class Users implements UserDetails {
 
 	private boolean enabled = false;
 
+	// 連続ログイン失敗回数
+	@Column(name = "failed_login_attempts", nullable = false)
+	private int failedLoginAttempts = 0;
+
+	// アカウントがロックされているかどうか
+	@Column(name = "account_locked", nullable = false)
+	private boolean accountLocked = false;
+
+	// ロックされた時間（nullならロックされてない）
+	@Column(name = "lock_time")
+	private LocalDateTime lockTime;
+
 	// 権限情報（簡単に空リストを返す）
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -108,4 +120,5 @@ public class Users implements UserDetails {
 	public int hashCode() {
 		return getClass().hashCode();
 	}
+
 }
