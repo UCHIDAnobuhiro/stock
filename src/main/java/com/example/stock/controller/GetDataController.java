@@ -70,10 +70,9 @@ public class GetDataController {
 
 	/**
 	 * SMA（単純移動平均）テクニカル指標データを取得するAPIエンドポイント。
-	 * <p>
+	 * 
 	 * クエリパラメータとして株式シンボル、時間間隔、期間、出力サイズを受け取り、
 	 * Twelve Data APIを通じてSMAデータを取得します。
-	 * </p>
 	 *
 	 * @param symbol 対象の株式シンボル（例：AAPL）
 	 * @param interval データの時間間隔（例：1min, 5min, 1day など）
