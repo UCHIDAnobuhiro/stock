@@ -28,7 +28,10 @@ export const enableTrendlineDrawing = (chart) => {
 		if (e.button !== 0) return; // 左クリックのみ処理
 
 		if (getPenChecked()) {
-			// ペンモード：線を描く
+			chart.options.plugins.zoom.pan.enabled=false;
+			chart.update(); // 更新（アニメーションなし）
+			
+//			// ペンモード：線を描く
 			start = {
 				x: xScale.getValueForPixel(mouseX),
 				y: yScale.getValueForPixel(mouseY)
@@ -68,7 +71,7 @@ export const enableTrendlineDrawing = (chart) => {
 			borderWidth: chartStyleConfig.trendLineBorderWidth,
 			borderCapStyle: 'round',
 		};
-
+		chart.options.plugins.zoom.pan.enabled=true;
 		chart.update(); // グラフ更新
 		start = null; // 開始点リセット
 	};
