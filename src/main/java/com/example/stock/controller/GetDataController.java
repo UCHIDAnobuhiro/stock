@@ -100,12 +100,20 @@ public class GetDataController {
 			@RequestParam(defaultValue = "AAPL") String symbol,
 			@RequestParam(defaultValue = "1day") String interval,
 			@RequestParam(defaultValue = "200") int outputsize) {
+
+		// データベースから取得
 		List<StockCandle> candles = stockService.getSavedCandles(symbol, interval, outputsize);
-		if (candles.isEmpty()) {
-			return ResponseEntity.status(404).body(Map.of(
-					"error", "データなし",
-					"message", "指定された条件のデータが見つかりませんでした"));
+		if (candles.size() < outputsize) {
+			stockService.saveStockCandles(symbol, interval, outputsize);
+			candles = stockService.getSavedCandles(symbol, interval, outputsize);
+			if (candles.isEmpty()) {
+				return ResponseEntity.status(404).body(Map.of(
+						"error", "データなし",
+						"message", "指定された条件のデータが見つかりませんでした"));
+			}
 		}
+
+		// DTO化して返す
 		List<StockCandleWithPrevCloseDto> dtoList = candles.stream()
 				.map(candle -> stockCandleConverter.fromEntity(candle))
 				.toList();
