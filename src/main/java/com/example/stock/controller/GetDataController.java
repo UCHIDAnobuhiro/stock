@@ -9,23 +9,23 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.stock.dto.StockCandleDto;
+import com.example.stock.dto.StockCandleWithPrevCloseDto;
 import com.example.stock.exception.StockApiException;
+import com.example.stock.model.StockCandle;
 import com.example.stock.service.StockService;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/stocks")
+@RequiredArgsConstructor
 public class GetDataController {
 	private final StockService stockService;
-
-	public GetDataController(StockService stockService) {
-		this.stockService = stockService;
-	}
 
 	/**
 	 * 指定した銘柄と期間の株価データ（時系列）を取得します
 	 * 
-	 * 例: /api/stocks/time-series?symbol=AAPL&interval=1day
+	 * 例: /api/stocks/time-series?symbol=AAPL&interval=1day&outputsize=100
 	 *
 	 * @param symbol ティッカーシンボル(例: AAPL)
 	 * @param interval データ間隔(例: 1day, 1week 1month)
@@ -45,7 +45,7 @@ public class GetDataController {
 	/**
 	 * chart.jsなどで利用するための、整形済みローソク足データを取得します。
 	 * 
-	 * 例: /api/stocks/time-series/values?symbol=AAPL&interval=1day
+	 * 例: /api/stocks/time-series/values?symbol=AAPL&interval=1day&outputsize=100
 	 *
 	 * @param symbol ティッカーシンボル(例: AAPL)
 	 * @param interval データ間隔(例: 1day, 1week 1month)
@@ -59,13 +59,51 @@ public class GetDataController {
 			@RequestParam String interval,
 			@RequestParam Integer outputsize) {
 		try {
-			List<StockCandleDto> candles = stockService.getStockCandleDtoList(symbol, interval, outputsize);
+			List<StockCandleWithPrevCloseDto> candles = stockService.getStockCandleWithPrevCloseDtoList(symbol,
+					interval,
+					outputsize);
 			return ResponseEntity.ok(candles);
 		} catch (StockApiException e) {
 			return ResponseEntity.status(502).body(Map.of(
 					"error", "データ取得エラー",
 					"message", e.getMessage()));
 		}
+	}
+
+	/**
+	 * 指定されたクエリパラメータに基づいて株価ローソク足データを取得し、保存処理を実行します。
+	 * デフォルトでは、AAPL（Apple）の1日足データを100件取得・保存します。
+	 *
+	 * 処理が正常に完了した場合、「保存完了！」というメッセージを含むHTTP 200レスポンスを返します。
+	 * 
+	 * 例: /api/stocks/fetch
+	 * 
+	 * @param symbol     銘柄コード（例：AAPL、MSFTなど） ※デフォルトは"AAPL"
+	 * @param interval   時間足の種類（例：1day、1minなど） ※デフォルトは"1day"
+	 * @param outputsize 取得件数（例：100） ※デフォルトは100
+	 * @return 保存成功時のレスポンスメッセージ
+	 */
+	@GetMapping("/fetch")
+	public ResponseEntity<String> fetchAndSave(
+			@RequestParam(defaultValue = "AAPL") String symbol,
+			@RequestParam(defaultValue = "1day") String interval,
+			@RequestParam(defaultValue = "100") int outputsize) {
+		stockService.saveStockCandles(symbol, interval, outputsize);
+		return ResponseEntity.ok("保存完了！");
+	}
+
+	// StockCandleController.java
+	@GetMapping("/list")
+	public ResponseEntity<?> getSavedCandles(
+			@RequestParam(defaultValue = "AAPL") String symbol,
+			@RequestParam(defaultValue = "1day") String interval) {
+		List<StockCandle> candles = stockService.getSavedCandles(symbol, interval);
+		if (candles.isEmpty()) {
+			return ResponseEntity.status(404).body(Map.of(
+					"error", "データなし",
+					"message", "指定された条件のデータが見つかりませんでした"));
+		}
+		return ResponseEntity.ok(candles);
 	}
 
 	/**
