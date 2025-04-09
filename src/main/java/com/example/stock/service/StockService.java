@@ -1,5 +1,6 @@
 package com.example.stock.service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -155,6 +156,21 @@ public class StockService {
 		return dtoList;
 	}
 
+	//前営業日の取得
+	private LocalDate getPreviousBusinessDay(LocalDate base) {
+		DayOfWeek day = base.getDayOfWeek();
+
+		if (day == DayOfWeek.MONDAY) {
+			return base.minusDays(3); // → 金曜日
+		} else if (day == DayOfWeek.SUNDAY) {
+			return base.minusDays(2); // → 金曜日
+		} else if (day == DayOfWeek.SATURDAY) {
+			return base.minusDays(1); // → 金曜日
+		} else {
+			return base.minusDays(1); // 平日なら前日でOK
+		}
+	}
+
 	/**
 	 * 指定された銘柄の最新のローソク足データ（前日終値付き）を取得します。
 	 *
@@ -163,7 +179,7 @@ public class StockService {
 	 */
 	public StockCandleWithPrevCloseDto getLatestStockWithPrevClose(String symbol) {
 		String interval = "1day";
-		LocalDate targetDate = LocalDate.now().minusDays(1);
+		LocalDate targetDate = getPreviousBusinessDay(LocalDate.now());
 		LocalDateTime datetime = targetDate.atStartOfDay();
 
 		Optional<StockCandle> candleOpt = stockCandleRepository
@@ -173,13 +189,13 @@ public class StockService {
 			return stockCandleConverter.fromEntity(candleOpt.get());
 		}
 
-		List<StockCandleWithPrevCloseDto> list = getStockCandleWithPrevCloseDtoList(symbol, "1day", 2);
+		List<StockCandleWithPrevCloseDto> list = getStockCandleWithPrevCloseDtoList(symbol, "1day", 100);
 
 		if (list.isEmpty()) {
 			logger.warn("symbol={} のデータが空です（前日終値付き）", symbol);
 			throw new StockApiException("最新の株価データが存在しませんでした");
 		}
-		saveStockCandles(symbol, interval, 1);
+		saveStockCandles(symbol, interval, 2);
 		return list.get(0); // 最新のデータ（リストは昇順）
 	}
 
