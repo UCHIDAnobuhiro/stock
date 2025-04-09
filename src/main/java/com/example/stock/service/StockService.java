@@ -13,6 +13,9 @@ import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -208,8 +211,12 @@ public class StockService {
 	}
 
 	// StockCandleService.java
-	public List<StockCandle> getSavedCandles(String symbol, String interval) {
-		return stockCandleRepository.findAllBySymbolAndIntervalOrderByDatetimeDesc(symbol, interval);
+	public List<StockCandle> getSavedCandles(String symbol, String interval, int outputsize) {
+		Pageable pageable = PageRequest.of(0, outputsize);
+		Page<StockCandle> page = stockCandleRepository.findAllBySymbolAndIntervalOrderByDatetimeDesc(symbol, interval,
+				pageable);
+		List<StockCandle> candles = page.getContent();
+		return candles;
 	}
 
 	/**

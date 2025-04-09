@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.stock.converter.StockCandleConverter;
 import com.example.stock.dto.StockCandleWithPrevCloseDto;
 import com.example.stock.exception.StockApiException;
 import com.example.stock.model.StockCandle;
@@ -21,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class GetDataController {
 	private final StockService stockService;
+	private final StockCandleConverter stockCandleConverter;
 
 	/**
 	 * 指定した銘柄と期間の株価データ（時系列）を取得します
@@ -87,7 +89,7 @@ public class GetDataController {
 	public ResponseEntity<String> fetchAndSave(
 			@RequestParam(defaultValue = "AAPL") String symbol,
 			@RequestParam(defaultValue = "1day") String interval,
-			@RequestParam(defaultValue = "100") int outputsize) {
+			@RequestParam(defaultValue = "200") int outputsize) {
 		stockService.saveStockCandles(symbol, interval, outputsize);
 		return ResponseEntity.ok("保存完了！");
 	}
@@ -96,14 +98,19 @@ public class GetDataController {
 	@GetMapping("/list")
 	public ResponseEntity<?> getSavedCandles(
 			@RequestParam(defaultValue = "AAPL") String symbol,
-			@RequestParam(defaultValue = "1day") String interval) {
-		List<StockCandle> candles = stockService.getSavedCandles(symbol, interval);
+			@RequestParam(defaultValue = "1day") String interval,
+			@RequestParam(defaultValue = "200") int outputsize) {
+		List<StockCandle> candles = stockService.getSavedCandles(symbol, interval, outputsize);
 		if (candles.isEmpty()) {
 			return ResponseEntity.status(404).body(Map.of(
 					"error", "データなし",
 					"message", "指定された条件のデータが見つかりませんでした"));
 		}
-		return ResponseEntity.ok(candles);
+		List<StockCandleWithPrevCloseDto> dtoList = candles.stream()
+				.map(candle -> stockCandleConverter.fromEntity(candle))
+				.toList();
+
+		return ResponseEntity.ok(dtoList);
 	}
 
 	/**
