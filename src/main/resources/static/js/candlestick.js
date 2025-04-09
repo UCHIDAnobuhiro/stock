@@ -88,7 +88,9 @@ const createCandleChart = (labels, data, volumeData, SMADatasets) => {
 		options: {
 			responsive: true,
 			maintainAspectRatio: false,
-			animation: false, // 動画を消す
+			animation: {
+			  duration: 0
+			},
 			scales: {
 				x: {
 					type: "category",
