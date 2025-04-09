@@ -24,6 +24,19 @@ public class GetDataController {
 	private final StockService stockService;
 	private final StockCandleConverter stockCandleConverter;
 
+	/**
+	 * データベースに保存されている株価ローソク足データを取得し、DTOに変換して返却します。
+	 * 
+	 * データ件数が {@code outputsize} に満たない場合は、外部API（Twelve Data）からデータを取得して
+	 * データベースに保存した後、再度取得を試みます。
+	 *
+	 * @param symbol     銘柄コード（例: "AAPL"）。デフォルトは "AAPL"
+	 * @param interval   データの時間間隔（例: "1day", "1week"）。デフォルトは "1day"
+	 * @param outputsize 必要なデータ件数（例: 200）。デフォルトは 200
+	 * @return 株価ローソク足データのリスト（JSON形式で返される）
+	 *         - 正常：200 OK + データリスト
+	 *         - データが取得できない場合：404 Not Found + エラーメッセージ
+	 */
 	@GetMapping("/list")
 	public ResponseEntity<?> getSavedCandles(
 			@RequestParam(defaultValue = "AAPL") String symbol,
@@ -32,6 +45,8 @@ public class GetDataController {
 
 		// データベースから取得
 		List<StockCandle> candles = stockService.getSavedCandles(symbol, interval, outputsize);
+
+		// データが不足している場合はAPIから補完して再取得
 		if (candles.size() < outputsize) {
 			stockService.saveStockCandles(symbol, interval, outputsize);
 			candles = stockService.getSavedCandles(symbol, interval, outputsize);
