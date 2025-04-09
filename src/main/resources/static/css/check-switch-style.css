@@ -45,7 +45,32 @@
 #trendLinePen:checked+label,
 #trendLineEraser:checked+label {
 	color: #4f46e5;
+	border-radius: 0.2;
 	font-weight: 600;
 	box-shadow: inset 0 0 0 2px #4f46e5, 3px 3px 6px rgb(204, 221, 249);
 }
 
+
+.favoriteCheckbox:checked + label{
+	color: rgb(255, 0, 0);
+}
+
+.favoriteCheckbox+label{
+	color: rgba(0, 0, 0,1);
+}
+
+.favoriteCheckbox + .favoriteLabel .icon-checked {
+  display: none;
+}
+
+.favoriteCheckbox + .favoriteLabel .icon-unchecked {
+  display: inline;
+}
+
+.favoriteCheckbox:checked + .favoriteLabel .icon-checked {
+  display: inline;
+}
+
+.favoriteCheckbox:checked + .favoriteLabel .icon-unchecked {
+  display: none;
+}
