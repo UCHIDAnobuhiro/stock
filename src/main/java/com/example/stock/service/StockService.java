@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import jakarta.transaction.Transactional;
 
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.example.stock.converter.StockCandleConverter;
 import com.example.stock.dto.StockCandleWithPrevCloseDto;
 import com.example.stock.exception.StockApiException;
 import com.example.stock.model.StockCandle;
@@ -32,6 +34,7 @@ public class StockService {
 	private final RestTemplate restTemplate;
 	private final ObjectMapper objectMapper;
 	private final StockCandleRepository stockCandleRepository;
+	private final StockCandleConverter stockCandleConverter;
 
 	private static final Logger logger = LoggerFactory.getLogger(StockService.class);
 
@@ -156,12 +159,24 @@ public class StockService {
 	 * @return 最新のローソク足データ（前日終値付き）
 	 */
 	public StockCandleWithPrevCloseDto getLatestStockWithPrevClose(String symbol) {
+		String interval = "1day";
+		LocalDate targetDate = LocalDate.now().minusDays(1);
+		LocalDateTime datetime = targetDate.atStartOfDay();
+
+		Optional<StockCandle> candleOpt = stockCandleRepository
+				.findBySymbolAndIntervalAndDatetime(symbol, interval, datetime);
+
+		if (candleOpt.isPresent()) {
+			return stockCandleConverter.fromEntity(candleOpt.get());
+		}
+
 		List<StockCandleWithPrevCloseDto> list = getStockCandleWithPrevCloseDtoList(symbol, "1day", 2);
 
 		if (list.isEmpty()) {
 			logger.warn("symbol={} のデータが空です（前日終値付き）", symbol);
 			throw new StockApiException("最新の株価データが存在しませんでした");
 		}
+		saveStockCandles(symbol, interval, 1);
 		return list.get(0); // 最新のデータ（リストは昇順）
 	}
 
@@ -187,30 +202,9 @@ public class StockService {
 					.isPresent();
 
 			if (!exists) {
-				stockCandleRepository.save(toEntity(dto));
+				stockCandleRepository.save(stockCandleConverter.toEntity(dto));
 			}
 		}
-	}
-
-	/**
-	 * DTO（StockCandleWithPrevCloseDto）からエンティティ（StockCandle）への変換を行います。
-	 * 日付は文字列から {@link LocalDateTime} に変換され、時間は00:00として設定されます。
-	 *
-	 * @param dto 前日終値付きの株価ローソク足データDTO
-	 * @return エンティティ形式の {@link StockCandle} オブジェクト
-	 */
-	private StockCandle toEntity(StockCandleWithPrevCloseDto dto) {
-		StockCandle entity = new StockCandle();
-		entity.setSymbol(dto.getSymbol());
-		entity.setInterval(dto.getInterval()); // "1day" など
-		entity.setDatetime(LocalDate.parse(dto.getDatetime()).atStartOfDay());
-		entity.setOpen(dto.getOpen());
-		entity.setHigh(dto.getHigh());
-		entity.setLow(dto.getLow());
-		entity.setClose(dto.getClose());
-		entity.setVolume(dto.getVolume());
-		entity.setPreviousClose(dto.getPrevClose());
-		return entity;
 	}
 
 	// StockCandleService.java
