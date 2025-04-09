@@ -50,9 +50,10 @@ export const fetchSMAData = async () => {
 			console.error(`SMA(${period}) API error:`, json.message);
 			return null;
 		}
-		return { 
-			timeperiod: period, 
-			values: json.values.reverse() };
+		return {
+			timeperiod: period,
+			values: json.values.reverse()
+		};
 	};
 
 	const results = await Promise.all(timePeriods.map(fetchOne));
