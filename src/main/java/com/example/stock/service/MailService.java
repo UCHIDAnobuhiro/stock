@@ -2,12 +2,15 @@ package com.example.stock.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
@@ -46,9 +49,12 @@ public class MailService {
 		// プレーンテキストの本文を初期化
 		String textBody;
 
+		//現在のurlを取得
+		String baseURL = getBaseUrlFromRequest();
+
 		// プレーンテキスト版（シンプルにそのままリンク）
 		if (tokenType == TokenType.VERIFY_EMAIL) {
-			link = "http://localhost:8080/verify/activate?token=" + token;
+			link = baseURL + "/verify/activate?token=" + token;
 			context.setVariable("verificationLink", link);
 			htmlBody = templateEngine.process("mail/verification-user", context);
 			textBody = "以下のリンクをブラウザで開いて、認証を完了してください:\n" + link;
@@ -99,4 +105,20 @@ public class MailService {
 		mailSender.send(message);
 	}
 
+	/**
+	 * 現在のurlを取得
+	 *現在のurlを取得http://localhost:8080/loginならhttp://localhost:8080/がとれる
+	 */
+	private String getBaseUrlFromRequest() {
+		ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+		if (attrs != null) {
+			HttpServletRequest request = attrs.getRequest();
+			String baseUrl = request.getScheme() + "://" + request.getServerName()
+					+ ((request.getServerPort() == 80 || request.getServerPort() == 443) ? ""
+							: ":" + request.getServerPort());
+
+			return baseUrl;
+		}
+		return null;
+	}
 }
