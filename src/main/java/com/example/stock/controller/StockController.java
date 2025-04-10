@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.example.stock.converter.TickersDTOConverter;
 import com.example.stock.dto.StockCandleWithPrevCloseDto;
 import com.example.stock.dto.TickersWithFavoriteDTO;
+import com.example.stock.exception.StockApiException;
 import com.example.stock.exception.TickersException;
 import com.example.stock.model.Favorites;
 import com.example.stock.model.Tickers;
@@ -106,9 +107,15 @@ public class StockController {
 
 	@GetMapping("/stock/table")
 	public String showStockTable(@RequestParam String symbol, Model model) {
-		StockCandleWithPrevCloseDto latest = stockService.getLatestStockWithPrevClose(symbol);
-		model.addAttribute("stock", latest);
-		return "fragments/stock/today-information :: today-information-template";
+		try {
+			StockCandleWithPrevCloseDto latest = stockService.getLatestStockWithPrevClose(symbol);
+			model.addAttribute("stock", latest);
+			return "fragments/stock/today-information :: today-information-template";
+
+		} catch (StockApiException e) {
+			model.addAttribute("errorMessage", "エラーが発生しました: " + e.getMessage());
+			return "error";
+		}
 	}
 
 }

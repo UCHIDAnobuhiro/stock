@@ -1,5 +1,6 @@
 package com.example.stock.service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -13,6 +14,9 @@ import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -152,6 +156,21 @@ public class StockService {
 		return dtoList;
 	}
 
+	//前営業日の取得
+	private LocalDate getPreviousBusinessDay(LocalDate base) {
+		DayOfWeek day = base.getDayOfWeek();
+
+		if (day == DayOfWeek.MONDAY) {
+			return base.minusDays(3); // → 金曜日
+		} else if (day == DayOfWeek.SUNDAY) {
+			return base.minusDays(2); // → 金曜日
+		} else if (day == DayOfWeek.SATURDAY) {
+			return base.minusDays(1); // → 金曜日
+		} else {
+			return base.minusDays(1); // 平日なら前日でOK
+		}
+	}
+
 	/**
 	 * 指定された銘柄の最新のローソク足データ（前日終値付き）を取得します。
 	 *
@@ -160,7 +179,7 @@ public class StockService {
 	 */
 	public StockCandleWithPrevCloseDto getLatestStockWithPrevClose(String symbol) {
 		String interval = "1day";
-		LocalDate targetDate = LocalDate.now().minusDays(1);
+		LocalDate targetDate = getPreviousBusinessDay(LocalDate.now());
 		LocalDateTime datetime = targetDate.atStartOfDay();
 
 		Optional<StockCandle> candleOpt = stockCandleRepository
@@ -170,13 +189,13 @@ public class StockService {
 			return stockCandleConverter.fromEntity(candleOpt.get());
 		}
 
-		List<StockCandleWithPrevCloseDto> list = getStockCandleWithPrevCloseDtoList(symbol, "1day", 2);
+		List<StockCandleWithPrevCloseDto> list = getStockCandleWithPrevCloseDtoList(symbol, "1day", 100);
 
 		if (list.isEmpty()) {
 			logger.warn("symbol={} のデータが空です（前日終値付き）", symbol);
 			throw new StockApiException("最新の株価データが存在しませんでした");
 		}
-		saveStockCandles(symbol, interval, 1);
+		saveStockCandles(symbol, interval, 2);
 		return list.get(0); // 最新のデータ（リストは昇順）
 	}
 
@@ -207,61 +226,20 @@ public class StockService {
 		}
 	}
 
-	// StockCandleService.java
-	public List<StockCandle> getSavedCandles(String symbol, String interval) {
-		return stockCandleRepository.findAllBySymbolAndIntervalOrderByDatetimeDesc(symbol, interval);
-	}
-
 	/**
-	 * 指定されたパラメータを元に、SMA（単純移動平均）テクニカル指標の取得用URLを構築します。
+	 * 指定されたシンボルとインターバルに対応するローソク足データを最新のものから指定件数分取得します。
 	 *
-	 * @param symbol 株式のシンボル（例：AAPL）
-	 * @param interval データの間隔（例：1min、5min、1dayなど）
-	 * @param timePeriod 移動平均を計算する期間
-	 * @param outputsize 出力されるデータのサイズ（例：30, 500など）
-	 * @return SMAテクニカル指標を取得するためのURL文字列
+	 * @param symbol    株式のシンボル（例: AAPL）
+	 * @param interval  データの時間間隔（例: 1min、5min、1day など）
+	 * @param outputsize 取得するローソク足データの件数
+	 * @return 指定条件に一致する最新のローソク足データのリスト
 	 */
-	private String buildSMATechnicalUrl(String symbol, String interval,
-			Integer timePeriod, Integer outputsize) {
-		return UriComponentsBuilder.newInstance()
-				.scheme("https")
-				.host("api.twelvedata.com")
-				.path("sma")
-				.queryParam("symbol", symbol)
-				.queryParam("interval", interval)
-				.queryParam("time_period", timePeriod)
-				.queryParam("outputsize", outputsize)
-				.queryParam("apikey", apiKey)
-				.toUriString();
-	}
-
-	/**
-	 * SMA（単純移動平均）テクニカル指標のデータをTwelve Data APIから取得します。
-	 *
-	 * @param symbol 株式のシンボル（例：AAPL）
-	 * @param interval データの間隔（例：1min、5min、1dayなど）
-	 * @param timePeriod 移動平均を計算する期間
-	 * @param outputsize 出力されるデータのサイズ（例：30, 500など）
-	 * @return 取得したSMAテクニカル指標データ（Map形式）
-	 * @throws StockApiException API呼び出し時にエラーが発生した場合にスローされます
-	 */
-	public Map<String, Object> getSMATechnicalIndicator(String symbol, String interval,
-			int timePeriod, int outputsize) {
-		// Twelve Data APIからデータ取得
-		String url = buildSMATechnicalUrl(symbol, interval, timePeriod, outputsize);
-
-		try {
-			logger.info("Fetching stock data from API: {}", url);
-			// APIへGETリクエストを送信し、レスポンスを取得
-			ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
-
-			// JSON文字列をMap<String, Object>形式に変換して返す
-			return objectMapper.readValue(response.getBody(), new TypeReference<>() {
-			});
-		} catch (Exception e) {
-			logger.error("API取得失敗: {}", e.getMessage(), e);
-			throw new StockApiException("株価のデータの取得に失敗しました", e);
-		}
+	public List<StockCandle> getSavedCandles(String symbol, String interval, int outputsize) {
+		Pageable pageable = PageRequest.of(0, outputsize);
+		Page<StockCandle> page = stockCandleRepository.findAllBySymbolAndIntervalOrderByDatetimeDesc(symbol, interval,
+				pageable);
+		List<StockCandle> candles = page.getContent();
+		return candles;
 	}
 
 }

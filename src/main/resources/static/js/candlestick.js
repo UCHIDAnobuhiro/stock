@@ -46,7 +46,7 @@ export const renderCharts = async () => {
 		SMADatasets = SMAResults.map(sma => ({
 			type: "line",
 			label: `SMA (${sma.timeperiod})`,
-			data: sma.values.map(d => ({ x: d.datetime, y: d.sma })),
+			data: sma.values.map(d => ({ x: d.datetime, y: parseFloat(d.indicators.sma) })),
 			borderColor: chartStyleConfig.getSMAColor(sma.timeperiod),
 			borderWidth: 2,
 			pointRadius: 0,

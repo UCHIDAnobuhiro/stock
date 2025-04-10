@@ -8,36 +8,30 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "stock_candle", uniqueConstraints = {
-		@UniqueConstraint(columnNames = { "symbol", "interval_type", "datetime" })
-})
+@Table(name = "technical_indicator_value")
 @Getter
 @Setter
 @NoArgsConstructor
-public class StockCandle {
+public class TechnicalIndicatorValue {
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	private String symbol; // ← 銘柄コード（例: "AAPL"）
+	private String symbol;
 	@Column(name = "interval_type")
-	private String interval; // ← "1day", "1week", "1month" など
+	private String interval; // "1day"など
 	private LocalDateTime datetime;
 
-	private double open;
-	private double high;
-	private double low;
-	private double close;
-	private long volume;
-
-	@Column(name = "previous_close")
-	private double previousClose;
+	private String indicator; // "SMA", "BollingerBands", "Ichimoku", etc.
+	private String lineName; // "sma", "upper", "tenkan_sen", "kijun_sen"など
+	private Integer period; // 例: 5, 25, 75 など
+	private Double value;
 
 }
