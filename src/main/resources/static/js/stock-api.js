@@ -52,7 +52,7 @@ export const fetchSMAData = async () => {
 		}
 		return {
 			timeperiod: period,
-			values: json.reverse()
+			values: json
 		};
 	};
 
