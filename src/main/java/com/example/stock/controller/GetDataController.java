@@ -9,63 +9,65 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.stock.dto.StockCandleDto;
-import com.example.stock.exception.StockApiException;
+import com.example.stock.converter.StockCandleConverter;
+import com.example.stock.converter.TechnicalIndicatorConverter;
+import com.example.stock.dto.FlexibleIndicatorDto;
+import com.example.stock.dto.StockCandleWithPrevCloseDto;
+import com.example.stock.model.StockCandle;
+import com.example.stock.model.TechnicalIndicatorValue;
 import com.example.stock.service.StockService;
+import com.example.stock.service.TechnicalService;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/stocks")
+@RequiredArgsConstructor
 public class GetDataController {
 	private final StockService stockService;
-
-	public GetDataController(StockService stockService) {
-		this.stockService = stockService;
-	}
-
-	/**
-	 * 指定した銘柄と期間の株価データ（時系列）を取得します
-	 * 
-	 * 例: /api/stocks/time-series?symbol=AAPL&interval=1day
-	 *
-	 * @param symbol ティッカーシンボル(例: AAPL)
-	 * @param interval データ間隔(例: 1day, 1week 1month)
-	 * @param outputsize データ数or ロウソク足の本数 (例: 50, 100) min:1 max:5000
-	 * 
-	 * @return APIから取得した株価データのJSONマップ
-	 */
-	@GetMapping("/time-series")
-	public ResponseEntity<Map<String, Object>> getDailyStock(
-			@RequestParam String symbol,
-			@RequestParam String interval,
-			@RequestParam Integer outputsize) {
-		Map<String, Object> data = stockService.getStockTimeSeries(symbol, interval, outputsize);
-		return ResponseEntity.ok(data);
-	}
+	private final TechnicalService technicalService;
+	private final StockCandleConverter stockCandleConverter;
+	private final TechnicalIndicatorConverter technicalIndicatorConverter;
 
 	/**
-	 * chart.jsなどで利用するための、整形済みローソク足データを取得します。
+	 * データベースに保存されている株価ローソク足データを取得し、DTOに変換して返却します。
 	 * 
-	 * 例: /api/stocks/time-series/values?symbol=AAPL&interval=1day
+	 * データ件数が {@code outputsize} に満たない場合は、外部API（Twelve Data）からデータを取得して
+	 * データベースに保存した後、再度取得を試みます。
 	 *
-	 * @param symbol ティッカーシンボル(例: AAPL)
-	 * @param interval データ間隔(例: 1day, 1week 1month)
-	 * @param outputsize データ数or ロウソク足の本数 (例: 50, 100) min:1 max:5000
-	 * 
-	 * @return 形済みのローソク足リスト
+	 * @param symbol     銘柄コード（例: "AAPL"）。デフォルトは "AAPL"
+	 * @param interval   データの時間間隔（例: "1day", "1week"）。デフォルトは "1day"
+	 * @param outputsize 必要なデータ件数（例: 200）。デフォルトは 200
+	 * @return 株価ローソク足データのリスト（JSON形式で返される）
+	 *         - 正常：200 OK + データリスト
+	 *         - データが取得できない場合：404 Not Found + エラーメッセージ
 	 */
-	@GetMapping("/time-series/values")
-	public ResponseEntity<?> getFilteredTimeSeries(
-			@RequestParam String symbol,
-			@RequestParam String interval,
-			@RequestParam Integer outputsize) {
-		try {
-			List<StockCandleDto> candles = stockService.getStockCandleDtoList(symbol, interval, outputsize);
-			return ResponseEntity.ok(candles);
-		} catch (StockApiException e) {
-			return ResponseEntity.status(502).body(Map.of(
-					"error", "データ取得エラー",
-					"message", e.getMessage()));
+	@GetMapping("/list")
+	public ResponseEntity<?> getSavedCandles(
+			@RequestParam(defaultValue = "AAPL") String symbol,
+			@RequestParam(defaultValue = "1day") String interval,
+			@RequestParam(defaultValue = "200") int outputsize) {
+
+		// データベースから取得
+		List<StockCandle> candles = stockService.getSavedCandles(symbol, interval, outputsize);
+
+		// データが不足している場合はAPIから補完して再取得
+		if (candles.size() < outputsize) {
+			stockService.saveStockCandles(symbol, interval, outputsize);
+			candles = stockService.getSavedCandles(symbol, interval, outputsize);
+			if (candles.isEmpty()) {
+				return ResponseEntity.status(404).body(Map.of(
+						"error", "データなし",
+						"message", "指定された条件のデータが見つかりませんでした"));
+			}
 		}
+
+		// DTO化して返す
+		List<StockCandleWithPrevCloseDto> dtoList = candles.stream()
+				.map(candle -> stockCandleConverter.fromEntity(candle))
+				.toList();
+
+		return ResponseEntity.ok(dtoList);
 	}
 
 	/**
@@ -82,19 +84,24 @@ public class GetDataController {
 	 */
 	@GetMapping("/technical/SMA")
 	public ResponseEntity<?> getSMA(
-			@RequestParam String symbol,
-			@RequestParam String interval,
-			@RequestParam Integer timeperiod,
-			@RequestParam Integer outputsize) {
-		try {
-			Map<String, Object> smaData = stockService.getSMATechnicalIndicator(symbol, interval, timeperiod,
-					outputsize);
-			return (ResponseEntity.ok(smaData));
-		} catch (StockApiException e) {
-			return ResponseEntity.status(502).body(Map.of(
-					"error", "データ取得エラー",
-					"message", e.getMessage()));
+			@RequestParam(defaultValue = "AAPL") String symbol,
+			@RequestParam(defaultValue = "1day") String interval,
+			@RequestParam(defaultValue = "5") Integer timeperiod,
+			@RequestParam(defaultValue = "200") Integer outputsize) {
+		// データベースから取得
+		List<TechnicalIndicatorValue> sma = technicalService.getSavedSMA(symbol, interval, timeperiod, outputsize);
+		if (sma.size() < outputsize) {
+			technicalService.fetchAndSaveSMA(symbol, interval, timeperiod, outputsize);
+			sma = technicalService.getSavedSMA(symbol, interval, timeperiod, outputsize);
+			if (sma.isEmpty()) {
+				return ResponseEntity.status(404).body(Map.of(
+						"error", "データなし",
+						"message", "指定された条件のデータが見つかりませんでした"));
+			}
 		}
+		// DTOに変換して返却
+		List<FlexibleIndicatorDto> dtoList = technicalIndicatorConverter.fromEntities(sma);
+		return ResponseEntity.ok(dtoList);
 	}
 
 }

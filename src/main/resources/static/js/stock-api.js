@@ -13,7 +13,7 @@ import stockConfig from './config/stock-config.js';
  * console.log(data[0].close); // 終値を出力
  */
 export const fetchStockData = async () => {
-	const url = `/api/stocks/time-series/values?symbol=${stockConfig.symbol}&interval=${stockConfig.interval}&outputsize=${stockConfig.outputsize}`;
+	const url = `/api/stocks/list?symbol=${stockConfig.symbol}&interval=${stockConfig.interval}&outputsize=${stockConfig.outputsize}`;
 	const res = await fetch(url);
 	const json = await res.json();
 
@@ -50,9 +50,10 @@ export const fetchSMAData = async () => {
 			console.error(`SMA(${period}) API error:`, json.message);
 			return null;
 		}
-		return { 
-			timeperiod: period, 
-			values: json.values.reverse() };
+		return {
+			timeperiod: period,
+			values: json
+		};
 	};
 
 	const results = await Promise.all(timePeriods.map(fetchOne));
