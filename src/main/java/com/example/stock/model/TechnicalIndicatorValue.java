@@ -2,6 +2,7 @@ package com.example.stock.model;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -24,6 +25,7 @@ public class TechnicalIndicatorValue {
 	private Long id;
 
 	private String symbol;
+	@Column(name = "interval_type")
 	private String interval; // "1day"など
 	private LocalDateTime datetime;
 

@@ -226,7 +226,14 @@ public class StockService {
 		}
 	}
 
-	// StockCandleService.java
+	/**
+	 * 指定されたシンボルとインターバルに対応するローソク足データを最新のものから指定件数分取得します。
+	 *
+	 * @param symbol    株式のシンボル（例: AAPL）
+	 * @param interval  データの時間間隔（例: 1min、5min、1day など）
+	 * @param outputsize 取得するローソク足データの件数
+	 * @return 指定条件に一致する最新のローソク足データのリスト
+	 */
 	public List<StockCandle> getSavedCandles(String symbol, String interval, int outputsize) {
 		Pageable pageable = PageRequest.of(0, outputsize);
 		Page<StockCandle> page = stockCandleRepository.findAllBySymbolAndIntervalOrderByDatetimeDesc(symbol, interval,

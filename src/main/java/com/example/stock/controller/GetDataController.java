@@ -10,9 +10,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.stock.converter.StockCandleConverter;
+import com.example.stock.converter.TechnicalIndicatorConverter;
+import com.example.stock.dto.FlexibleIndicatorDto;
 import com.example.stock.dto.StockCandleWithPrevCloseDto;
-import com.example.stock.exception.StockApiException;
 import com.example.stock.model.StockCandle;
+import com.example.stock.model.TechnicalIndicatorValue;
 import com.example.stock.service.StockService;
 import com.example.stock.service.TechnicalService;
 
@@ -25,6 +27,7 @@ public class GetDataController {
 	private final StockService stockService;
 	private final TechnicalService technicalService;
 	private final StockCandleConverter stockCandleConverter;
+	private final TechnicalIndicatorConverter technicalIndicatorConverter;
 
 	/**
 	 * データベースに保存されている株価ローソク足データを取得し、DTOに変換して返却します。
@@ -85,15 +88,20 @@ public class GetDataController {
 			@RequestParam(defaultValue = "1day") String interval,
 			@RequestParam(defaultValue = "5") Integer timeperiod,
 			@RequestParam(defaultValue = "200") Integer outputsize) {
-		try {
-			Map<String, Object> smaData = technicalService.getSMATechnicalIndicator(symbol, interval, timeperiod,
-					outputsize);
-			return (ResponseEntity.ok(smaData));
-		} catch (StockApiException e) {
-			return ResponseEntity.status(502).body(Map.of(
-					"error", "データ取得エラー",
-					"message", e.getMessage()));
+		// データベースから取得
+		List<TechnicalIndicatorValue> sma = technicalService.getSavedSMA(symbol, interval, timeperiod, outputsize);
+		if (sma.size() < outputsize) {
+			technicalService.fetchAndSaveSMA(symbol, interval, timeperiod, outputsize);
+			sma = technicalService.getSavedSMA(symbol, interval, timeperiod, outputsize);
+			if (sma.isEmpty()) {
+				return ResponseEntity.status(404).body(Map.of(
+						"error", "データなし",
+						"message", "指定された条件のデータが見つかりませんでした"));
+			}
 		}
+		// DTOに変換して返却
+		List<FlexibleIndicatorDto> dtoList = technicalIndicatorConverter.fromEntities(sma);
+		return ResponseEntity.ok(dtoList);
 	}
 
 }

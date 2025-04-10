@@ -1,16 +1,23 @@
 package com.example.stock.service;
 
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.example.stock.converter.TechnicalIndicatorConverter;
+import com.example.stock.dto.FlexibleIndicatorDto;
 import com.example.stock.exception.StockApiException;
+import com.example.stock.model.TechnicalIndicatorValue;
+import com.example.stock.repository.TechnicalIndicatorValueRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -21,7 +28,10 @@ import lombok.RequiredArgsConstructor;
 public class TechnicalService {
 	private final RestTemplate restTemplate;
 	private final ObjectMapper objectMapper;
-	private static final Logger logger = LoggerFactory.getLogger(StockService.class);
+	private final TechnicalIndicatorConverter technicalIndicatorConverter;
+	private final TechnicalIndicatorValueRepository technicalIndicatorValueRepository;
+
+	private static final Logger logger = LoggerFactory.getLogger(TechnicalService.class);
 
 	// application.propertiesからAPIキーを読み込む。
 	@Value("${api.key}")
@@ -77,6 +87,45 @@ public class TechnicalService {
 			logger.error("API取得失敗: {}", e.getMessage(), e);
 			throw new StockApiException("株価のデータの取得に失敗しました", e);
 		}
+	}
+
+	public void fetchAndSaveSMA(String symbol, String interval, int period, int outputsize) {
+		try {
+			// 1. APIからSMAデータ取得（Map形式）
+			Map<String, Object> responseMap = getSMATechnicalIndicator(symbol, interval, period, outputsize);
+
+			// 2. Map → JSON文字列に変換
+			String json = objectMapper.writeValueAsString(responseMap);
+
+			// 3. JSON → DTOリスト
+			List<FlexibleIndicatorDto> dtoList = technicalIndicatorConverter.parseDtoFromJson(json);
+
+			// 4. DTO → Entityリスト
+			List<TechnicalIndicatorValue> entities = technicalIndicatorConverter.toEntities(symbol, interval, "SMA",
+					period, dtoList);
+
+			// 5. DB保存
+			technicalIndicatorValueRepository.saveAll(entities);
+
+		} catch (Exception e) {
+			throw new RuntimeException("SMAデータの取得または保存に失敗しました", e);
+		}
+	}
+
+	/**
+	 * 指定された条件に一致するSMAテクニカル指標データを、最新のものから指定件数分取得します。
+	 *
+	 * @param symbol    株式のシンボル（例: AAPL）
+	 * @param interval  データの時間間隔（例: 1day, 1min など）
+	 * @param period    移動平均の期間（例: 25, 75 など）
+	 * @param outputsize 取得するデータの件数
+	 * @return 指定条件に一致するSMAのリスト
+	 */
+	public List<TechnicalIndicatorValue> getSavedSMA(String symbol, String interval, int period, int outputsize) {
+		Pageable pageable = PageRequest.of(0, outputsize);
+		return technicalIndicatorValueRepository
+				.findAllBySymbolAndIntervalAndIndicatorAndLineNameAndPeriodOrderByDatetimeDesc(
+						symbol, interval, "SMA", "sma", period, pageable);
 	}
 
 }
