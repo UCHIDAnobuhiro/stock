@@ -14,6 +14,7 @@ import com.example.stock.dto.StockCandleWithPrevCloseDto;
 import com.example.stock.exception.StockApiException;
 import com.example.stock.model.StockCandle;
 import com.example.stock.service.StockService;
+import com.example.stock.service.TechnicalService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class GetDataController {
 	private final StockService stockService;
+	private final TechnicalService technicalService;
 	private final StockCandleConverter stockCandleConverter;
 
 	/**
@@ -79,12 +81,12 @@ public class GetDataController {
 	 */
 	@GetMapping("/technical/SMA")
 	public ResponseEntity<?> getSMA(
-			@RequestParam String symbol,
-			@RequestParam String interval,
-			@RequestParam Integer timeperiod,
-			@RequestParam Integer outputsize) {
+			@RequestParam(defaultValue = "AAPL") String symbol,
+			@RequestParam(defaultValue = "1day") String interval,
+			@RequestParam(defaultValue = "5") Integer timeperiod,
+			@RequestParam(defaultValue = "200") Integer outputsize) {
 		try {
-			Map<String, Object> smaData = stockService.getSMATechnicalIndicator(symbol, interval, timeperiod,
+			Map<String, Object> smaData = technicalService.getSMATechnicalIndicator(symbol, interval, timeperiod,
 					outputsize);
 			return (ResponseEntity.ok(smaData));
 		} catch (StockApiException e) {
