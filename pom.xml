@@ -12,10 +12,8 @@
 	</parent>
 
 	<groupId>com.example</groupId>
-	<artifactId>WorkTimeMg</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<name>WorkTimeMg</name>
-	<description>Demo project for Spring Boot</description>
+	<artifactId>Stock</artifactId>
+	<version>1.0.0</version>
 
 	<properties>
 		<java.version>21</java.version>
