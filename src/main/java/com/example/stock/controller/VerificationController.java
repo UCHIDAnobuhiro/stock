@@ -19,7 +19,7 @@ public class VerificationController {
 
 	@GetMapping("/verify/request")
 	public String showResendForm() {
-		return "/verify/request-form";
+		return "verify/request-form";
 	}
 
 	@PostMapping("/verify/mail")

@@ -60,7 +60,7 @@ public class MailService {
 			textBody = "以下のリンクをブラウザで開いて、認証を完了してください:\n" + link;
 			logger.info("認証メールを送信します: to={}, link={}", toEmail, link);
 		} else if (tokenType == TokenType.RESET_PASSWORD) {
-			link = "http://localhost:8080/password/reset?token=" + token;
+			link = baseURL + "/password/reset?token=" + token;
 			context.setVariable("resetPasswordLink", link);
 			htmlBody = templateEngine.process("mail/verification-password", context);
 			textBody = "以下のリンクをブラウザで開いて、パスワードの再設定を完了してください:\n" + link;

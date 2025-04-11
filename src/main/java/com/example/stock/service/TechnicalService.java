@@ -6,7 +6,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -122,7 +121,7 @@ public class TechnicalService {
 	 * @param outputsize 取得するデータの件数
 	 * @return 指定条件に一致するSMAのリスト
 	 */
-	@Cacheable(value = "smaCache", key = "#symbol + ':' + #interval + ':' + #period + ':' + #outputsize")
+	// @Cacheable(value = "smaCache", key = "#symbol + ':' + #interval + ':' + #period + ':' + #outputsize")
 	public List<TechnicalIndicatorValue> getSavedSMA(String symbol, String interval, int period, int outputsize) {
 		System.out.println(
 				"SMAデータをDBから取得中: " + symbol + ", " + interval + ", period=" + period + ", size=" + outputsize);
