@@ -14,7 +14,6 @@ import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -196,7 +195,7 @@ public class StockService {
 			logger.warn("symbol={} のデータが空です（前日終値付き）", symbol);
 			throw new StockApiException("最新の株価データが存在しませんでした");
 		}
-		saveStockCandles(symbol, interval, 2);
+		saveStockCandles(symbol, interval, 200);
 		return list.get(0); // 最新のデータ（リストは昇順）
 	}
 
@@ -235,7 +234,7 @@ public class StockService {
 	 * @param outputsize 取得するローソク足データの件数
 	 * @return 指定条件に一致する最新のローソク足データのリスト
 	 */
-	@Cacheable(value = "candlesCache", key = "#symbol + ':' + #interval + ':' + #outputsize")
+	// @Cacheable(value = "candlesCache", key = "#symbol + ':' + #interval + ':' + #outputsize")
 	public List<StockCandle> getSavedCandles(String symbol, String interval, int outputsize) {
 		System.out.println(
 				"データベースにアクセスしています... symbol=" + symbol + ", interval=" + interval + ", outputsize=" + outputsize);

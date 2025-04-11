@@ -25,7 +25,7 @@ public class ResetPasswordController {
 
 	@GetMapping("/password/request")
 	public String showPasswordRequest() {
-		return "/password/request-form";
+		return "password/request-form";
 	}
 
 	@PostMapping("/password/email")
@@ -61,7 +61,7 @@ public class ResetPasswordController {
 		model.addAttribute("form", new ResetPasswordForm()); // ← formバインディング用
 		model.addAttribute("token", token); // ← hiddenで使う
 		// 有効なトークンなのでリセット画面へ遷移
-		return "/password/reset";
+		return "password/reset";
 
 	}
 
@@ -75,14 +75,14 @@ public class ResetPasswordController {
 		// フィールドの基本バリデーション（@NotBlankなど）
 		if (bindingResult.hasErrors()) {
 			model.addAttribute("token", token); // hidden用
-			return "/password/reset";
+			return "password/reset";
 		}
 
 		// パスワード一致チェック
 		if (!form.getPassword().equals(form.getConfirmPassword())) {
 			bindingResult.rejectValue("confirmPassword", "password.mismatch", "パスワードが一致しません");
 			model.addAttribute("token", token);
-			return "/password/reset";
+			return "password/reset";
 		}
 
 		// パスワード更新処理
@@ -93,7 +93,7 @@ public class ResetPasswordController {
 			return "redirect:/login";
 		} else {
 			redirectAttributes.addFlashAttribute("error", "トークンが無効または期限切れです。");
-			return "redirect:/password/request-form";
+			return "redirect:/password/request";
 		}
 
 	}
