@@ -196,7 +196,7 @@ public class StockService {
 			logger.warn("symbol={} のデータが空です（前日終値付き）", symbol);
 			throw new StockApiException("最新の株価データが存在しませんでした");
 		}
-		saveStockCandles(symbol, interval, 2);
+		saveStockCandles(symbol, interval, 200);
 		return list.get(0); // 最新のデータ（リストは昇順）
 	}
 
