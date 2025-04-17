@@ -19,13 +19,13 @@ import com.example.stock.exception.StockApiException;
 import com.example.stock.exception.TickersException;
 import com.example.stock.model.Favorites;
 import com.example.stock.model.Tickers;
-import com.example.stock.model.UserHolding;
+import com.example.stock.model.UserStock;
 import com.example.stock.model.Users;
 import com.example.stock.security.SecurityUtils;
 import com.example.stock.service.FavoritesService;
 import com.example.stock.service.StockService;
 import com.example.stock.service.TickersService;
-import com.example.stock.service.UserHoldingService;
+import com.example.stock.service.UserStockService;
 import com.example.stock.service.UserWalletService;
 
 import lombok.RequiredArgsConstructor;
@@ -39,7 +39,7 @@ public class StockController {
 	private final StockService stockService;
 	private final SecurityUtils securityUtils;
 	private final UserWalletService userWalletService;
-	private final UserHoldingService userHoldingService;
+	private final UserStockService userHoldingService;
 
 	//stock.htmlを最初にallのtickersリストを表示
 	@GetMapping("/stock")
@@ -134,17 +134,19 @@ public class StockController {
 
 		//口座情報を取得
 		Users user = securityUtils.getLoggedInUserOrThrow();
-		BigDecimal balance = userWalletService.getWalletByUser(user).getBalance();
+		BigDecimal jpyBalance = userWalletService.getWalletByUser(user).getJpyBalance();
+		BigDecimal usdBalance = userWalletService.getWalletByUser(user).getUsdBalance();
 
 		//保有状況を取得
-		UserHolding userHolding = userHoldingService.getHoldingByUserAndTicker(user, symbol);
+		UserStock userHolding = userHoldingService.getHoldingByUserAndTicker(user, symbol);
 
 		//tickersを取得
 		Tickers ticker = tickersService.getTickersBySymbol(symbol);
 
 		model.addAttribute("stock", latest);
 		model.addAttribute("userName", user.getDisplayName());
-		model.addAttribute("balance", balance);
+		model.addAttribute("jpyBalance", jpyBalance);
+		model.addAttribute("usdBalance", usdBalance);
 		model.addAttribute("holding", userHolding);
 		model.addAttribute("ticker", ticker);
 
@@ -157,16 +159,18 @@ public class StockController {
 		//口座情報を取得
 		String symbol = "AAPL";
 		Users user = securityUtils.getLoggedInUserOrThrow();
-		BigDecimal balance = userWalletService.getWalletByUser(user).getBalance();
+		BigDecimal jpyBalance = userWalletService.getWalletByUser(user).getJpyBalance();
+		BigDecimal usdBalance = userWalletService.getWalletByUser(user).getUsdBalance();
 
 		//保有状況を取得
-		UserHolding userHolding = userHoldingService.getHoldingByUserAndTicker(user, symbol);
+		UserStock userHolding = userHoldingService.getHoldingByUserAndTicker(user, symbol);
 
 		//tickersを取得
 		Tickers ticker = tickersService.getTickersBySymbol(symbol);
 
 		model.addAttribute("userName", user.getDisplayName());
-		model.addAttribute("balance", balance);
+		model.addAttribute("jpyBalance", jpyBalance);
+		model.addAttribute("usdBalance", usdBalance);
 		model.addAttribute("holding", userHolding);
 		model.addAttribute("ticker", ticker);
 		return "order-check";

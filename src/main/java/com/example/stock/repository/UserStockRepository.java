@@ -4,10 +4,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.example.stock.model.Tickers;
-import com.example.stock.model.UserHolding;
+import com.example.stock.model.UserStock;
 import com.example.stock.model.Users;
 
 @Repository
-public interface UserHoldingRepository extends JpaRepository<UserHolding, Long> {
-	UserHolding findByUserAndTicker(Users user, Tickers ticker);
+public interface UserStockRepository extends JpaRepository<UserStock, Long> {
+	UserStock findByUserAndTicker(Users user, Tickers ticker);
 }

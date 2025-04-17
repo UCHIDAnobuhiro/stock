@@ -15,9 +15,9 @@ import jakarta.persistence.Table;
 import lombok.Data;
 
 @Entity
-@Table(name = "user_holding")
+@Table(name = "user_stock")
 @Data
-public class UserHolding {
+public class UserStock {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -33,12 +33,10 @@ public class UserHolding {
 	@Column(name = "quantity", nullable = false)
 	private BigDecimal quantity;
 
-	@Column(name = "average_price", nullable = false)
-	private BigDecimal averagePrice;
+	@Column(name = "create_at", nullable = false)
+	private LocalDateTime createAt;
 
 	@Column(name = "update_at", nullable = false)
 	private LocalDateTime updateAt;
 
-	@Column(name = "create_at", nullable = false)
-	private LocalDateTime createAt;
 }

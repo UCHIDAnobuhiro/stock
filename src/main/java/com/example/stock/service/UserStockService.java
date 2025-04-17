@@ -3,19 +3,19 @@ package com.example.stock.service;
 import org.springframework.stereotype.Service;
 
 import com.example.stock.model.Tickers;
-import com.example.stock.model.UserHolding;
+import com.example.stock.model.UserStock;
 import com.example.stock.model.Users;
-import com.example.stock.repository.UserHoldingRepository;
+import com.example.stock.repository.UserStockRepository;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class UserHoldingService {
-	private final UserHoldingRepository userHoldingRepository;
+public class UserStockService {
+	private final UserStockRepository userHoldingRepository;
 	private final TickersService tickersService;
 
-	public UserHolding getHoldingByUserAndTicker(Users user, String symbol) {
+	public UserStock getHoldingByUserAndTicker(Users user, String symbol) {
 		Tickers ticker = tickersService.getTickersBySymbol(symbol);
 		return userHoldingRepository.findByUserAndTicker(user, ticker);
 	}
