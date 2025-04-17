@@ -1,0 +1,35 @@
+name: CD
+
+on:
+    push:
+        branches: ["main"]
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: コードをチェックアウト
+              uses: actions/checkout@v4
+
+            - name: Javaをセットアップ
+              uses: actions/setup-java@v4
+              with:
+                  distribution: "temurin"
+                  java-version: "21"
+
+            - name: アプリをビルド
+              run: mvn clean package -Dspring.profiles.active=prod
+
+            - name: GCEにjarファイルをアップロード
+              run: |
+                  scp -i ${{ secrets.SSH_KEY }} -o StrictHostKeyChecking=no \
+                    target/*.jar ${{ secrets.GCE_USER }}@${{ secrets.GCE_HOST }}:/home/${{ secrets.GCE_USER }}/app.jar
+
+            - name: GCEでアプリを再起動
+              run: |
+                  ssh -i ${{ secrets.SSH_KEY }} -o StrictHostKeyChecking=no \
+                    ${{ secrets.GCE_USER }}@${{ secrets.GCE_HOST }} << 'EOF'
+                    pkill -f 'java -jar' || true
+                    nohup java -jar /home/${{ secrets.GCE_USER }}/app.jar > app.log 2>&1 &
+                  EOF
