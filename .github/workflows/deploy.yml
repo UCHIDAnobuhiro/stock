@@ -21,14 +21,19 @@ jobs:
             - name: アプリをビルド
               run: mvn clean package -DskipTests
 
+            - name: 秘密鍵を保存
+              run: |
+                  echo "${{ secrets.SSH_KEY }}" > private_key
+                  chmod 600 private_key
+
             - name: GCEにjarファイルをアップロード
               run: |
-                  scp -i ${{ secrets.SSH_KEY }} -o StrictHostKeyChecking=no \
+                  scp -i private_key -o StrictHostKeyChecking=no \
                     target/*.jar ${{ secrets.GCE_USER }}@${{ secrets.GCE_HOST }}:/home/${{ secrets.GCE_USER }}/app.jar
 
             - name: GCEでアプリを再起動
               run: |
-                  ssh -i ${{ secrets.SSH_KEY }} -o StrictHostKeyChecking=no \
+                  ssh -i private_key -o StrictHostKeyChecking=no \
                     ${{ secrets.GCE_USER }}@${{ secrets.GCE_HOST }} << 'EOF'
                     pkill -f 'java -jar' || true
                     nohup java -jar /home/${{ secrets.GCE_USER }}/app.jar > app.log 2>&1 &
