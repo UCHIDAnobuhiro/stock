@@ -2,7 +2,7 @@
 <div id="todayInformation" th:fragment="today-information-template">
 	<div class="flex flex-col">
 		<!--銘柄名＋銘柄コード-->
-		<div id="tickerNameAndCode" class="text-sm">
+		<div id="tickerNameAndCode" class="text-sm" th:text="${ticker.brand + ' (' + ticker.ticker + ')'}">
 			APPLE(AAPL)
 		</div>
 		<!--現在値-->

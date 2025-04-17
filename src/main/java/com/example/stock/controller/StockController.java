@@ -53,7 +53,9 @@ public class StockController {
 			// 銘柄の当日の情報を取得
 			String symbol = "AAPL";
 			StockCandleWithPrevCloseDto latest = stockService.getLatestStockWithPrevClose(symbol);
+			Tickers ticker = tickersService.getTickersBySymbol(symbol);
 			model.addAttribute("stock", latest);
+			model.addAttribute("ticker", ticker);
 
 			//tickersにisFavoriteを追加し、チェックボックスに使用される
 			List<TickersWithFavoriteDTO> tickersWithFavoriteDTOs = TickersDTOConverter
@@ -116,7 +118,9 @@ public class StockController {
 	public String showStockTable(@RequestParam String symbol, Model model) {
 		try {
 			StockCandleWithPrevCloseDto latest = stockService.getLatestStockWithPrevClose(symbol);
+			Tickers ticker = tickersService.getTickersBySymbol(symbol);
 			model.addAttribute("stock", latest);
+			model.addAttribute("ticker", ticker);
 			return "fragments/stock/today-information :: today-information-template";
 
 		} catch (StockApiException e) {

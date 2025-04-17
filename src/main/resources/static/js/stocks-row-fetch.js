@@ -27,7 +27,6 @@ const onRowClick = (event) => {
 		.then(res => res.text())
 		.then(html => {
 			document.getElementById('todayInformation').innerHTML = html;
-			document.getElementById('tickerNameAndCode').innerText = `${brand} (${ticker})`;
 		})
 		.catch(err =>
 			console.error('銘柄情報取得失敗:', err));
