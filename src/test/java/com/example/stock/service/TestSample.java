@@ -10,6 +10,7 @@ public class TestSample {
 		int a = 2;
 		int b = 3;
 		assertEquals(5, a + b);
+		assertEquals(6, a + b);
 	}
 
 	@Test
