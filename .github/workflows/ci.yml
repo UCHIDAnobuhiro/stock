@@ -1,0 +1,52 @@
+name: CI
+
+on:
+    pull_request:
+        branches: ["develop-main"]
+    push:
+        branches: ["develop-main"]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        services:
+            mysql:
+                image: mysql:8.0
+                env:
+                    MYSQL_DATABASE: stock
+                    MYSQL_ROOT_PASSWORD: password
+                    MYSQL_USER: testuser
+                    MYSQL_PASSWORD: testpass
+                ports:
+                    - 3306:3306
+                options: >-
+                    --health-cmd="mysqladmin ping --silent"
+                    --health-interval=10s
+                    --health-timeout=5s
+                    --health-retries=3
+
+        env:
+            DB_URL: jdbc:mysql://127.0.0.1:3306/stock
+            DB_USERNAME: testuser
+            DB_PASSWORD: testpass
+            API_KEY: ${{ secrets.API_KEY }}
+            EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
+            EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+            SPRING_PROFILE: test
+
+        steps:
+            - name: コードをチェックアウト
+              uses: actions/checkout@v4
+
+            - name: Javaをセットアップ
+              uses: actions/setup-java@v4
+              with:
+                  distribution: "temurin"
+                  java-version: "21"
+
+            - name: MySQL起動を待機
+              run: sleep 20
+
+            - name: Mavenでビルド＆テスト
+              run: mvn clean verify -B -Dspring.profiles.active=test
