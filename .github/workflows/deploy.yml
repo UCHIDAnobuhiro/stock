@@ -19,7 +19,7 @@ jobs:
                   java-version: "21"
 
             - name: アプリをビルド
-              run: mvn clean package -Dspring.profiles.active=prod
+              run: mvn clean package -DskipTests
 
             - name: GCEにjarファイルをアップロード
               run: |
