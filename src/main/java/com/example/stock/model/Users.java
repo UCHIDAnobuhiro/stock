@@ -86,6 +86,10 @@ public class Users implements UserDetails {
 		return password;
 	}
 
+	public String getDisplayName() {
+		return this.username;
+	}
+
 	@Override
 	public boolean isAccountNonExpired() {
 		return true;
