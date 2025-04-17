@@ -1,0 +1,10 @@
+<div id="order" class="flex flex-row items-end h-full ml-5 pb-2" th:fragment="order-template">
+	<form th:action="@{/stock/order}" method="get">
+		<input type="hidden" name="symbol" id="orderSymbol" value="AAPL">
+		<button type="submit" name="orderType" value="buy"
+			class="bg-gray-100 inline-flex py-2 px-5 rounded-lg items-center ml-4 
+			hover:bg-gray-200 focus:outline-none font-bold shadow-md">買い</button>
+		<button type="submit" name="orderType" value="sell"
+			class="bg-gray-100 inline-flex py-2 px-5 rounded-lg items-center ml-4 hover:bg-gray-200 focus:outline-none font-bold shadow-md">売り</button>
+	</form>
+</div>

@@ -1,5 +1,6 @@
 package com.example.stock.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.stock.converter.TickersDTOConverter;
@@ -17,11 +19,14 @@ import com.example.stock.exception.StockApiException;
 import com.example.stock.exception.TickersException;
 import com.example.stock.model.Favorites;
 import com.example.stock.model.Tickers;
+import com.example.stock.model.UserHolding;
 import com.example.stock.model.Users;
 import com.example.stock.security.SecurityUtils;
 import com.example.stock.service.FavoritesService;
 import com.example.stock.service.StockService;
 import com.example.stock.service.TickersService;
+import com.example.stock.service.UserHoldingService;
+import com.example.stock.service.UserWalletService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -33,6 +38,8 @@ public class StockController {
 	private final FavoritesService favoritesService;
 	private final StockService stockService;
 	private final SecurityUtils securityUtils;
+	private final UserWalletService userWalletService;
+	private final UserHoldingService userHoldingService;
 
 	//stock.htmlを最初にallのtickersリストを表示
 	@GetMapping("/stock")
@@ -116,6 +123,53 @@ public class StockController {
 			model.addAttribute("errorMessage", "エラーが発生しました: " + e.getMessage());
 			return "error";
 		}
+	}
+
+	@GetMapping("/stock/order")
+	public String showOrderPage(@RequestParam String orderType, @RequestParam String symbol, Model model) {
+
+		// 銘柄の当日の情報を取得
+		StockCandleWithPrevCloseDto latest = stockService.getLatestStockWithPrevClose(symbol);
+		model.addAttribute("stock", latest);
+
+		//口座情報を取得
+		Users user = securityUtils.getLoggedInUserOrThrow();
+		BigDecimal balance = userWalletService.getWalletByUser(user).getBalance();
+
+		//保有状況を取得
+		UserHolding userHolding = userHoldingService.getHoldingByUserAndTicker(user, symbol);
+
+		//tickersを取得
+		Tickers ticker = tickersService.getTickersBySymbol(symbol);
+
+		model.addAttribute("stock", latest);
+		model.addAttribute("userName", user.getDisplayName());
+		model.addAttribute("balance", balance);
+		model.addAttribute("holding", userHolding);
+		model.addAttribute("ticker", ticker);
+
+		model.addAttribute("orderType", orderType);
+		return "order";
+	}
+
+	@PostMapping("/stock/order/submit")
+	public String showOrderCheckPage(Model model) {
+		//口座情報を取得
+		String symbol = "AAPL";
+		Users user = securityUtils.getLoggedInUserOrThrow();
+		BigDecimal balance = userWalletService.getWalletByUser(user).getBalance();
+
+		//保有状況を取得
+		UserHolding userHolding = userHoldingService.getHoldingByUserAndTicker(user, symbol);
+
+		//tickersを取得
+		Tickers ticker = tickersService.getTickersBySymbol(symbol);
+
+		model.addAttribute("userName", user.getDisplayName());
+		model.addAttribute("balance", balance);
+		model.addAttribute("holding", userHolding);
+		model.addAttribute("ticker", ticker);
+		return "order-check";
 	}
 
 }
