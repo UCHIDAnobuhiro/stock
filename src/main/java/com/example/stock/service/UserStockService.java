@@ -1,5 +1,7 @@
 package com.example.stock.service;
 
+import java.math.BigDecimal;
+
 import org.springframework.stereotype.Service;
 
 import com.example.stock.model.Tickers;
@@ -12,11 +14,17 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class UserStockService {
-	private final UserStockRepository userHoldingRepository;
+	private final UserStockRepository userStockRepository;
 	private final TickersService tickersService;
 
-	public UserStock getHoldingByUserAndTicker(Users user, String symbol) {
+	public BigDecimal getStockQuantityByUserAndTicker(Users user, String symbol) {
 		Tickers ticker = tickersService.getTickersBySymbol(symbol);
-		return userHoldingRepository.findByUserAndTicker(user, ticker);
+		BigDecimal quantity = BigDecimal.ZERO;
+		UserStock userStock = userStockRepository.findByUserAndTicker(user, ticker);
+		if (userStock != null && userStock.getQuantity() != null) {
+			quantity = userStock.getQuantity();
+		}
+
+		return quantity;
 	}
 }

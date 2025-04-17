@@ -19,7 +19,6 @@ import com.example.stock.exception.StockApiException;
 import com.example.stock.exception.TickersException;
 import com.example.stock.model.Favorites;
 import com.example.stock.model.Tickers;
-import com.example.stock.model.UserStock;
 import com.example.stock.model.Users;
 import com.example.stock.security.SecurityUtils;
 import com.example.stock.service.FavoritesService;
@@ -39,7 +38,7 @@ public class StockController {
 	private final StockService stockService;
 	private final SecurityUtils securityUtils;
 	private final UserWalletService userWalletService;
-	private final UserStockService userHoldingService;
+	private final UserStockService userStockService;
 
 	//stock.htmlを最初にallのtickersリストを表示
 	@GetMapping("/stock")
@@ -142,7 +141,7 @@ public class StockController {
 		BigDecimal usdBalance = userWalletService.getWalletByUser(user).getUsdBalance();
 
 		//保有状況を取得
-		UserStock userHolding = userHoldingService.getHoldingByUserAndTicker(user, symbol);
+		BigDecimal quantity = userStockService.getStockQuantityByUserAndTicker(user, symbol);
 
 		//tickersを取得
 		Tickers ticker = tickersService.getTickersBySymbol(symbol);
@@ -151,7 +150,7 @@ public class StockController {
 		model.addAttribute("userName", user.getDisplayName());
 		model.addAttribute("jpyBalance", jpyBalance);
 		model.addAttribute("usdBalance", usdBalance);
-		model.addAttribute("holding", userHolding);
+		model.addAttribute("quantity", quantity);
 		model.addAttribute("ticker", ticker);
 
 		model.addAttribute("orderType", orderType);
@@ -167,7 +166,7 @@ public class StockController {
 		BigDecimal usdBalance = userWalletService.getWalletByUser(user).getUsdBalance();
 
 		//保有状況を取得
-		UserStock userHolding = userHoldingService.getHoldingByUserAndTicker(user, symbol);
+		BigDecimal quantity = userStockService.getStockQuantityByUserAndTicker(user, symbol);
 
 		//tickersを取得
 		Tickers ticker = tickersService.getTickersBySymbol(symbol);
@@ -175,7 +174,7 @@ public class StockController {
 		model.addAttribute("userName", user.getDisplayName());
 		model.addAttribute("jpyBalance", jpyBalance);
 		model.addAttribute("usdBalance", usdBalance);
-		model.addAttribute("holding", userHolding);
+		model.addAttribute("quantity", quantity);
 		model.addAttribute("ticker", ticker);
 		return "order-check";
 	}
