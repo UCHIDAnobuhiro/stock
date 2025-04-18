@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.stock.converter.TickersDTOConverter;
-import com.example.stock.dto.OrderPageDataDto;
 import com.example.stock.dto.StockCandleWithPrevCloseDto;
 import com.example.stock.dto.TickersWithFavoriteDTO;
 import com.example.stock.exception.StockApiException;
@@ -124,32 +123,4 @@ public class StockController {
 			return "error";
 		}
 	}
-
-	@GetMapping("/stock/order")
-	public String showOrderPage(@RequestParam String orderType, @RequestParam String symbol, Model model) {
-
-		// symbol が無効なら stock に戻す
-		if (symbol == null || symbol.trim().isEmpty()) {
-			return "stock";
-		}
-
-		// Service からまとめてデータ取得
-		OrderPageDataDto data = orderPageDataService.getOrderPageData(symbol);
-
-		if (data == null) {
-			return "stock"; // 取得に失敗したら stock ページへ
-		}
-
-		model.addAttribute("stock", data.getStock());
-		model.addAttribute("userName", data.getUser().getDisplayName());
-		model.addAttribute("jpyBalance", data.getJpyBalance());
-		model.addAttribute("usdBalance", data.getUsdBalance());
-		model.addAttribute("quantity", data.getQuantity());
-		model.addAttribute("ticker", data.getTicker());
-
-		model.addAttribute("orderType", orderType);
-
-		return "order";
-	}
-
 }
