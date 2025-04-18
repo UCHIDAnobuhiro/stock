@@ -1,5 +1,6 @@
 package com.example.stock.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,8 @@ import com.example.stock.security.SecurityUtils;
 import com.example.stock.service.FavoritesService;
 import com.example.stock.service.StockService;
 import com.example.stock.service.TickersService;
+import com.example.stock.service.UserStockService;
+import com.example.stock.service.UserWalletService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -33,6 +36,8 @@ public class StockController {
 	private final FavoritesService favoritesService;
 	private final StockService stockService;
 	private final SecurityUtils securityUtils;
+	private final UserWalletService userWalletService;
+	private final UserStockService userStockService;
 
 	//stock.htmlを最初にallのtickersリストを表示
 	@GetMapping("/stock")
@@ -46,7 +51,9 @@ public class StockController {
 			// 銘柄の当日の情報を取得
 			String symbol = "AAPL";
 			StockCandleWithPrevCloseDto latest = stockService.getLatestStockWithPrevClose(symbol);
+			Tickers ticker = tickersService.getTickersBySymbol(symbol);
 			model.addAttribute("stock", latest);
+			model.addAttribute("ticker", ticker);
 
 			//tickersにisFavoriteを追加し、チェックボックスに使用される
 			List<TickersWithFavoriteDTO> tickersWithFavoriteDTOs = TickersDTOConverter
@@ -109,13 +116,44 @@ public class StockController {
 	public String showStockTable(@RequestParam String symbol, Model model) {
 		try {
 			StockCandleWithPrevCloseDto latest = stockService.getLatestStockWithPrevClose(symbol);
+			Tickers ticker = tickersService.getTickersBySymbol(symbol);
 			model.addAttribute("stock", latest);
+			model.addAttribute("ticker", ticker);
 			return "fragments/stock/today-information :: today-information-template";
 
 		} catch (StockApiException e) {
 			model.addAttribute("errorMessage", "エラーが発生しました: " + e.getMessage());
 			return "error";
 		}
+	}
+
+	@GetMapping("/stock/order")
+	public String showOrderPage(@RequestParam String orderType, @RequestParam String symbol, Model model) {
+
+		// 銘柄の当日の情報を取得
+		StockCandleWithPrevCloseDto latest = stockService.getLatestStockWithPrevClose(symbol);
+		model.addAttribute("stock", latest);
+
+		//口座情報を取得
+		Users user = securityUtils.getLoggedInUserOrThrow();
+		BigDecimal jpyBalance = userWalletService.getWalletByUser(user).getJpyBalance();
+		BigDecimal usdBalance = userWalletService.getWalletByUser(user).getUsdBalance();
+
+		//保有状況を取得
+		BigDecimal quantity = userStockService.getStockQuantityByUserAndTicker(user, symbol);
+
+		//tickersを取得
+		Tickers ticker = tickersService.getTickersBySymbol(symbol);
+
+		model.addAttribute("stock", latest);
+		model.addAttribute("userName", user.getDisplayName());
+		model.addAttribute("jpyBalance", jpyBalance);
+		model.addAttribute("usdBalance", usdBalance);
+		model.addAttribute("quantity", quantity);
+		model.addAttribute("ticker", ticker);
+
+		model.addAttribute("orderType", orderType);
+		return "order";
 	}
 
 }

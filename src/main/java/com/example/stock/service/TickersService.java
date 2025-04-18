@@ -57,4 +57,8 @@ public class TickersService {
 		}
 		return tickersList;
 	}
+
+	public Tickers getTickersBySymbol(String symbol) {
+		return tickersRepository.findByTicker(symbol);
+	}
 }
