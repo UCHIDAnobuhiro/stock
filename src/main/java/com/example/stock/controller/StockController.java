@@ -1,6 +1,5 @@
 package com.example.stock.controller;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -12,6 +11,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.stock.converter.TickersDTOConverter;
+import com.example.stock.dto.OrderPageDataDto;
 import com.example.stock.dto.StockCandleWithPrevCloseDto;
 import com.example.stock.dto.TickersWithFavoriteDTO;
 import com.example.stock.exception.StockApiException;
@@ -21,10 +21,9 @@ import com.example.stock.model.Tickers;
 import com.example.stock.model.Users;
 import com.example.stock.security.SecurityUtils;
 import com.example.stock.service.FavoritesService;
+import com.example.stock.service.OrderPageDataService;
 import com.example.stock.service.StockService;
 import com.example.stock.service.TickersService;
-import com.example.stock.service.UserStockService;
-import com.example.stock.service.UserWalletService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,8 +35,7 @@ public class StockController {
 	private final FavoritesService favoritesService;
 	private final StockService stockService;
 	private final SecurityUtils securityUtils;
-	private final UserWalletService userWalletService;
-	private final UserStockService userStockService;
+	private final OrderPageDataService orderPageDataService;
 
 	//stock.htmlを最初にallのtickersリストを表示
 	@GetMapping("/stock")
@@ -130,29 +128,27 @@ public class StockController {
 	@GetMapping("/stock/order")
 	public String showOrderPage(@RequestParam String orderType, @RequestParam String symbol, Model model) {
 
-		// 銘柄の当日の情報を取得
-		StockCandleWithPrevCloseDto latest = stockService.getLatestStockWithPrevClose(symbol);
-		model.addAttribute("stock", latest);
+		// symbol が無効なら stock に戻す
+		if (symbol == null || symbol.trim().isEmpty()) {
+			return "stock";
+		}
 
-		//口座情報を取得
-		Users user = securityUtils.getLoggedInUserOrThrow();
-		BigDecimal jpyBalance = userWalletService.getWalletByUser(user).getJpyBalance();
-		BigDecimal usdBalance = userWalletService.getWalletByUser(user).getUsdBalance();
+		// Service からまとめてデータ取得
+		OrderPageDataDto data = orderPageDataService.getOrderPageData(symbol);
 
-		//保有状況を取得
-		BigDecimal quantity = userStockService.getStockQuantityByUserAndTicker(user, symbol);
+		if (data == null) {
+			return "stock"; // 取得に失敗したら stock ページへ
+		}
 
-		//tickersを取得
-		Tickers ticker = tickersService.getTickersBySymbol(symbol);
-
-		model.addAttribute("stock", latest);
-		model.addAttribute("userName", user.getDisplayName());
-		model.addAttribute("jpyBalance", jpyBalance);
-		model.addAttribute("usdBalance", usdBalance);
-		model.addAttribute("quantity", quantity);
-		model.addAttribute("ticker", ticker);
+		model.addAttribute("stock", data.getStock());
+		model.addAttribute("userName", data.getUser().getDisplayName());
+		model.addAttribute("jpyBalance", data.getJpyBalance());
+		model.addAttribute("usdBalance", data.getUsdBalance());
+		model.addAttribute("quantity", data.getQuantity());
+		model.addAttribute("ticker", data.getTicker());
 
 		model.addAttribute("orderType", orderType);
+
 		return "order";
 	}
 
