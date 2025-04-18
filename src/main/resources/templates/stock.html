@@ -30,7 +30,10 @@
 		<!--右側の当日情報、グラフ、出来高-->
 		<section class="text-gray-600 body-font w-2/3 px-4 pt-4 pb-6 h-full flex flex-col">
 			<!--当日情報-->
-			<div th:insert="~{fragments/stock/today-information :: today-information-template}"></div>
+			<div class="flex flex-row border-2 rounded-lg border-gray-300 border-opacity-50 flex-row pt-2 pl-3 w-full">
+				<div th:replace="~{fragments/stock/today-information :: today-information-template}"></div>
+				<div th:insert="~{fragments/order/order-button :: order-template}"></div>
+			</div>
 			<!--ローソクと出来高-->
 			<div class="flex-grow" th:insert="~{fragments/stock/graph-volume-show :: graph-volume-show-template}"></div>
 		</section>

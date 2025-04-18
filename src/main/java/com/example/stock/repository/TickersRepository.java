@@ -11,4 +11,6 @@ public interface TickersRepository extends JpaRepository<Tickers, Long> {
 	List<Tickers> findAll();
 
 	Optional<Tickers> findById(Long id);
+
+	Tickers findByTicker(String ticker);
 }
