@@ -15,8 +15,14 @@ import com.google.cloud.vision.v1.Image;
 import com.google.cloud.vision.v1.ImageAnnotatorClient;
 import com.google.protobuf.ByteString;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class LogoDetectionService {
+
+	private final ImageAnnotatorClient visionClient;
+
 	// ファイルアップロードのvalidation
 	public String validateImageFile(MultipartFile file) {
 		if (file.isEmpty()) {
@@ -33,9 +39,10 @@ public class LogoDetectionService {
 			return "ファイルサイズは2MB以内にしてください。";
 		}
 
-		return null; // エラーなし
+		return null;
 	}
 
+	// Vision APIを使って、画像から企業ロゴを検出し、信頼度付きのロゴ情報を返す
 	public List<String> detectLogos(MultipartFile file) throws Exception {
 		List<String> logos = new ArrayList<>();
 
@@ -51,18 +58,17 @@ public class LogoDetectionService {
 				.setImage(img)
 				.build();
 
-		// Vision API クライアントを作成し、画像解析を実行
-		try (ImageAnnotatorClient client = ImageAnnotatorClient.create()) {
-			List<AnnotateImageResponse> responses = client.batchAnnotateImages(Collections.singletonList(request))
-					.getResponsesList();
+		// Vision APIにリクエストを送信し、レスポンス（検出結果）を取得
+		List<AnnotateImageResponse> responses = visionClient
+				.batchAnnotateImages(Collections.singletonList(request))
+				.getResponsesList();
 
-			// 結果からロゴ情報を取り出してリストに追加
-			for (AnnotateImageResponse res : responses) {
-				for (EntityAnnotation annotation : res.getLogoAnnotationsList()) {
-					String company = annotation.getDescription();
-					double score = annotation.getScore();
-					logos.add(company + "（信頼度：" + String.format("%.2f", score) + "）");
-				}
+		// 結果からロゴ情報を取り出してリストに追加
+		for (AnnotateImageResponse res : responses) {
+			for (EntityAnnotation annotation : res.getLogoAnnotationsList()) {
+				String company = annotation.getDescription();
+				double score = annotation.getScore();
+				logos.add(company + "（信頼度：" + String.format("%.2f", score) + "）");
 			}
 		}
 
