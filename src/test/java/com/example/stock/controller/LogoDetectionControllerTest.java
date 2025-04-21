@@ -30,7 +30,7 @@ public class LogoDetectionControllerTest {
 
 	}
 
-	// TC8: GETリクエストフォームが表示される
+	// F-001-TC8: GETリクエストフォームが表示される
 	@Test
 	void testShowForm_returnsUploadPage() throws Exception {
 		mockMvc.perform(MockMvcRequestBuilders.get("/logo/detect")
@@ -39,7 +39,7 @@ public class LogoDetectionControllerTest {
 				.andExpect(view().name("logo/upload"));
 	}
 
-	// TC9: エラーメッセージの表示
+	// F-001-TC9: エラーメッセージの表示
 	@Test
 	void testDetect_withUnsupportedFileType_setsMimeTypeErrorMessag() throws Exception {
 		MockMultipartFile emptyFile = new MockMultipartFile("file", "test.pdf", "application/pdf",
