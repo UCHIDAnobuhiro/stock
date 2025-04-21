@@ -1,8 +1,10 @@
 package com.example.stock.service;
 
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -44,7 +46,7 @@ public class LogoDetectionService {
 
 	// Vision APIを使って、画像から企業ロゴを検出し、信頼度付きのロゴ情報を返す
 	public List<String> detectLogos(MultipartFile file) throws Exception {
-		List<String> logos = new ArrayList<>();
+		Map<String, Float> logoMap = new HashMap<>();
 
 		// アップロードされた画像ファイルの中身をバイナリデータ（ByteString）として読み込む
 		ByteString imgBytes = ByteString.readFrom(file.getInputStream());
@@ -65,13 +67,33 @@ public class LogoDetectionService {
 
 		// 結果からロゴ情報を取り出してリストに追加
 		for (AnnotateImageResponse res : responses) {
+			if (res.hasError()) {
+				// Vision APIのエラーハンドリング
+				throw new RuntimeException("Vision API error:" + res.getError().getMessage());
+			}
+
+			List<EntityAnnotation> annotations = res.getLogoAnnotationsList();
+			if (annotations.isEmpty()) {
+				return List.of("ロゴが検出されませんでした");
+			}
 			for (EntityAnnotation annotation : res.getLogoAnnotationsList()) {
 				String company = annotation.getDescription();
 				double score = annotation.getScore();
-				logos.add(company + "（信頼度：" + String.format("%.2f", score) + "）");
+
+				if (score >= 0.5f) {
+					logoMap.merge(company, (float) score, Math::max);
+				}
 			}
+
 		}
 
-		return logos;
+		if (logoMap.isEmpty()) {
+			return List.of("ロゴが検出されませんでした");
+		}
+
+		return logoMap.entrySet().stream()
+				.sorted((e1, e2) -> Float.compare(e2.getValue(), e1.getValue()))
+				.map(e -> e.getKey() + "（信頼度：" + Math.round(e.getValue() * 100) + "％）")
+				.collect(Collectors.toList());
 	}
 }
