@@ -26,10 +26,10 @@ public class UserWallet {
 	@JoinColumn(name = "user_id", nullable = false) // Usersテーブルのidを参照する外部キー
 	private Users user; // `Users`エンティティとの関連付け
 
-	@Column(name = "jpy_balance", nullable = false)
+	@Column(name = "jpy_balance", precision = 18, scale = 2, nullable = false)
 	private BigDecimal jpyBalance;
 
-	@Column(name = "usd_balance", nullable = false)
+	@Column(name = "usd_balance", precision = 18, scale = 2, nullable = false)
 	private BigDecimal usdBalance;
 
 	@Column(name = "create_at", nullable = false)

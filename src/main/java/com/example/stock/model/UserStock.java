@@ -30,7 +30,7 @@ public class UserStock {
 	@JoinColumn(name = "ticker_id", nullable = false) // Usersテーブルのidを参照する外部キー
 	private Tickers ticker; // `Users`エンティティとの関連付け
 
-	@Column(name = "quantity", nullable = false)
+	@Column(name = "quantity", precision = 18, scale = 2, nullable = false)
 	private BigDecimal quantity;
 
 	@Column(name = "create_at", nullable = false)
