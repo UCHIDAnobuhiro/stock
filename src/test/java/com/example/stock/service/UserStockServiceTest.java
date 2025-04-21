@@ -100,6 +100,11 @@ public class UserStockServiceTest {
 		testTicker2.setTicker("GOOG");
 		testTicker2.setBrand("Google LLC");
 		tickersRepository.save(testTicker2);
+		System.out.println("AAAAAAAAAAAAtestTicker ID: " + testTicker.getId());
+		System.out.println("AAAAAAAAAAAAtestTicker2 ID: " + testTicker2.getId());
+		System.out.println("AAAAAAAAAAAAtestUser ID: " + testUser.getId());
+		System.out.println("AAAAAAAAAAAAtestUser2 ID: " + testUser2.getId());
+
 	}
 
 	/**
