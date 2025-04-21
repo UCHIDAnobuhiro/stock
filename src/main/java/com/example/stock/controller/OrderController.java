@@ -1,5 +1,7 @@
 package com.example.stock.controller;
 
+import java.lang.reflect.Field;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,16 +21,18 @@ public class OrderController {
 	@GetMapping("/stock/order")
 	public String showOrderPage(@RequestParam String orderType, @RequestParam String symbol, Model model) {
 
-		// symbol が無効なら stock に戻す
-		if (symbol == null || symbol.trim().isEmpty()) {
-			return "stock";
-		}
-
 		// Service からまとめてデータ取得
 		OrderPageDataDto data = orderPageDataService.getOrderPageData(symbol);
 
-		if (data == null) {
-			return "stock"; // 取得に失敗したら stock ページへ
+		//accountデータ取得失敗の時
+		if (data == null || hasNullField(data)) {
+			if (data != null) {
+				if (data.getTicker() != null)
+					model.addAttribute("ticker", data.getTicker());
+				if (data.getStock() != null)
+					model.addAttribute("stock", data.getStock());
+			}
+			return "stock";
 		}
 
 		model.addAttribute("stock", data.getStock());
@@ -41,6 +45,21 @@ public class OrderController {
 		model.addAttribute("orderType", orderType);
 
 		return "order";
+	}
+
+	private boolean hasNullField(Object dto) {
+		try {
+			for (Field field : dto.getClass().getDeclaredFields()) {
+				field.setAccessible(true);
+				Object value = field.get(dto);
+				if (value == null) {
+					return true;
+				}
+			}
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		}
+		return false;
 	}
 
 }
