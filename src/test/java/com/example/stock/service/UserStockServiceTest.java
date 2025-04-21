@@ -5,9 +5,6 @@ import static org.assertj.core.api.Assertions.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,9 +43,6 @@ public class UserStockServiceTest {
 	private Tickers testTicker;
 	private Tickers testTicker2;
 
-	@PersistenceContext
-	private EntityManager em;
-
 	/**
 	 * 各テスト実行前に必要なユーザーと銘柄データを用意する。
 	 */
@@ -59,15 +53,8 @@ public class UserStockServiceTest {
 		tickersRepository.deleteAll();
 		usersRepository.deleteAll();
 
-		em.createNativeQuery("SET FOREIGN_KEY_CHECKS = 0").executeUpdate();
-		em.createNativeQuery("TRUNCATE TABLE user_stock").executeUpdate();
-		em.createNativeQuery("TRUNCATE TABLE users").executeUpdate();
-		em.createNativeQuery("TRUNCATE TABLE tickers").executeUpdate();
-		em.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1").executeUpdate();
-
 		// ユーザー作成
 		testUser = new Users();
-		//		testUser.setId(1L);
 		testUser.setUsername("株式太郎");
 		testUser.setEmail("stockuser@example.com");
 		testUser.setPassword("$2a$10$hBrJiyk7dArR3hGR7bvu5.oYKlK6O506lRvqdl8WTIvu1bxV22EJy");
@@ -80,7 +67,6 @@ public class UserStockServiceTest {
 		usersRepository.save(testUser);
 
 		testUser2 = new Users();
-		//		testUser2.setId(2L);
 		testUser2.setUsername("株式太郎");
 		testUser2.setEmail("stockuser2@example.com");
 		testUser2.setPassword("$2a$10$hBrJiyk7dArR3hGR7bvu5.oYKlK6O506lRvqdl8WTIvu1bxV22EJy");
@@ -95,20 +81,13 @@ public class UserStockServiceTest {
 		// 銘柄作成（例: Apple の株）
 		testTicker = new Tickers();
 		testTicker.setTicker("AAPL");
-		//		testTicker.setId(1L);
 		testTicker.setBrand("Apple Inc.");
 		tickersRepository.save(testTicker);
 
 		testTicker2 = new Tickers();
 		testTicker2.setTicker("GOOG");
 		testTicker2.setBrand("Google LLC");
-		//		testTicker2.setId(2L);
 		tickersRepository.save(testTicker2);
-		System.out.println("AAAAAAAAAAAAtestTicker ID: " + testTicker.getId());
-		System.out.println("AAAAAAAAAAAAtestTicker2 ID: " + testTicker2.getId());
-		System.out.println("AAAAAAAAAAAAtestUser ID: " + testUser.getId());
-		System.out.println("AAAAAAAAAAAAtestUser2 ID: " + testUser2.getId());
-
 	}
 
 	/**
