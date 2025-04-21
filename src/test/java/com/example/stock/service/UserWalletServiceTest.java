@@ -203,7 +203,7 @@ public class UserWalletServiceTest {
 		UserWallet wallet = new UserWallet();
 		wallet.setUser(testUser);
 		wallet.setJpyBalance(new BigDecimal("10000000000000000.01")); // 超限
-		wallet.setUsdBalance(BigDecimal.TEN);
+		wallet.setUsdBalance(new BigDecimal("10000000000000000.01")); // 超限
 		wallet.setCreateAt(LocalDateTime.now());
 		wallet.setUpdateAt(LocalDateTime.now());
 
@@ -222,7 +222,7 @@ public class UserWalletServiceTest {
 		UserWallet wallet = new UserWallet();
 		wallet.setUser(testUser);
 		wallet.setJpyBalance(new BigDecimal("0.009")); // 小数第3位
-		wallet.setUsdBalance(BigDecimal.TEN);
+		wallet.setUsdBalance(new BigDecimal("0.009")); // 小数第3位
 		wallet.setCreateAt(LocalDateTime.now());
 		wallet.setUpdateAt(LocalDateTime.now());
 
@@ -241,7 +241,7 @@ public class UserWalletServiceTest {
 		UserWallet wallet = new UserWallet();
 		wallet.setUser(testUser);
 		wallet.setJpyBalance(new BigDecimal("-9999999999999999.99"));
-		wallet.setUsdBalance(BigDecimal.ZERO);
+		wallet.setUsdBalance(new BigDecimal("-9999999999999999.99"));
 		wallet.setCreateAt(LocalDateTime.now());
 		wallet.setUpdateAt(LocalDateTime.now());
 
@@ -249,6 +249,7 @@ public class UserWalletServiceTest {
 		UserWallet result = userWalletService.getWalletByUser(testUser);
 
 		assertThat(result.getJpyBalance()).isEqualTo(new BigDecimal("-9999999999999999.99"));
+		assertThat(result.getUsdBalance()).isEqualTo(new BigDecimal("-9999999999999999.99"));
 	}
 
 	/**
@@ -259,7 +260,7 @@ public class UserWalletServiceTest {
 		UserWallet wallet = new UserWallet();
 		wallet.setUser(testUser);
 		wallet.setJpyBalance(new BigDecimal("-10000000000000000.00"));
-		wallet.setUsdBalance(BigDecimal.ZERO);
+		wallet.setUsdBalance(new BigDecimal("-10000000000000000.00"));
 		wallet.setCreateAt(LocalDateTime.now());
 		wallet.setUpdateAt(LocalDateTime.now());
 
