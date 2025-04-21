@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,15 +46,24 @@ public class UserStockServiceTest {
 	private Tickers testTicker;
 	private Tickers testTicker2;
 
+	@PersistenceContext
+	private EntityManager em;
+
 	/**
 	 * 各テスト実行前に必要なユーザーと銘柄データを用意する。
 	 */
 	@BeforeEach
 	void setup() {
 		//重複防止のためデータベースをリセット
-		userStockRepository.deleteAll();
-		tickersRepository.deleteAll();
-		usersRepository.deleteAll();
+		//		userStockRepository.deleteAll();
+		//		tickersRepository.deleteAll();
+		//		usersRepository.deleteAll();
+
+		em.createNativeQuery("SET FOREIGN_KEY_CHECKS = 0").executeUpdate();
+		em.createNativeQuery("TRUNCATE TABLE user_stock").executeUpdate();
+		em.createNativeQuery("TRUNCATE TABLE users").executeUpdate();
+		em.createNativeQuery("TRUNCATE TABLE tickers").executeUpdate();
+		em.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1").executeUpdate();
 
 		// ユーザー作成
 		testUser = new Users();
