@@ -2,6 +2,7 @@ package com.example.stock.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -51,6 +52,7 @@ public class UserWalletService {
 	 * @return 作成されたウォレットエンティティ
 	 */
 	public UserWallet createWalletForUser(Users user) {
+		Objects.requireNonNull(user, "ユーザーがnullです。ウォレットを作成できません。");
 		UserWallet wallet = new UserWallet();
 		wallet.setUser(user);
 		wallet.setJpyBalance(BigDecimal.ZERO); // 初期JPY残高
