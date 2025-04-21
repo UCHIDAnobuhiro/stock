@@ -68,7 +68,7 @@ public class UserStockServiceTest {
 
 		testUser2 = new Users();
 		testUser2.setUsername("株式太郎");
-		testUser2.setEmail("stockuser@example.com");
+		testUser2.setEmail("stockuser2@example.com");
 		testUser2.setPassword("$2a$10$hBrJiyk7dArR3hGR7bvu5.oYKlK6O506lRvqdl8WTIvu1bxV22EJy");
 		testUser2.setCreateAt(LocalDateTime.now());
 		testUser2.setUpdateAt(LocalDateTime.now());
