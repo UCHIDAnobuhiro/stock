@@ -37,12 +37,22 @@ import okhttp3.Response;
 public class LogoDetectionService {
 
 	private final ImageAnnotatorClient visionClient;
+	private final PromptLoader loader;
+	private final OkHttpClient client;
 
 	@Value("${gemini.api.url}")
 	private String geminiApiUrl;
 
 	@Value("${gemini.api.key}")
 	private String geminiApiKey;
+
+	public void setGeminiApiUrl(String geminiApiUrl) {
+		this.geminiApiUrl = geminiApiUrl;
+	}
+
+	public void setGeminiApiKey(String geminiApiKey) {
+		this.geminiApiKey = geminiApiKey;
+	}
 
 	// ファイルアップロードのvalidation
 	public String validateImageFile(MultipartFile file) {
@@ -117,13 +127,10 @@ public class LogoDetectionService {
 	}
 
 	public String summarizeWithGemini(String visionJson) throws IOException {
-		OkHttpClient client = new OkHttpClient();
-
 		// Gemini API エンドポイント
 		String url = geminiApiUrl + geminiApiKey;
 
 		// Geminiに渡すプロンプト
-		PromptLoader loader = new PromptLoader();
 		String prompt = loader.loadPrompt(PromptType.MARKDOWN, visionJson);
 
 		// Gemini用のJSONリクエストボディ
