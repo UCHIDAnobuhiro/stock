@@ -3,7 +3,6 @@ package com.example.stock.controller;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,9 +20,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class LogoDetectionController {
 	private final LogoDetectionService logoDetectionService;
-
-	@Value("${gemini.api.key}")
-	private String geminiApiKey;
 
 	@GetMapping("/detect")
 	public String showForm() {
