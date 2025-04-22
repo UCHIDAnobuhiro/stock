@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class PromptLoader {
 	public String loadPrompt(PromptType type, String visionJson) throws IOException {
 		String filename = switch (type) {
