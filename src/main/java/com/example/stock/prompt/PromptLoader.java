@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-import org.json.JSONObject;
-
 public class PromptLoader {
 	public String loadPrompt(PromptType type, String visionJson) throws IOException {
 		String filename = switch (type) {
@@ -31,7 +29,7 @@ public class PromptLoader {
 				throw new IOException("テンプレートが見つかりません");
 			}
 			String rawJson = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-			return rawJson.replace("{{PROMPT}}", JSONObject.quote(prompt));
+			return rawJson.replace("{{PROMPT}}", prompt);
 		}
 	}
 

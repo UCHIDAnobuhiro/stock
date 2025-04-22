@@ -127,17 +127,8 @@ public class LogoDetectionService {
 		String prompt = loader.loadPrompt(PromptType.MARKDOWN, visionJson);
 
 		// Gemini用のJSONリクエストボディ
-		String requestBody = """
-				{
-				  "contents": [
-				    {
-				      "parts": [
-				        { "text": %s }
-				      ]
-				    }
-				  ]
-				}
-				""".formatted(JSONObject.quote(prompt));
+		String requestBody = loader.loadRequestJson(prompt);
+		System.out.println("Geminiリクエストボディ:\n" + requestBody);
 
 		Request request = new Request.Builder()
 				.url(url)
