@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import java.math.BigDecimal;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -61,12 +62,10 @@ class OrderPageDataServiceTest {
 		wallet.setJpyBalance(new BigDecimal("1000"));
 		wallet.setUsdBalance(new BigDecimal("100"));
 
-		stock = new StockCandleWithPrevCloseDto(); // 内容は簡略化
+		stock = new StockCandleWithPrevCloseDto();
 	}
 
-	/**
-	 * 正常に全ての情報が取得できた場合、DTO が正しく返されるかを検証
-	 */
+	@DisplayName("T-201: 正常時にDTOを正しく返す")
 	@Test
 	void testGetOrderPageData_allValid_returnsDto() {
 		when(securityUtils.getLoggedInUserOrThrow()).thenReturn(user);
@@ -87,18 +86,14 @@ class OrderPageDataServiceTest {
 		assertThat(result.getQuantity()).isEqualTo(new BigDecimal("50.25"));
 	}
 
-	/**
-	 * symbol が空文字のとき、null を返す
-	 */
+	@DisplayName("T-202: symbolが空のときnullを返す")
 	@Test
 	void testGetOrderPageData_symbolEmpty_returnsNull() {
 		OrderPageDataDto result = orderPageDataService.getOrderPageData(" ");
 		assertNull(result);
 	}
 
-	/**
-	 * Ticker が見つからなかった場合、null を返す
-	 */
+	@DisplayName("T-203: tickerがnullのときnullを返す")
 	@Test
 	void testGetOrderPageData_tickerNotFound_returnsNull() {
 		when(securityUtils.getLoggedInUserOrThrow()).thenReturn(user);
@@ -108,9 +103,7 @@ class OrderPageDataServiceTest {
 		assertNull(result);
 	}
 
-	/**
-	 * Stock 情報が取得できなかった場合、null を返す
-	 */
+	@DisplayName("T-204: stockがnullのときnullを返す")
 	@Test
 	void testGetOrderPageData_stockNotFound_returnsNull() {
 		when(securityUtils.getLoggedInUserOrThrow()).thenReturn(user);
@@ -121,9 +114,7 @@ class OrderPageDataServiceTest {
 		assertNull(result);
 	}
 
-	/**
-	 * Wallet が取得できなかった場合、null を返す
-	 */
+	@DisplayName("T-205: walletがnullのときnullを返す")
 	@Test
 	void testGetOrderPageData_walletNotFound_returnsNull() {
 		when(securityUtils.getLoggedInUserOrThrow()).thenReturn(user);
@@ -135,9 +126,7 @@ class OrderPageDataServiceTest {
 		assertNull(result);
 	}
 
-	/**
-	 * quantity が null の場合、0 に変換されて返される
-	 */
+	@DisplayName("T-206: quantityがnullのとき0に置き換えられる")
 	@Test
 	void testGetOrderPageData_quantityNull_shouldReturnZero() {
 		when(securityUtils.getLoggedInUserOrThrow()).thenReturn(user);

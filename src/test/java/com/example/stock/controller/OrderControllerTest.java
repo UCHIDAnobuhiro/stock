@@ -1,5 +1,7 @@
 package com.example.stock.controller;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -7,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.math.BigDecimal;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -31,9 +34,7 @@ public class OrderControllerTest {
 	@MockBean
 	private OrderPageDataService orderPageDataService;
 
-	/**
-	 * OrderPageDataDto が null の場合、stock ページへリダイレクト
-	 */
+	@DisplayName("T-301: OrderPageDataDtoがnullまたは不完全な場合、「stock」ページを返す")
 	@Test
 	void testShowOrderPage_serviceReturnsNull_returnsStockView() throws Exception {
 		Tickers ticker = new Tickers();
@@ -41,29 +42,23 @@ public class OrderControllerTest {
 		ticker.setTicker("AAPL");
 
 		StockCandleWithPrevCloseDto stock = new StockCandleWithPrevCloseDto(
-				"AAPL", // symbol
-				"1day", // interval
-				"2025-04-09 00:00:00", // datetime
-				170.00, // open
-				175.00, // high
-				169.50, // low
-				172.42, // close
-				184067400L, // volume
-				171.95 // prevClose
-		);
+				"AAPL", "1day", "2025-04-09 00:00:00",
+				170.00, 175.00, 169.50, 172.42, 184067400L, 171.95);
 
 		OrderPageDataDto dto = new OrderPageDataDto(null, ticker, stock, null, null, null);
 		when(orderPageDataService.getOrderPageData("AAPL")).thenReturn(dto);
+
 		mockMvc.perform(MockMvcRequestBuilders.get("/stock/order")
 				.with(user("testuser").roles("USER"))
 				.param("orderType", "buy")
 				.param("symbol", "AAPL"))
-				.andExpect(status().isOk());
+				.andExpect(status().isOk())
+				.andExpect(view().name("stock"))
+				.andExpect(model().attributeExists("ticker"))
+				.andExpect(model().attributeExists("stock"));
 	}
 
-	/**
-	 * 正常なデータが返る場合、order ページを返す
-	 */
+	@DisplayName("T-302: 正常なOrderPageDataDtoが返る場合、「order」ページを返す")
 	@Test
 	void testShowOrderPage_successful_returnsOrderView() throws Exception {
 		Users user = new Users();
@@ -88,12 +83,12 @@ public class OrderControllerTest {
 				.param("symbol", "AAPL"))
 				.andExpect(status().isOk())
 				.andExpect(view().name("order"))
-				.andExpect(model().attributeExists("stock"))
-				.andExpect(model().attributeExists("userName"))
-				.andExpect(model().attributeExists("jpyBalance"))
-				.andExpect(model().attributeExists("usdBalance"))
-				.andExpect(model().attributeExists("quantity"))
-				.andExpect(model().attributeExists("ticker"))
-				.andExpect(model().attribute("orderType", "buy"));
+				.andExpect(model().attributeExists("data"))
+				.andExpect(model().attribute("data", hasProperty("user", hasProperty("displayName", is("テスト太郎")))))
+				.andExpect(model().attribute("data", hasProperty("ticker", hasProperty("ticker", is("AAPL")))))
+				.andExpect(model().attribute("data", hasProperty("jpyBalance", is(new BigDecimal("1000")))))
+				.andExpect(model().attribute("data", hasProperty("usdBalance", is(new BigDecimal("500")))))
+				.andExpect(model().attribute("data", hasProperty("quantity", is(new BigDecimal("20")))))
+				.andExpect(model().attribute("orderType", is("buy")));
 	}
 }

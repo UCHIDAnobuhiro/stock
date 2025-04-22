@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,10 +19,6 @@ import com.example.stock.repository.TickersRepository;
 import com.example.stock.repository.UserStockRepository;
 import com.example.stock.repository.UsersRepository;
 
-/**
- * UserStockService の単体テスト。
- * ユーザーが保有する銘柄（株式）の数量を正しく取得できるかを検証する。
- */
 @SpringBootTest
 @Transactional
 public class UserStockServiceTest {
@@ -43,17 +40,12 @@ public class UserStockServiceTest {
 	private Tickers testTicker;
 	private Tickers testTicker2;
 
-	/**
-	 * 各テスト実行前に必要なユーザーと銘柄データを用意する。
-	 */
 	@BeforeEach
 	void setup() {
-		//重複防止のためデータベースをリセット
 		userStockRepository.deleteAll();
 		tickersRepository.deleteAll();
 		usersRepository.deleteAll();
 
-		// ユーザー作成
 		testUser = new Users();
 		testUser.setUsername("株式太郎");
 		testUser.setEmail("stockuser@example.com");
@@ -78,7 +70,6 @@ public class UserStockServiceTest {
 		testUser2.setLockTime(null);
 		usersRepository.save(testUser2);
 
-		// 銘柄作成（例: Apple の株）
 		testTicker = new Tickers();
 		testTicker.setTicker("AAPL");
 		testTicker.setBrand("Apple Inc.");
@@ -90,9 +81,6 @@ public class UserStockServiceTest {
 		tickersRepository.save(testTicker2);
 	}
 
-	/**
-	 * createAt / updateAt をセットした UserStock を生成する共通メソッド
-	 */
 	private UserStock buildStock(Users user, Tickers ticker, BigDecimal quantity) {
 		UserStock stock = new UserStock();
 		stock.setUser(user);
@@ -103,18 +91,14 @@ public class UserStockServiceTest {
 		return stock;
 	}
 
-	/**
-	 * T-101ユーザーが株式を保有していない場合、数量0が返るかテスト
-	 */
+	@DisplayName("T-101: ユーザーが株式を保有していない場合、数量0が返る")
 	@Test
 	void testGetStockQuantity_returnsZeroIfNoStock() {
 		BigDecimal quantity = userStockService.getStockQuantityByUserAndTicker(testUser, testTicker.getTicker());
 		assertThat(quantity).isEqualTo(BigDecimal.ZERO);
 	}
 
-	/**
-	 * T-102ユーザーが株式を保有している場合、その正しい数量が返るかテスト
-	 */
+	@DisplayName("T-102: ユーザーが株式を保有している場合、正しい数量が返る")
 	@Test
 	void testGetStockQuantity_returnsCorrectQuantity() {
 		userStockRepository.save(buildStock(testUser, testTicker, new BigDecimal("42.75")));
@@ -122,18 +106,14 @@ public class UserStockServiceTest {
 		assertThat(quantity).isEqualTo(new BigDecimal("42.75"));
 	}
 
-	/**
-	 * T-103存在しない ticker シンボルを指定した場合0が返す。
-	 */
+	@DisplayName("T-103: 存在しない ticker シンボルを指定した場合、数量0が返る")
 	@Test
 	void testGetStockQuantity_withInvalidSymbol_shouldThrowOrReturnZero() {
 		BigDecimal quantity = userStockService.getStockQuantityByUserAndTicker(testUser, "INVALID");
 		assertThat(quantity).isEqualTo(BigDecimal.ZERO);
 	}
 
-	/**
-	 * T-104最大数量（DECIMAL(18,2)）のテスト：9999999999999999.99を扱えるか確認
-	 */
+	@DisplayName("T-104: 最大数量（9999999999999999.99）が正しく処理できる")
 	@Test
 	void testGetStockQuantity_withMaxValue() {
 		userStockRepository.save(buildStock(testUser, testTicker, new BigDecimal("9999999999999999.99")));
@@ -141,9 +121,7 @@ public class UserStockServiceTest {
 		assertThat(quantity).isEqualTo(new BigDecimal("9999999999999999.99"));
 	}
 
-	/**
-	 * T-105最小有効数量（0.01）を扱えるか確認
-	 */
+	@DisplayName("T-105: 最小有効数量（0.01）を正しく処理できる")
 	@Test
 	void testGetStockQuantity_withMinPositiveValue() {
 		userStockRepository.save(buildStock(testUser, testTicker, new BigDecimal("0.01")));
@@ -151,9 +129,7 @@ public class UserStockServiceTest {
 		assertThat(quantity).isEqualTo(new BigDecimal("0.01"));
 	}
 
-	/**
-	 * T-106負の数量を許容する（現状ルールでは許可されている）
-	 */
+	@DisplayName("T-106: 負の数量も処理できる（ルール上許可）")
 	@Test
 	void testGetStockQuantity_withNegativeQuantity() {
 		userStockRepository.save(buildStock(testUser, testTicker, new BigDecimal("-50")));
@@ -161,9 +137,7 @@ public class UserStockServiceTest {
 		assertThat(quantity).isEqualTo(new BigDecimal("-50"));
 	}
 
-	/**
-	 * T-107複数のユーザーが同じ銘柄を保有しても干渉しないことを確認
-	 */
+	@DisplayName("T-107: 複数ユーザーが同じ銘柄を保有していても正しく分離される")
 	@Test
 	void testGetStockQuantity_multiUserSeparation() {
 		userStockRepository.save(buildStock(testUser, testTicker, new BigDecimal("100")));
@@ -176,9 +150,7 @@ public class UserStockServiceTest {
 		assertThat(bQuantity).isEqualTo(new BigDecimal("200"));
 	}
 
-	/**
-	 * T-108ユーザーが複数の銘柄を持っていても、個別に数量を取得できることをテスト
-	 */
+	@DisplayName("T-108: ユーザーが複数銘柄を保有していても個別に数量を取得できる")
 	@Test
 	void testGetStockQuantity_multiTickerSeparation() {
 		userStockRepository.save(buildStock(testUser, testTicker, new BigDecimal("10"))); // AAPL
@@ -189,5 +161,32 @@ public class UserStockServiceTest {
 
 		assertThat(quantityAAPL).isEqualTo(new BigDecimal("10"));
 		assertThat(quantityGOOG).isEqualTo(new BigDecimal("5"));
+	}
+
+	@DisplayName("T-109: DECIMAL(18,2) を超える数量は保存されない")
+	@Test
+	void testGetStockQuantity_overMaxDecimal_shouldFail() {
+		BigDecimal overLimit = new BigDecimal("100000000000000000.00");
+		UserStock stock = buildStock(testUser, testTicker, overLimit);
+
+		try {
+			userStockRepository.save(stock);
+			fail("例外が発生しないのは想定外です");
+		} catch (Exception e) {
+			assertThat(e).isInstanceOf(Exception.class);
+		}
+	}
+
+	@DisplayName("T-110: 銘柄が null の場合は例外が保存されない")
+	@Test
+	void testGetStockQuantity_nullFields_shouldFail() {
+		UserStock invalidStock = buildStock(testUser, null, new BigDecimal("10"));
+
+		try {
+			userStockRepository.save(invalidStock);
+			fail("nullユーザーで例外が出ないのはバグです");
+		} catch (Exception e) {
+			assertThat(e).isInstanceOf(Exception.class);
+		}
 	}
 }
