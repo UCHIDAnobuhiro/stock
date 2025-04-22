@@ -36,12 +36,8 @@ public class OrderController {
 		}
 
 		model.addAttribute("stock", data.getStock());
-		model.addAttribute("userName", data.getUser().getDisplayName());
-		model.addAttribute("jpyBalance", data.getJpyBalance());
-		model.addAttribute("usdBalance", data.getUsdBalance());
-		model.addAttribute("quantity", data.getQuantity());
 		model.addAttribute("ticker", data.getTicker());
-
+		model.addAttribute("data", data);
 		model.addAttribute("orderType", orderType);
 
 		return "order";
