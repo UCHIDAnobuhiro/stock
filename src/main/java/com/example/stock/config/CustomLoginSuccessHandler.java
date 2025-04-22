@@ -37,6 +37,6 @@ public class CustomLoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 			}
 		});
 
-		response.sendRedirect("/stock");
+		response.sendRedirect("/logo/detect");
 	}
 }
