@@ -128,7 +128,6 @@ public class LogoDetectionService {
 
 		// Gemini用のJSONリクエストボディ
 		String requestBody = loader.loadRequestJson(prompt);
-		System.out.println("Geminiリクエストボディ:\n" + requestBody);
 
 		Request request = new Request.Builder()
 				.url(url)
