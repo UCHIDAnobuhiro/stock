@@ -1,0 +1,88 @@
+<div id="order-form" th:fragment="order-form-template">
+	<div id="order-form-container"
+		class="w-full flex flex-col justify-center items-center border-2 rounded-lg border-gray-300 border-opacity-50">
+		<form th:action="@{/stock/order/submit}" method="post" class="w-full">
+			<div class="text-center text-3xl font-bold mt-8 mb-4"
+				th:text="${orderType == 'buy' ? '買い注文' : (orderType == 'sell' ? '売り注文' : '')}">
+			</div>
+			<table class="mx-auto pl-10">
+				<tr class="border-b">
+					<th class="text-right py-3 pr-4">銘柄名</th>
+					<td class="py-3 pl-2">
+						<span th:text="${data.ticker.brand + ' (' + data.ticker.ticker + ')'}"></span>
+					</td>
+				</tr>
+				<tr class="border-b">
+					<th class="text-right py-3 pr-4">数量</th>
+					<td class="py-3 pl-2">
+						<input type="number" name="quantity" value="1" size="10"
+						class="p-1 pl-3 border border-gray-300 rounded hover:bg-gray-50 hover:shadow"> 株
+					</td>
+				</tr>
+				<tr class="border-b">
+					<th class="text-right py-3 pr-4">価格</th>
+					<td class="py-3 pl-2">
+						<label>
+							<input type="radio" name="priceType" value="LIMIT" checked>
+							指値：
+							<input type="number" step="0.01" name="limitPrice" value="202.14"
+							class="p-1 pl-3 border border-gray-300 rounded hover:bg-gray-50 hover:shadow">
+						</label><br>
+						<label>
+							<input type="radio" name="priceType" value="MARKET"> 成行
+						</label>
+					</td>
+				</tr>
+				<tr class="border-b">
+					<th class="text-right py-3 pr-4">決済方法</th>
+					<td class="py-3 pl-2">
+						<label>
+							<input type="radio" name="moneySelector" checked
+								th:text="${orderType == 'buy' ? '円で買う' : (orderType == 'sell' ? '円で受け取る' : '')}">
+						</label>
+						<label class="pl-2">
+							<input type="radio" name="moneySelector"
+								th:text="${orderType == 'buy' ? 'ドルで買う' : (orderType == 'sell' ? 'ドルで受け取る' : '')}">
+						</label><br>
+					</td>
+				</tr>
+				<tr class="border-b">
+					<th class="text-right py-3 pr-4">予想受渡金額</th>
+					<td class="py-3 pl-2">
+						70,000円/202.14ドル
+					</td>
+				</tr>
+				<tr class="border-b">
+					<th class="text-right py-3 pr-4">参考為替レート</th>
+					<td class="py-3 pl-2">
+						143.07円/USドル
+					</td>
+				</tr>
+			</table>
+			<div class="mt-6 text-center flex flex-col items-center justify-center">
+				<label class="block mb-2 text-lg font-bold">取引暗証番号</label>
+				<input type="password" name="tradingPin" class=" p-2 rounded text-black border-2 border-gray-700 
+					       hover:border-2 hover:border-indigo-500 hover:bg-gray-50 hover:shadow-lg 
+					       focus:outline-none transition-all duration-200 font-semibold" />
+			</div>
+
+			<!-- ボタン -->
+			<div class="flex flex-row relative mt-6 mb-4 items-center justify-center">
+				<div class="absolute left-1/2 transform -translate-x-[calc(100%-210px)] z-0">
+					<a
+						class="inline-flex items-center justify-center leading-none text-white 
+						bg-indigo-500 border-0 py-2 px-4 focus:outline-none hover:bg-indigo-600 rounded text-lg">
+						戻る
+					</a>
+				</div>
+				<div class="text-center">
+					<button type="submit"
+						class="inline-flex items-center justify-center leading-none text-white 
+						bg-indigo-500 border-0 py-2 px-4 focus:outline-none hover:bg-indigo-600 rounded text-lg">
+						注文をする
+					</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>

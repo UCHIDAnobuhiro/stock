@@ -5,6 +5,7 @@ import java.lang.reflect.Field;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.stock.dto.OrderPageDataDto;
@@ -41,6 +42,17 @@ public class OrderController {
 		model.addAttribute("orderType", orderType);
 
 		return "order";
+	}
+
+	@PostMapping("/stock/order/submit")
+	public String showOrderCheckPage(Model model) {
+		//口座情報を取得
+		String symbol = "AAPL";
+		// Service からまとめてデータ取得
+		OrderPageDataDto data = orderPageDataService.getOrderPageData(symbol);
+
+		model.addAttribute("data", data);
+		return "order-check";
 	}
 
 	private boolean hasNullField(Object dto) {
