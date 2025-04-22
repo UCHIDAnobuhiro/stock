@@ -33,7 +33,7 @@ public class LogoDetectionController {
 	@PostMapping("/detect")
 	public String detectLogo(@RequestParam("file") MultipartFile file, Model model) {
 		List<String> logos = new ArrayList<>();
-		String summaryText = "";
+		String summaryHTML = "";
 
 		String error = logoDetectionService.validateImageFile(file);
 		if (error != null) {
@@ -43,13 +43,18 @@ public class LogoDetectionController {
 
 		try {
 			logos = logoDetectionService.detectLogos(file);
-			model.addAttribute("logos", logos);
+			if (!logos.isEmpty() && !logos.get(0).equals("ロゴが検出されませんでした")) {
+				String topLogo = logos.get(0);
+				String companyName = topLogo.split("（")[0];
+				summaryHTML = logoDetectionService.summarizeWithGemini(companyName);
+			}
+
 		} catch (Exception e) {
 			model.addAttribute("error", "ロゴ検出中にエラーが発生しました：" + e.getMessage());
 		}
 
 		model.addAttribute("logos", logos);
-		model.addAttribute("summaryText", summaryText);
+		model.addAttribute("summaryHTML", summaryHTML);
 		return "logo/upload";
 	}
 
