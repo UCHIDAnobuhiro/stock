@@ -10,6 +10,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.stock.model.UserWallet;
@@ -19,7 +21,11 @@ import com.example.stock.repository.UsersRepository;
 
 @SpringBootTest
 @Transactional
+@ActiveProfiles("test")
 public class UserWalletServiceTest {
+
+	@MockBean
+	private LogoDetectionService mockLogoDetectionService;
 
 	@Autowired
 	private UserWalletService userWalletService;
