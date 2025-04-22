@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
+import org.json.JSONObject;
+
 public class PromptLoader {
 	public String loadPrompt(PromptType type, String visionJson) throws IOException {
 		String filename = switch (type) {
@@ -20,6 +22,16 @@ public class PromptLoader {
 			}
 			String rawTemplate = new String(is.readAllBytes(), StandardCharsets.UTF_8);
 			return rawTemplate.replace("{{visionJson}}", visionJson);
+		}
+	}
+
+	public String loadRequestJson(String prompt) throws IOException {
+		try (InputStream is = getClass().getClassLoader().getResourceAsStream("prompts/gemini_request_template.json")) {
+			if (is == null) {
+				throw new IOException("テンプレートが見つかりません");
+			}
+			String rawJson = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+			return rawJson.replace("{{PROMPT}}", JSONObject.quote(prompt));
 		}
 	}
 
