@@ -20,13 +20,13 @@ const onRowClick = (event) => {
 	console.log('クリックされた銘柄:', ticker, brand);
 	stockConfig.symbol = ticker;
 	renderCharts();
+	document.getElementById("orderSymbol").value=ticker;
 
 	// 銘柄情報を非同期で取得して挿入
 	fetch(`/stock/table?symbol=${encodeURIComponent(ticker)}`)
 		.then(res => res.text())
 		.then(html => {
 			document.getElementById('todayInformation').innerHTML = html;
-			document.getElementById('tickerNameAndCode').innerText = `${brand} (${ticker})`;
 		})
 		.catch(err =>
 			console.error('銘柄情報取得失敗:', err));
