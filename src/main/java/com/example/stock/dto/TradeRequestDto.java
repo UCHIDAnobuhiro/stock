@@ -46,4 +46,6 @@ public class TradeRequestDto {
 	@Pattern(regexp = "LIMIT|MARKET", message = "注文タイプが不正です。")
 	private String type;
 
+	private String tradingPin;
+
 }

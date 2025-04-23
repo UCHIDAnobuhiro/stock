@@ -6,6 +6,7 @@ import java.math.RoundingMode;
 
 import jakarta.validation.Valid;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -18,6 +19,8 @@ import com.example.stock.converter.TradeConverter;
 import com.example.stock.dto.OrderPageDataDto;
 import com.example.stock.dto.TradeRequestDto;
 import com.example.stock.model.Trade;
+import com.example.stock.model.Users;
+import com.example.stock.security.SecurityUtils;
 import com.example.stock.service.OrderPageDataService;
 import com.example.stock.service.TickersService;
 import com.example.stock.service.TradeService;
@@ -36,6 +39,8 @@ public class OrderController {
 	private final TradeConverter tradeConverter;
 	private final UserWalletService userWalletService;
 	private final UserStockService userStockService;
+	private final PasswordEncoder passwordEncoder;
+	private final SecurityUtils securityUtils;
 
 	@GetMapping("/stock/order")
 	public String showOrderPage(@RequestParam String orderType, @RequestParam String symbol, Model model) {
@@ -66,6 +71,7 @@ public class OrderController {
 
 		String symbol = tickersService.getTickerById(dto.getTickerId()).getTicker();
 		Trade newTrade = tradeConverter.toTradeEntity(dto);
+		Users user = securityUtils.getLoggedInUserOrThrow();
 		Boolean isTradeSucces = true;
 		System.out.println(newTrade);
 
@@ -92,6 +98,12 @@ public class OrderController {
 			model.addAttribute("errorMessage", "入力に誤りがあります");
 		}
 
+		//パスワード相違エラー
+		String inputPassword = dto.getTradingPin();
+		if (!passwordEncoder.matches(inputPassword, user.getPassword())) {
+			isTradeSucces = false;
+			model.addAttribute("errorMessage", "パスワードが正しくありません。");
+		}
 		//余力不足エラー
 		if (!tradeService.isBalanceEnough(newTrade)) {
 			isTradeSucces = false;
