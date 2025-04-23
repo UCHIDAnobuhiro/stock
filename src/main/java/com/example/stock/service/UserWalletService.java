@@ -7,12 +7,15 @@ import java.util.Objects;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import com.example.stock.model.Trade;
 import com.example.stock.model.UserWallet;
 import com.example.stock.model.Users;
 import com.example.stock.repository.UserWalletRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserWalletService {
@@ -64,4 +67,31 @@ public class UserWalletService {
 
 		return userWalletRepository.save(wallet); // DBへ保存
 	}
+
+	public void applyTradeToWallet(Trade trade) {
+		UserWallet wallet = getWalletByUser(trade.getUser());
+		BigDecimal amount = trade.getTotalPrice();
+		String currency = trade.getSettlementCurrency();
+
+		// 売買区分: 0 = 買い（出金）, 1 = 売り（入金）
+		if (trade.getSide() == 0) {
+			// 買いの場合 → ユーザー残高から引く
+			if ("JPY".equalsIgnoreCase(currency)) {
+				wallet.setJpyBalance(wallet.getJpyBalance().subtract(amount));
+			} else if ("USD".equalsIgnoreCase(currency)) {
+				wallet.setUsdBalance(wallet.getUsdBalance().subtract(amount));
+			}
+		} else if (trade.getSide() == 1) {
+			// 売りの場合 → ユーザー残高に加える
+			if ("JPY".equalsIgnoreCase(currency)) {
+				wallet.setJpyBalance(wallet.getJpyBalance().add(amount));
+			} else if ("USD".equalsIgnoreCase(currency)) {
+				wallet.setUsdBalance(wallet.getUsdBalance().add(amount));
+			}
+		}
+
+		wallet.setUpdateAt(LocalDateTime.now());
+		userWalletRepository.save(wallet);
+	}
+
 }

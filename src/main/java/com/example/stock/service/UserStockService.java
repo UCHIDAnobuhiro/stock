@@ -1,10 +1,12 @@
 package com.example.stock.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 
 import com.example.stock.model.Tickers;
+import com.example.stock.model.Trade;
 import com.example.stock.model.UserStock;
 import com.example.stock.model.Users;
 import com.example.stock.repository.UserStockRepository;
@@ -31,13 +33,45 @@ public class UserStockService {
 	 */
 	public BigDecimal getStockQuantityByUserAndTicker(Users user, String symbol) {
 		Tickers ticker = tickersService.getTickersBySymbol(symbol);
-		BigDecimal quantity = BigDecimal.ZERO;
-		UserStock userStock = userStockRepository.findByUserAndTicker(user, ticker);
 
-		if (userStock != null && userStock.getQuantity() != null) {
-			quantity = userStock.getQuantity();
+		return userStockRepository.findByUserAndTicker(user, ticker)
+				.map(UserStock::getQuantity)
+				.orElse(BigDecimal.ZERO);
+	}
+
+	public void applyTradeToUserStock(Trade trade) {
+		Users user = trade.getUser();
+		Tickers ticker = trade.getTicker();
+		BigDecimal tradeQty = trade.getQuantity();
+
+		// 查询该用户是否已有该股票持仓
+		UserStock userStock = userStockRepository.findByUserAndTicker(user, ticker)
+				.orElseGet(() -> {
+					// 如果没有，且是买入操作时新建（卖出则不合法）
+					if (trade.getSide() == 1) {
+						throw new IllegalArgumentException("保有していない株式を売却することはできません");
+					}
+					UserStock newStock = new UserStock();
+					newStock.setUser(user);
+					newStock.setTicker(ticker);
+					newStock.setQuantity(BigDecimal.ZERO);
+					newStock.setCreateAt(LocalDateTime.now());
+					return newStock;
+				});
+
+		// 买入（加数量）
+		if (trade.getSide() == 0) {
+			userStock.setQuantity(userStock.getQuantity().add(tradeQty));
+		}
+		// 卖出（减数量）
+		else if (trade.getSide() == 1) {
+			if (userStock.getQuantity().compareTo(tradeQty) < 0) {
+				throw new IllegalArgumentException("売却数量が保有数量を超えています");
+			}
+			userStock.setQuantity(userStock.getQuantity().subtract(tradeQty));
 		}
 
-		return quantity;
+		userStock.setUpdateAt(LocalDateTime.now());
+		userStockRepository.save(userStock);
 	}
 }

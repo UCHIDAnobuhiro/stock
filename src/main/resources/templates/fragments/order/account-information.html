@@ -13,6 +13,6 @@
 
 	<div>保有状況：
 		<span th:text="${data.ticker.brand + ' (' + data.ticker.ticker + ')'}"></span>
-		<span th:text="${data.quantity + '株'}"></span>
+		<span th:text="${#numbers.formatDecimal(data.quantity, 0, 'COMMA', 0, 'POINT') + '株'}"></span>
 	</div>
 </div>
