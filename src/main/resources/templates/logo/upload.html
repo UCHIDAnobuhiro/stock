@@ -7,6 +7,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>Logo</title>
 	<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+	<link rel="stylesheet" th:href="@{/css/gemini-response.css}">
 </head>
 
 <body class="flex flex-col min-h-screen">
@@ -42,8 +43,8 @@
 				</ul>
 				<h2 class="text-xl font-semibold mb-3">Geminiによる企業情報要約</h2>
 				<div style="border: 1px solid #ccc; padding: 10px">
-					<pre class="whitespace-pre-wrap break-words bg-gray-100 p-4 rounded-lg text-sm leading-relaxed"
-						th:text="${summaryText}"></pre>
+					<div class="gemini-card whitespace-pre-wrap break-words bg-gray-100 p-4 rounded-lg text-sm leading-relaxed"
+						th:utext="${summaryHTML}"></div>
 				</div>
 			</div>
 		</div>

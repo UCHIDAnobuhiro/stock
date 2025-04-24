@@ -9,6 +9,8 @@ import org.springframework.web.client.RestTemplate;
 
 import com.google.cloud.vision.v1.ImageAnnotatorClient;
 
+import okhttp3.OkHttpClient;
+
 @Configuration
 public class AppConfig {
 
@@ -21,5 +23,10 @@ public class AppConfig {
 	@Profile("!test")
 	ImageAnnotatorClient imageAnnotatorClient() throws IOException {
 		return ImageAnnotatorClient.create();
+	}
+
+	@Bean
+	OkHttpClient okHttpClient() {
+		return new OkHttpClient();
 	}
 }
