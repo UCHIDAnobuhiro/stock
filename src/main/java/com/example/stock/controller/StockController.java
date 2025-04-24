@@ -20,6 +20,7 @@ import com.example.stock.model.Tickers;
 import com.example.stock.model.Users;
 import com.example.stock.security.SecurityUtils;
 import com.example.stock.service.FavoritesService;
+import com.example.stock.service.OrderPageDataService;
 import com.example.stock.service.StockService;
 import com.example.stock.service.TickersService;
 
@@ -33,6 +34,7 @@ public class StockController {
 	private final FavoritesService favoritesService;
 	private final StockService stockService;
 	private final SecurityUtils securityUtils;
+	private final OrderPageDataService orderPageDataService;
 
 	//stock.htmlを最初にallのtickersリストを表示
 	@GetMapping("/stock")
@@ -46,7 +48,9 @@ public class StockController {
 			// 銘柄の当日の情報を取得
 			String symbol = "AAPL";
 			StockCandleWithPrevCloseDto latest = stockService.getLatestStockWithPrevClose(symbol);
+			Tickers ticker = tickersService.getTickersBySymbol(symbol);
 			model.addAttribute("stock", latest);
+			model.addAttribute("ticker", ticker);
 
 			//tickersにisFavoriteを追加し、チェックボックスに使用される
 			List<TickersWithFavoriteDTO> tickersWithFavoriteDTOs = TickersDTOConverter
@@ -109,7 +113,9 @@ public class StockController {
 	public String showStockTable(@RequestParam String symbol, Model model) {
 		try {
 			StockCandleWithPrevCloseDto latest = stockService.getLatestStockWithPrevClose(symbol);
+			Tickers ticker = tickersService.getTickersBySymbol(symbol);
 			model.addAttribute("stock", latest);
+			model.addAttribute("ticker", ticker);
 			return "fragments/stock/today-information :: today-information-template";
 
 		} catch (StockApiException e) {
