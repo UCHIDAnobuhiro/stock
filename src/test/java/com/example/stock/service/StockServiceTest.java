@@ -14,6 +14,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.example.stock.exception.StockApiException;
+import com.google.cloud.vision.v1.ImageAnnotatorClient;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -27,6 +28,9 @@ public class StockServiceTest {
 
 	@MockBean
 	private LogoDetectionService mockLogoDetectionService;
+
+	@MockBean
+	private ImageAnnotatorClient imageAnnotatorClient;
 
 	@BeforeEach
 	void clearCache() {
