@@ -15,7 +15,7 @@ public interface TechnicalIndicatorValueRepository extends JpaRepository<Technic
 
 	List<TechnicalIndicatorValue> findBySymbolAndIntervalTypeAndPeriodAndIndicator(
 			String symbol,
-			String intervalType,
+			String interval,
 			int period,
 			String indicator);
 }
