@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -26,7 +27,7 @@ import com.google.cloud.vision.v1.ImageAnnotatorClient;
 @ActiveProfiles("test")
 @EnableCaching
 public class TechnicalServiceTest {
-	@Autowired
+	@SpyBean
 	private TechnicalService technicalIndicatorService;
 
 	@MockBean
@@ -57,7 +58,7 @@ public class TechnicalServiceTest {
 		// キャッシュクリア
 		cacheManager.getCache("smaCache").clear();
 		when(technicalIndicatorValueRepository.findBySymbolAndIntervalTypeAndPeriodAndIndicator(
-				eq(symbol), eq(interval), eq(period), eq("SMA"))).thenReturn(List.of(new TechnicalIndicatorValue()));
+				eq(symbol), eq(interval), eq(period), eq("SMA"))).thenReturn(List.of());
 	}
 
 	// F-006-TC06	getSavedSMA の結果がキャッシュされることを検証
@@ -68,12 +69,9 @@ public class TechnicalServiceTest {
 				outputsize);
 		assertNotNull(first);
 
-		// 2回目（キャッシュから取得される）
-		List<TechnicalIndicatorValue> second = technicalIndicatorService.getSavedSMA(symbol, interval, period,
-				outputsize);
-
-		// 呼び出し回数が1回のみであることを検証（キャッシュされている）
-		verify(technicalIndicatorService, times(1)).getSavedSMA(symbol, interval, period, outputsize);
+		// キャッシュから取得されるか確認
+		Cache cache = cacheManager.getCache("smaCache");
+		assertNotNull(cache.get(cacheKey)); // キャッシュが存在するか確認
 	}
 
 	// F-006-TC07	getSavedSMA が空リストを返す場合はキャッシュされないことを検証
@@ -84,10 +82,10 @@ public class TechnicalServiceTest {
 				outputsize);
 		assertTrue(result.isEmpty());
 
-		// 2回目呼び出し（キャッシュされてないのでまた呼ばれる）
-		List<TechnicalIndicatorValue> second = technicalIndicatorService.getSavedSMA("FAKE", interval, period,
-				outputsize);
-		verify(technicalIndicatorService, times(2)).getSavedSMA("FAKE", interval, period, outputsize);
+		Cache cache = cacheManager.getCache("smaCache");
+		String fakeKey = "FAKE:1day:25:10";
+		assertNull(cache.get(fakeKey)); // キャッシュされていないことを確認
+
 	}
 
 	// F-006-TC08	fetchAndSaveSMA 実行時に smaCache の該当エントリが削除されることを検証
