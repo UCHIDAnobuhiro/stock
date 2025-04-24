@@ -15,15 +15,20 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestTemplate;
 
+import com.example.stock.config.RedisTestConfig;
 import com.example.stock.converter.TechnicalIndicatorConverter;
 import com.example.stock.model.TechnicalIndicatorValue;
 import com.example.stock.repository.TechnicalIndicatorValueRepository;
 import com.google.cloud.vision.v1.ImageAnnotatorClient;
 
 @SpringBootTest
+@Import(RedisTestConfig.class)
 @ActiveProfiles("test")
 @EnableCaching
 public class TechnicalServiceTest {
@@ -71,19 +76,30 @@ public class TechnicalServiceTest {
 				.findAllBySymbolAndIntervalAndIndicatorAndLineNameAndPeriodOrderByDatetimeDesc(
 						eq("FAKE"), eq(interval), eq("SMA"), eq("sma"), eq(period), any()))
 								.thenReturn(List.of());
+
+		// RestTemplateのモック設定（APIレスポンスのダミー）
+		String fakeJson = "{\"values\": []}"; // 例：SMAレスポンスの簡易的な構造
+		ResponseEntity<String> mockResponse = new ResponseEntity<>(fakeJson, HttpStatus.OK);
+
+		when(restTemplate.getForEntity(anyString(), eq(String.class)))
+				.thenReturn(mockResponse);
 	}
 
 	// F-006-TC06	getSavedSMA の結果がキャッシュされることを検証
 	@Test
 	void getSavedSMA_shouldCacheResult_whenDataExists() {
-		// 初回呼び出し（キャッシュされる）
-		List<TechnicalIndicatorValue> first = technicalIndicatorService.getSavedSMA(symbol, interval, period,
-				outputsize);
-		assertNotNull(first);
 
-		// キャッシュから取得されるか確認
-		Cache cache = cacheManager.getCache("smaCache");
-		assertNotNull(cache.get(cacheKey)); // キャッシュが存在するか確認
+		// 初回（キャッシュされる）
+		technicalIndicatorService.getSavedSMA(symbol, interval, period, outputsize);
+
+		// 2回目（キャッシュから取得される想定）
+		technicalIndicatorService.getSavedSMA(symbol, interval, period, outputsize);
+
+		// DBからの取得が1回だけであることを検証（キャッシュが効いている証拠）
+		verify(technicalIndicatorValueRepository, times(1))
+				.findAllBySymbolAndIntervalAndIndicatorAndLineNameAndPeriodOrderByDatetimeDesc(
+						eq(symbol), eq(interval), eq("SMA"), eq("sma"), eq(period), any());
+
 	}
 
 	// F-006-TC07	getSavedSMA が空リストを返す場合はキャッシュされないことを検証
