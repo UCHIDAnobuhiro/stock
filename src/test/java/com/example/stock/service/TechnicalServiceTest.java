@@ -20,7 +20,6 @@ import org.springframework.web.client.RestTemplate;
 import com.example.stock.converter.TechnicalIndicatorConverter;
 import com.example.stock.model.TechnicalIndicatorValue;
 import com.example.stock.repository.TechnicalIndicatorValueRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.vision.v1.ImageAnnotatorClient;
 
 @SpringBootTest
@@ -32,9 +31,6 @@ public class TechnicalServiceTest {
 
 	@MockBean
 	private RestTemplate restTemplate;
-
-	@MockBean
-	private ObjectMapper objectMapper;
 
 	@MockBean
 	private TechnicalIndicatorConverter technicalIndicatorConverter;
