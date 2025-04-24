@@ -8,20 +8,26 @@ import org.springframework.stereotype.Service;
 import com.example.stock.model.Tickers;
 import com.example.stock.model.Trade;
 import com.example.stock.model.UserStock;
+import com.example.stock.model.UserWallet;
 import com.example.stock.model.Users;
 import com.example.stock.repository.UserStockRepository;
+import com.example.stock.util.TradeValidationUtil;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * ユーザーが保有する銘柄（株式）の数量を管理するサービスクラス。
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserStockService {
 
 	private final UserStockRepository userStockRepository;
 	private final TickersService tickersService;
+	private final UserWalletService userWalletService;
+	private final StockService stockService;
 
 	/**
 	 * 指定されたユーザーが特定の銘柄をどれだけ保有しているか（株数）を取得する。
@@ -39,15 +45,20 @@ public class UserStockService {
 				.orElse(BigDecimal.ZERO);
 	}
 
+	/**
+	 * 取引に基づいてユーザーの保有株数を更新。
+	 * 買い注文: 加算、売り注文: 減算（残数不足時はエラー）
+	 * 
+	 * @param trade 実行された取引
+	 */
 	public void applyTradeToUserStock(Trade trade) {
 		Users user = trade.getUser();
 		Tickers ticker = trade.getTicker();
 		BigDecimal tradeQty = trade.getQuantity();
+		UserWallet wallet = userWalletService.getWalletByUser(user);
 
-		// 查询该用户是否已有该股票持仓
 		UserStock userStock = userStockRepository.findByUserAndTicker(user, ticker)
 				.orElseGet(() -> {
-					// 如果没有，且是买入操作时新建（卖出则不合法）
 					if (trade.getSide() == 1) {
 						throw new IllegalArgumentException("保有していない株式を売却することはできません");
 					}
@@ -59,12 +70,28 @@ public class UserStockService {
 					return newStock;
 				});
 
-		// 买入（加数量）
+		// 買い（残高減少）前にチェックし、ログ処理する
+		if (!TradeValidationUtil.isBalanceEnough(trade, wallet)) {
+			log.error("【残高エラー】取引ID：{}, ユーザーID: {}, 通貨: {}, 必要金額: {}, 残高: {}",
+					trade.getId(), user.getId(), trade.getSettlementCurrency(),
+					trade.getTotalPrice(),
+					"JPY".equalsIgnoreCase(trade.getSettlementCurrency())
+							? wallet.getJpyBalance()
+							: wallet.getUsdBalance());
+		}
+
+		//値幅制限チェック
+		if (!TradeValidationUtil.isWithinLimit(trade, stockService)) {
+			BigDecimal[] range = TradeValidationUtil.getPriceLimitRange(trade, stockService);
+			log.error("【価格制限エラー】取引ID：{}, ユーザーID: {}, 単価: {}, 許容範囲: {} ～ {}",
+					trade.getId(), user.getId(), trade.getUnitPrice(),
+					range[0], range[1]);
+		}
+
+		// 株数更新
 		if (trade.getSide() == 0) {
 			userStock.setQuantity(userStock.getQuantity().add(tradeQty));
-		}
-		// 卖出（减数量）
-		else if (trade.getSide() == 1) {
+		} else if (trade.getSide() == 1) {
 			if (userStock.getQuantity().compareTo(tradeQty) < 0) {
 				throw new IllegalArgumentException("売却数量が保有数量を超えています");
 			}

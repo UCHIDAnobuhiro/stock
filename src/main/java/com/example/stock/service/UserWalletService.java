@@ -11,6 +11,7 @@ import com.example.stock.model.Trade;
 import com.example.stock.model.UserWallet;
 import com.example.stock.model.Users;
 import com.example.stock.repository.UserWalletRepository;
+import com.example.stock.util.TradeValidationUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class UserWalletService {
 	private final UserWalletRepository userWalletRepository;
+	private final StockService stockService;
 
 	/**
 	 * 指定されたユーザーに対応するウォレットを取得します。
@@ -68,24 +70,42 @@ public class UserWalletService {
 		return userWalletRepository.save(wallet); // DBへ保存
 	}
 
+	/**
+	 * 取引に応じてウォレットの残高を更新。
+	 * チェック失敗時はログのみ記録（画面へのエラー送出はしない）。
+	 *
+	 * @param trade 対象取引
+	 */
 	public void applyTradeToWallet(Trade trade) {
 		UserWallet wallet = getWalletByUser(trade.getUser());
 		BigDecimal amount = trade.getTotalPrice();
 		String currency = trade.getSettlementCurrency();
 
-		// 売買区分: 0 = 買い（出金）, 1 = 売り（入金）
 		if (trade.getSide() == 0) {
-			// 買いの場合 → ユーザー残高から引く
+			// 買い（残高減少）前にチェックし、ログ処理する
+			if (!TradeValidationUtil.isBalanceEnough(trade, wallet)) {
+				log.error("【残高エラー】取引ID：{}, ユーザーID: {}, 通貨: {}, 必要金額: {}, 残高: {}",
+						trade.getId(), trade.getUser().getId(), currency, amount,
+						"JPY".equalsIgnoreCase(currency) ? wallet.getJpyBalance() : wallet.getUsdBalance());
+			}
+			//値幅制限チェック
+			if (!TradeValidationUtil.isWithinLimit(trade, stockService)) {
+				BigDecimal[] range = TradeValidationUtil.getPriceLimitRange(trade, stockService);
+				log.error("【価格制限エラー】取引ID：{}, ユーザーID: {}, 単価: {}, 許容範囲: {} ～ {}",
+						trade.getId(), trade.getUser().getId(), trade.getUnitPrice(),
+						range[0], range[1]);
+			}
+
 			if ("JPY".equalsIgnoreCase(currency)) {
 				wallet.setJpyBalance(wallet.getJpyBalance().subtract(amount));
-			} else if ("USD".equalsIgnoreCase(currency)) {
+			} else {
 				wallet.setUsdBalance(wallet.getUsdBalance().subtract(amount));
 			}
 		} else if (trade.getSide() == 1) {
-			// 売りの場合 → ユーザー残高に加える
+			// 売り（残高加算）
 			if ("JPY".equalsIgnoreCase(currency)) {
 				wallet.setJpyBalance(wallet.getJpyBalance().add(amount));
-			} else if ("USD".equalsIgnoreCase(currency)) {
+			} else {
 				wallet.setUsdBalance(wallet.getUsdBalance().add(amount));
 			}
 		}

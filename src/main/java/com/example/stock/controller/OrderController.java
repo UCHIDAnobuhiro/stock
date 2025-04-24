@@ -1,8 +1,6 @@
 package com.example.stock.controller;
 
 import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 import jakarta.validation.Valid;
 
@@ -42,104 +40,99 @@ public class OrderController {
 	private final PasswordEncoder passwordEncoder;
 	private final SecurityUtils securityUtils;
 
+	/**
+	 * 注文ページの初期表示
+	 * @param orderType "buy" or "sell"
+	 * @param symbol 銘柄コード
+	 * @param model 表示モデル
+	 * @return 注文入力画面
+	 */
 	@GetMapping("/stock/order")
 	public String showOrderPage(@RequestParam String orderType, @RequestParam String symbol, Model model) {
-
-		// Service からまとめてデータ取得
 		OrderPageDataDto data = orderPageDataService.getOrderPageData(symbol);
 
-		//accountデータ取得失敗の時
 		if (data == null || hasNullField(data)) {
 			if (data != null) {
-				if (data.getTicker() != null)
-					model.addAttribute("ticker", data.getTicker());
-				if (data.getStock() != null)
-					model.addAttribute("stock", data.getStock());
+				model.addAttribute("ticker", data.getTicker());
+				model.addAttribute("stock", data.getStock());
 			}
 			return "stock";
 		}
+
 		model.addAttribute("stock", data.getStock());
 		model.addAttribute("ticker", data.getTicker());
 		model.addAttribute("data", data);
 		model.addAttribute("orderType", orderType);
-
 		return "order";
 	}
 
+	/**
+	 * 注文確認処理
+	 * @param dto フォームからの入力
+	 * @param result バリデーション結果
+	 * @param model ビュー描画用モデル
+	 * @return 注文確認画面または入力画面
+	 */
 	@PostMapping("/stock/order/submit")
 	public String showOrderCheckPage(@Valid @ModelAttribute TradeRequestDto dto, BindingResult result, Model model) {
 
 		String symbol = tickersService.getTickerById(dto.getTickerId()).getTicker();
 		Trade newTrade = tradeConverter.toTradeEntity(dto);
 		Users user = securityUtils.getLoggedInUserOrThrow();
-		Boolean isTradeSucces = true;
-		System.out.println(newTrade);
+		boolean isTradeSuccess = true;
 
-		// Service からまとめてデータ取得
+		//画面移動に必要なデータが足りない場合はstockへ戻る
 		OrderPageDataDto data = orderPageDataService.getOrderPageData(symbol);
-
-		//accountデータ取得失敗の時
 		if (data == null || hasNullField(data)) {
 			if (data != null) {
-				if (data.getTicker() != null)
-					model.addAttribute("ticker", data.getTicker());
-				if (data.getStock() != null)
-					model.addAttribute("stock", data.getStock());
+				model.addAttribute("ticker", data.getTicker());
+				model.addAttribute("stock", data.getStock());
 			}
 			return "stock";
 		}
 
-		//入力エラー
+		// 入力エラー
 		if (result.hasErrors()) {
-			isTradeSucces = false;
-			result.getFieldErrors().forEach(e -> {
-				System.out.println(e.getField() + ": " + e.getDefaultMessage());
-			});
+			isTradeSuccess = false;
+			result.getFieldErrors().forEach(e -> System.out.println(e.getField() + ": " + e.getDefaultMessage()));
 			model.addAttribute("errorMessage", "入力に誤りがあります");
 		}
 
-		//パスワード相違エラー
-		String inputPassword = dto.getTradingPin();
-		if (!passwordEncoder.matches(inputPassword, user.getPassword())) {
-			isTradeSucces = false;
+		// パスワード確認
+		if (!passwordEncoder.matches(dto.getTradingPin(), user.getPassword())) {
+			isTradeSuccess = false;
 			model.addAttribute("errorMessage", "パスワードが正しくありません。");
 		}
-		//余力不足エラー
-		if (!tradeService.isBalanceEnough(newTrade)) {
-			isTradeSucces = false;
-			model.addAttribute("errorMessage", "残高不足のため、再度注文を確認してください");
+
+		// 業務バリデーション（残高・価格）
+		if (isTradeSuccess) {
+			try {
+				tradeService.validateTrade(newTrade);
+			} catch (IllegalStateException e) {
+				isTradeSuccess = false;
+				model.addAttribute("errorMessage", e.getMessage());
+			}
 		}
 
-		// 値幅制限エラー（現在値±10%超過）
-		if (!tradeService.isWithinlimit(newTrade)) {
-			isTradeSucces = false;
-
-			//エラーメッセージ作成
-			BigDecimal closePrice = BigDecimal.valueOf(data.getStock().getClose()).setScale(2, RoundingMode.HALF_UP);
-			BigDecimal upperLimit = closePrice.multiply(BigDecimal.valueOf(1.1)).setScale(2, RoundingMode.HALF_UP);
-			BigDecimal lowerLimit = closePrice.multiply(BigDecimal.valueOf(0.9)).setScale(2, RoundingMode.HALF_UP);
-			String errorMessage = String.format(
-					"注文価格が値幅制限を超えています（範囲: %s ～ %s）",
-					lowerLimit.toPlainString(),
-					upperLimit.toPlainString());
-			model.addAttribute("errorMessage", errorMessage);
-		}
-
-		//画面移動
-		if (isTradeSucces) {
-			tradeService.saveTrade(newTrade);
-			userWalletService.applyTradeToWallet(newTrade);
-			userStockService.applyTradeToUserStock(newTrade);
-			OrderPageDataDto updatedData = orderPageDataService.getOrderPageData(symbol);
-			model.addAttribute("data", updatedData);
-			return "order-check";
-		} else {
+		//エラーが発生するなら
+		if (!isTradeSuccess) {
+			// 入力画面に必要なデータを送り、入力画面へ戻る
 			model.addAttribute("stock", data.getStock());
 			model.addAttribute("ticker", data.getTicker());
 			model.addAttribute("data", data);
 			model.addAttribute("orderType", dto.getSide());
 			return "order";
 		}
+
+		// エラーが発生してないなら、注文確定処理（DB保存）
+		tradeService.saveTrade(newTrade);
+		userWalletService.applyTradeToWallet(newTrade);
+		userStockService.applyTradeToUserStock(newTrade);
+
+		// 最新データ再取得し確認画面へ遷移
+		OrderPageDataDto updatedData = orderPageDataService.getOrderPageData(symbol);
+		model.addAttribute("data", updatedData);
+		return "order-check";
 	}
 
 	private Boolean hasNullField(Object dto) {
