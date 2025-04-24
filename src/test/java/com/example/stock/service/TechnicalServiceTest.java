@@ -14,14 +14,17 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestTemplate;
 
 import com.example.stock.converter.TechnicalIndicatorConverter;
 import com.example.stock.model.TechnicalIndicatorValue;
 import com.example.stock.repository.TechnicalIndicatorValueRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.cloud.vision.v1.ImageAnnotatorClient;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @EnableCaching
 public class TechnicalServiceTest {
 	@SpyBean
@@ -38,6 +41,9 @@ public class TechnicalServiceTest {
 
 	@MockBean
 	private TechnicalIndicatorValueRepository technicalIndicatorValueRepository;
+
+	@MockBean
+	private ImageAnnotatorClient imageAnnotatorClient;
 
 	@Autowired
 	private CacheManager cacheManager;

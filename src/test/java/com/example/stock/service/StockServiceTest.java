@@ -27,9 +27,6 @@ public class StockServiceTest {
 	private CacheManager cacheManager;
 
 	@MockBean
-	private LogoDetectionService mockLogoDetectionService;
-
-	@MockBean
 	private ImageAnnotatorClient imageAnnotatorClient;
 
 	@BeforeEach
