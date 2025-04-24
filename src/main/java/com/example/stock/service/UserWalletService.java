@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 public class UserWalletService {
 	private final UserWalletRepository userWalletRepository;
 	private final StockService stockService;
+	private final UserWalletLogService userWalletLogService;
 
 	/**
 	 * 指定されたユーザーに対応するウォレットを取得します。
@@ -80,29 +81,47 @@ public class UserWalletService {
 		UserWallet wallet = getWalletByUser(trade.getUser());
 		BigDecimal amount = trade.getTotalPrice();
 		String currency = trade.getSettlementCurrency();
+		boolean isAvailable = true;
 
-		if (trade.getSide() == 0) {
-			// 買い（残高減少）前にチェックし、ログ処理する
+		// チェック：残高・価格制限・通貨
+		if (trade.getSide() == 0) { // 買い（残高減少）
 			if (!TradeValidationUtil.isBalanceEnough(trade, wallet)) {
 				log.error("【残高エラー】取引ID：{}, ユーザーID: {}, 通貨: {}, 必要金額: {}, 残高: {}",
 						trade.getId(), trade.getUser().getId(), currency, amount,
 						"JPY".equalsIgnoreCase(currency) ? wallet.getJpyBalance() : wallet.getUsdBalance());
+				isAvailable = false;
 			}
-			//値幅制限チェック
 			if (!TradeValidationUtil.isWithinLimit(trade, stockService)) {
 				BigDecimal[] range = TradeValidationUtil.getPriceLimitRange(trade, stockService);
 				log.error("【価格制限エラー】取引ID：{}, ユーザーID: {}, 単価: {}, 許容範囲: {} ～ {}",
 						trade.getId(), trade.getUser().getId(), trade.getUnitPrice(),
 						range[0], range[1]);
+				isAvailable = false;
 			}
+		} else if (trade.getSide() == 1) {
+			// 売り侧はチェック不要（今の仕様では無条件で加算可能）
+		}
 
+		// 通貨チェック
+		if (!"JPY".equalsIgnoreCase(currency) && !"USD".equalsIgnoreCase(currency)) {
+			log.error("【通貨エラー】取引ID：{}, ユーザーID: {}, 未対応の通貨: {}", trade.getId(), trade.getUser().getId(), currency);
+			isAvailable = false;
+		}
+
+		//チェックに問題があるなら、そのままreturn
+		if (!isAvailable) {
+			System.out.println("出现问题，不更新订单");
+			return;
+		}
+
+		// チェックをすべて通過後、残高の変更を行う
+		if (trade.getSide() == 0) {
 			if ("JPY".equalsIgnoreCase(currency)) {
 				wallet.setJpyBalance(wallet.getJpyBalance().subtract(amount));
 			} else {
 				wallet.setUsdBalance(wallet.getUsdBalance().subtract(amount));
 			}
 		} else if (trade.getSide() == 1) {
-			// 売り（残高加算）
 			if ("JPY".equalsIgnoreCase(currency)) {
 				wallet.setJpyBalance(wallet.getJpyBalance().add(amount));
 			} else {
@@ -111,6 +130,12 @@ public class UserWalletService {
 		}
 
 		wallet.setUpdateAt(LocalDateTime.now());
+
+		// log作成・保存
+		userWalletLogService.createAndSaveLog(trade, wallet);
+
+		System.out.println("订单正常，保存数据");
+		// DB保存
 		userWalletRepository.save(wallet);
 	}
 
