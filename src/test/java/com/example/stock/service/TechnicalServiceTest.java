@@ -9,18 +9,35 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.web.client.RestTemplate;
 
+import com.example.stock.converter.TechnicalIndicatorConverter;
 import com.example.stock.model.TechnicalIndicatorValue;
+import com.example.stock.repository.TechnicalIndicatorValueRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @EnableCaching
 public class TechnicalServiceTest {
 	@SpyBean
 	private TechnicalService technicalIndicatorService;
+
+	@MockBean
+	private RestTemplate restTemplate;
+
+	@MockBean
+	private ObjectMapper objectMapper;
+
+	@MockBean
+	private TechnicalIndicatorConverter technicalIndicatorConverter;
+
+	@MockBean
+	private TechnicalIndicatorValueRepository technicalIndicatorValueRepository;
 
 	@Autowired
 	private CacheManager cacheManager;
