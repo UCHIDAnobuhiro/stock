@@ -1,14 +1,19 @@
 package com.example.stock.service;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.stock.prompt.PromptLoader;
+import com.example.stock.prompt.PromptType;
 import com.google.cloud.vision.v1.AnnotateImageRequest;
 import com.google.cloud.vision.v1.AnnotateImageResponse;
 import com.google.cloud.vision.v1.EntityAnnotation;
@@ -16,14 +21,38 @@ import com.google.cloud.vision.v1.Feature;
 import com.google.cloud.vision.v1.Image;
 import com.google.cloud.vision.v1.ImageAnnotatorClient;
 import com.google.protobuf.ByteString;
+import com.vladsch.flexmark.html.HtmlRenderer;
+import com.vladsch.flexmark.parser.Parser;
+import com.vladsch.flexmark.util.ast.Node;
 
 import lombok.RequiredArgsConstructor;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 @Service
 @RequiredArgsConstructor
 public class LogoDetectionService {
 
 	private final ImageAnnotatorClient visionClient;
+	private final PromptLoader loader;
+	private final OkHttpClient client;
+
+	@Value("${gemini.api.url}")
+	private String geminiApiUrl;
+
+	@Value("${gemini.api.key}")
+	private String geminiApiKey;
+
+	public void setGeminiApiUrl(String geminiApiUrl) {
+		this.geminiApiUrl = geminiApiUrl;
+	}
+
+	public void setGeminiApiKey(String geminiApiKey) {
+		this.geminiApiKey = geminiApiKey;
+	}
 
 	// ファイルアップロードのvalidation
 	public String validateImageFile(MultipartFile file) {
@@ -96,4 +125,56 @@ public class LogoDetectionService {
 				.map(e -> e.getKey() + "（信頼度：" + Math.round(e.getValue() * 100) + "％）")
 				.collect(Collectors.toList());
 	}
+
+	public String summarizeWithGemini(String visionJson) throws IOException {
+		// Gemini API エンドポイント
+		String url = geminiApiUrl + geminiApiKey;
+
+		// Geminiに渡すプロンプト
+		String prompt = loader.loadPrompt(PromptType.MARKDOWN, visionJson);
+
+		// Gemini用のJSONリクエストボディ
+		String requestBody = loader.loadRequestJson(prompt);
+
+		Request request = new Request.Builder()
+				.url(url)
+				.post(RequestBody.create(requestBody, MediaType.get("application/json")))
+				.build();
+
+		try (Response response = client.newCall(request).execute()) {
+			if (!response.isSuccessful()) {
+				throw new IOException("Unexpected code " + response);
+			}
+			String responseBody = response.body().string();
+			JSONObject obj = new JSONObject(responseBody);
+			// Geminiのレスポンスから "text" を抽出
+			String markdown = obj.getJSONArray("candidates")
+					.getJSONObject(0)
+					.getJSONObject("content")
+					.getJSONArray("parts")
+					.getJSONObject(0)
+					.getString("text");
+
+			// Tickerの行を抽出
+			String ticker = extractTicker(markdown);
+			System.out.println(ticker);
+
+			// Markdown → HTML
+			Parser parser = Parser.builder().build();
+			HtmlRenderer renderer = HtmlRenderer.builder().build();
+			Node document = parser.parse(markdown);
+			return renderer.render(document);
+		}
+	}
+
+	private String extractTicker(String markdown) {
+		String[] lines = markdown.split("\n");
+		for (int i = 0; i < lines.length - 1; i++) {
+			if (lines[i].trim().contains("企業のTicker")) {
+				return lines[i + 1].trim(); // 次の行がTicker
+			}
+		}
+		return "";
+	}
+
 }
