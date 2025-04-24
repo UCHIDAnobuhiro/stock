@@ -39,6 +39,9 @@ public class TechnicalServiceTest {
 	@MockBean
 	private TechnicalIndicatorValueRepository technicalIndicatorValueRepository;
 
+	@MockBean
+	private com.google.cloud.vision.v1.ImageAnnotatorClient imageAnnotatorClient;
+
 	@Autowired
 	private CacheManager cacheManager;
 
