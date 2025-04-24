@@ -13,4 +13,9 @@ public interface TechnicalIndicatorValueRepository extends JpaRepository<Technic
 	List<TechnicalIndicatorValue> findAllBySymbolAndIntervalAndIndicatorAndLineNameAndPeriodOrderByDatetimeDesc(
 			String symbol, String interval, String indicator, String lineName, Integer period, Pageable pageable);
 
+	List<TechnicalIndicatorValue> findBySymbolAndIntervalTypeAndPeriodAndIndicator(
+			String symbol,
+			String intervalType,
+			int period,
+			String indicator);
 }

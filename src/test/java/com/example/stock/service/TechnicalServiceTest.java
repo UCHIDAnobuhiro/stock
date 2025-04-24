@@ -1,6 +1,7 @@
 package com.example.stock.service;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.util.List;
@@ -10,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -26,7 +26,7 @@ import com.google.cloud.vision.v1.ImageAnnotatorClient;
 @ActiveProfiles("test")
 @EnableCaching
 public class TechnicalServiceTest {
-	@SpyBean
+	@Autowired
 	private TechnicalService technicalIndicatorService;
 
 	@MockBean
@@ -56,6 +56,8 @@ public class TechnicalServiceTest {
 		cacheKey = symbol + ":" + interval + ":" + period + ":" + outputsize;
 		// キャッシュクリア
 		cacheManager.getCache("smaCache").clear();
+		when(technicalIndicatorValueRepository.findBySymbolAndIntervalTypeAndPeriodAndIndicator(
+				eq(symbol), eq(interval), eq(period), eq("SMA"))).thenReturn(List.of(new TechnicalIndicatorValue()));
 	}
 
 	// F-006-TC06	getSavedSMA の結果がキャッシュされることを検証
