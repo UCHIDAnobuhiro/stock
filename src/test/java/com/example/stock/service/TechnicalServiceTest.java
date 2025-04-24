@@ -57,8 +57,20 @@ public class TechnicalServiceTest {
 		cacheKey = symbol + ":" + interval + ":" + period + ":" + outputsize;
 		// キャッシュクリア
 		cacheManager.getCache("smaCache").clear();
-		when(technicalIndicatorValueRepository.findBySymbolAndIntervalTypeAndPeriodAndIndicator(
-				eq(symbol), eq(interval), eq(period), eq("SMA"))).thenReturn(List.of());
+
+		TechnicalIndicatorValue dummy = new TechnicalIndicatorValue();
+
+		// 正常系の戻り値（AAPL）
+		when(technicalIndicatorValueRepository
+				.findAllBySymbolAndIntervalAndIndicatorAndLineNameAndPeriodOrderByDatetimeDesc(
+						eq(symbol), eq(interval), eq("SMA"), eq("sma"), eq(period), any()))
+								.thenReturn(List.of(dummy));
+
+		// 異常系の戻り値（FAKE）
+		when(technicalIndicatorValueRepository
+				.findAllBySymbolAndIntervalAndIndicatorAndLineNameAndPeriodOrderByDatetimeDesc(
+						eq("FAKE"), eq(interval), eq("SMA"), eq("sma"), eq(period), any()))
+								.thenReturn(List.of());
 	}
 
 	// F-006-TC06	getSavedSMA の結果がキャッシュされることを検証
