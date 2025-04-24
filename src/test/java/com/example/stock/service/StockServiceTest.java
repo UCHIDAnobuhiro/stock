@@ -10,10 +10,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.test.context.ActiveProfiles;
 
 import com.example.stock.exception.StockApiException;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @EnableCaching
 public class StockServiceTest {
 	@SpyBean
