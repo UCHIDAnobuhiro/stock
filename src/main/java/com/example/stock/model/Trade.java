@@ -71,7 +71,7 @@ public class Trade {
 
 	/** 為替レート（任意だが、指定時は0.01以上） */
 	@DecimalMin(value = "0.01", message = "為替レートは0.01以上である必要があります")
-	@Column(name = "exchange_rate", precision = 18, scale = 2)
+	@Column(name = "exchange_rate", nullable = false, precision = 18, scale = 2)
 	private BigDecimal exchangeRate;
 
 	/** 売買区分（0=買い, 1=売り） */
@@ -86,7 +86,7 @@ public class Trade {
 	@Column(name = "type", nullable = false, columnDefinition = "TINYINT UNSIGNED")
 	private int type;
 
-	/** ステータス（初期値：4） */
+	/** ステータス（デフォルト：4　成功） */
 	@Column(name = "status", nullable = false, columnDefinition = "TINYINT UNSIGNED")
 	private int status = 4;
 

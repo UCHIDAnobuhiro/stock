@@ -30,6 +30,7 @@ public class UserWalletLogService {
 			throw new IllegalArgumentException("取引とウォレットの所有者が一致しません。");
 		}
 
+		//必要な変数を作成
 		String currency = trade.getSettlementCurrency();
 		BigDecimal beforeBalance = getCurrentBalance(wallet, currency);
 		BigDecimal changeAmount = trade.getSide() == 0
@@ -38,6 +39,7 @@ public class UserWalletLogService {
 
 		BigDecimal afterBalance = beforeBalance.add(changeAmount);
 
+		//新規作成
 		UserWalletLog log = new UserWalletLog();
 		log.setUserWallet(wallet);
 		log.setTrade(trade);
@@ -47,9 +49,11 @@ public class UserWalletLogService {
 		log.setChangeAmount(changeAmount);
 		log.setCreateAt(LocalDateTime.now());
 
+		//保存
 		userWalletLogRepository.save(log);
 	}
 
+	//取引通貨を取得
 	private BigDecimal getCurrentBalance(UserWallet wallet, String currency) {
 		if ("JPY".equalsIgnoreCase(currency)) {
 			return wallet.getJpyBalance();

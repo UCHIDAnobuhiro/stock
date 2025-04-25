@@ -135,6 +135,7 @@ public class OrderController {
 		return "order-check";
 	}
 
+	//dtoにnullがあるかをチェック
 	private Boolean hasNullField(Object dto) {
 		try {
 			for (Field field : dto.getClass().getDeclaredFields()) {

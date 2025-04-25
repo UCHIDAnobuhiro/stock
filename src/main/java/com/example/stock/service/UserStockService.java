@@ -47,8 +47,8 @@ public class UserStockService {
 
 	/**
 	 * 取引に基づいてユーザーの保有株数を更新。
-	 * 買い注文: 加算、売り注文: 減算（残数不足時はエラー）
-	 * 
+	 * 買い注文: 加算、売り注文: 減算
+	 * 不正のエラー時はログを出力
 	 * @param trade 実行された取引
 	 */
 	public void applyTradeToUserStock(Trade trade) {
@@ -56,7 +56,35 @@ public class UserStockService {
 		Tickers ticker = trade.getTicker();
 		BigDecimal tradeQty = trade.getQuantity();
 		UserWallet wallet = userWalletService.getWalletByUser(user);
+		boolean isAvailable = true;
 
+		// 買い（残高減少）前にチェックし、ログ処理する
+		if (!TradeValidationUtil.isBalanceEnough(trade, wallet)) {
+			log.error("【残高エラー】取引ID：{}, ユーザーID: {}, 通貨: {}, 必要金額: {}, 残高: {}",
+					trade.getId(), user.getId(), trade.getSettlementCurrency(),
+					trade.getTotalPrice(),
+					"JPY".equalsIgnoreCase(trade.getSettlementCurrency())
+							? wallet.getJpyBalance()
+							: wallet.getUsdBalance());
+			isAvailable = false;
+		}
+
+		//値幅制限チェック
+		if (!TradeValidationUtil.isWithinLimit(trade, stockService)) {
+			BigDecimal[] range = TradeValidationUtil.getPriceLimitRange(trade, stockService);
+			log.error("【価格制限エラー】取引ID：{}, ユーザーID: {}, 単価: {}, 許容範囲: {} ～ {}",
+					trade.getId(), user.getId(), trade.getUnitPrice(),
+					range[0], range[1]);
+			isAvailable = false;
+
+		}
+
+		//エラーが発生なら、更新しない
+		if (!isAvailable) {
+			return;
+		}
+
+		//保有があるかを確認、ない場合は新規か異常を出すか
 		UserStock userStock = userStockRepository.findByUserAndTicker(user, ticker)
 				.orElseGet(() -> {
 					if (trade.getSide() == 1) {
@@ -69,24 +97,6 @@ public class UserStockService {
 					newStock.setCreateAt(LocalDateTime.now());
 					return newStock;
 				});
-
-		// 買い（残高減少）前にチェックし、ログ処理する
-		if (!TradeValidationUtil.isBalanceEnough(trade, wallet)) {
-			log.error("【残高エラー】取引ID：{}, ユーザーID: {}, 通貨: {}, 必要金額: {}, 残高: {}",
-					trade.getId(), user.getId(), trade.getSettlementCurrency(),
-					trade.getTotalPrice(),
-					"JPY".equalsIgnoreCase(trade.getSettlementCurrency())
-							? wallet.getJpyBalance()
-							: wallet.getUsdBalance());
-		}
-
-		//値幅制限チェック
-		if (!TradeValidationUtil.isWithinLimit(trade, stockService)) {
-			BigDecimal[] range = TradeValidationUtil.getPriceLimitRange(trade, stockService);
-			log.error("【価格制限エラー】取引ID：{}, ユーザーID: {}, 単価: {}, 許容範囲: {} ～ {}",
-					trade.getId(), user.getId(), trade.getUnitPrice(),
-					range[0], range[1]);
-		}
 
 		// 株数更新
 		if (trade.getSide() == 0) {

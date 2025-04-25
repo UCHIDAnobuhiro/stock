@@ -2,7 +2,10 @@ package com.example.stock.service;
 
 import java.math.BigDecimal;
 
+import jakarta.validation.Valid;
+
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 import com.example.stock.model.Trade;
 import com.example.stock.model.UserWallet;
@@ -17,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Service
+@Validated
 @RequiredArgsConstructor // finalなフィールドを自動でコンストラクタに注入
 public class TradeService {
 
@@ -30,7 +34,7 @@ public class TradeService {
 	 * @param dto フロントエンドから送られた注文情報
 	 * @return 保存されたTradeエンティティ
 	 */
-	public Trade saveTrade(Trade newTrade) {
+	public Trade saveTrade(@Valid Trade newTrade) {
 		return tradeRepository.save(newTrade);
 	}
 

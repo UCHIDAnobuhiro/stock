@@ -46,6 +46,14 @@ public class TradeValidationUtil {
 	}
 
 	/**
+	 * ※テスト用のメソッドです。本番コードでは {@link #isWithinLimit(Trade, StockService)} を使用してください。
+	 */
+	public static boolean isWithinLimit(Trade trade, BigDecimal lowerLimit, BigDecimal upperLimit) {
+		BigDecimal unitPrice = trade.getUnitPrice();
+		return unitPrice.compareTo(lowerLimit) >= 0 && unitPrice.compareTo(upperLimit) <= 0;
+	}
+
+	/**
 	 * 現在値 ±10% の価格範囲を取得
 	 * @param trade 対象取引
 	 * @param stockService 現在値取得用

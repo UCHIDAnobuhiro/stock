@@ -1,6 +1,7 @@
 package com.example.stock.service;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -8,23 +9,36 @@ import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.stock.dto.StockCandleWithPrevCloseDto;
 import com.example.stock.model.Tickers;
+import com.example.stock.model.Trade;
 import com.example.stock.model.UserStock;
+import com.example.stock.model.UserWallet;
 import com.example.stock.model.Users;
 import com.example.stock.repository.TickersRepository;
+import com.example.stock.repository.TradeRepository;
 import com.example.stock.repository.UserStockRepository;
+import com.example.stock.repository.UserWalletLogRepository;
+import com.example.stock.repository.UserWalletRepository;
 import com.example.stock.repository.UsersRepository;
 
+@ExtendWith(OutputCaptureExtension.class)
 @SpringBootTest
 @Transactional
 @ActiveProfiles("test")
 public class UserStockServiceTest {
+
+	@MockBean
+	private StockService stockService;
 
 	@MockBean
 	private LogoDetectionService mockLogoDetectionService;
@@ -41,16 +55,31 @@ public class UserStockServiceTest {
 	@Autowired
 	private TickersRepository tickersRepository;
 
+	@Autowired
+	private UserWalletService userWalletService;
+
+	@Autowired
+	private TradeRepository tradeRepository;
+
+	@Autowired
+	private UserWalletLogRepository userWalletLogRepository;
+
+	@Autowired
+	private UserWalletRepository userWalletRepository;
+
 	private Users testUser;
 	private Users testUser2;
 	private Tickers testTicker;
 	private Tickers testTicker2;
+	private UserWallet testWallet;
 
 	@BeforeEach
 	void setup() {
-		userStockRepository.deleteAll();
-		tickersRepository.deleteAll();
-		usersRepository.deleteAll();
+		userWalletLogRepository.deleteAll(); // 最子级：引用了 trade 和 wallet
+		tradeRepository.deleteAll(); // 引用了 ticker 和 user
+		userWalletRepository.deleteAll(); // 引用了 user
+		tickersRepository.deleteAll(); // 引用了无
+		usersRepository.deleteAll(); // 父表
 
 		testUser = new Users();
 		testUser.setUsername("株式太郎");
@@ -85,6 +114,18 @@ public class UserStockServiceTest {
 		testTicker2.setTicker("GOOG");
 		testTicker2.setBrand("Google LLC");
 		tickersRepository.save(testTicker2);
+
+		testWallet = userWalletService.getWalletByUser(testUser);
+		testWallet.setJpyBalance(new BigDecimal("5000"));
+		testWallet.setUsdBalance(new BigDecimal("100"));
+		userWalletRepository.save(testWallet);
+
+		StockCandleWithPrevCloseDto mockDto = new StockCandleWithPrevCloseDto();
+		mockDto.setClose(100.0);
+		mockDto.setPrevClose(100.0);
+		mockDto.setSymbol("AAPL");
+		mockDto.setInterval("1day");
+		when(stockService.getLatestStockWithPrevClose("AAPL")).thenReturn(mockDto);
 	}
 
 	private UserStock buildStock(Users user, Tickers ticker, BigDecimal quantity) {
@@ -194,5 +235,64 @@ public class UserStockServiceTest {
 		} catch (Exception e) {
 			assertThat(e).isInstanceOf(Exception.class);
 		}
+	}
+
+	@Test
+	@DisplayName("T-111: 価格制限外でログ出力され、UserStockは保存されない")
+	void testApplyTradeToUserStock_priceOutOfRange(CapturedOutput output) {
+
+		// 価格制限外の価格で注文
+		Trade trade = createTrade(testUser, testTicker, "JPY", new BigDecimal("200"), 0); // 上限超過
+
+		userStockService.applyTradeToUserStock(trade);
+
+		assertThat(output).contains("【価格制限エラー】");
+		assertThat(userStockRepository.findByUserAndTicker(testUser, testTicker)).isEmpty();
+	}
+
+	@Test
+	@DisplayName("T-112: 残高不足でログ出力され、UserStockは保存されない")
+	void testApplyTradeToUserStock_insufficientBalance(CapturedOutput output) {
+		// 残高をゼロにする
+		testWallet.setJpyBalance(BigDecimal.ZERO);
+		userWalletRepository.save(testWallet);
+
+		// 買い注文（価格は正常、残高が足りない）
+		Trade trade = createTrade(testUser, testTicker, "JPY", new BigDecimal("1000"), 0);
+
+		userStockService.applyTradeToUserStock(trade);
+
+		assertThat(output).contains("【残高エラー】");
+		assertThat(userStockRepository.findByUserAndTicker(testUser, testTicker)).isEmpty();
+	}
+
+	@Test
+	@DisplayName("T-113: 正常な買い注文でUserStockが作成・数量加算される")
+	void testApplyTradeToUserStock_buy_createsAndAdds() {
+		// 保有なし → 新規作成される
+		Trade trade = createTrade(testUser, testTicker, "JPY", new BigDecimal("100"), 0);
+		trade.setQuantity(new BigDecimal("3"));
+
+		userStockService.applyTradeToUserStock(trade);
+
+		UserStock result = userStockRepository.findByUserAndTicker(testUser, testTicker).orElse(null);
+		assertThat(result).isNotNull();
+		assertThat(result.getQuantity()).isEqualTo(new BigDecimal("3"));
+	}
+
+	private Trade createTrade(Users user, Tickers ticker, String currency, BigDecimal total, int side) {
+		Trade t = new Trade();
+		t.setUser(user);
+		t.setTicker(ticker);
+		t.setSettlementCurrency(currency);
+		t.setCurrency(currency);
+		t.setSide(side);
+		t.setTotalPrice(total);
+		t.setUnitPrice(total);
+		t.setExchangeRate(BigDecimal.ONE);
+		t.setQuantity(BigDecimal.ONE);
+		t.setCreateAt(LocalDateTime.now());
+		t.setUpdateAt(LocalDateTime.now());
+		return tradeRepository.save(t);
 	}
 }

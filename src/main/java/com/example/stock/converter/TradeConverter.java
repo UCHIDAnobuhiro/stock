@@ -46,21 +46,25 @@ public class TradeConverter {
 	 * @return 生成された Trade エンティティ（DB保存可能な形式）
 	 */
 	public Trade toTradeEntity(TradeRequestDto dto) {
+
 		Trade trade = new Trade();
+
+		//必須情報を取得
 		Users user = securityUtils.getLoggedInUserOrThrow();
 		Tickers ticker = tickersService.getTickerById(dto.getTickerId());
 
+		//現在値を取得
 		String symbol = ticker.getTicker();
 		StockCandleWithPrevCloseDto latest = stockService.getLatestStockWithPrevClose(symbol);
 		BigDecimal latestClose = BigDecimal.valueOf(latest.getClose());
-		System.out.println(latestClose);
-		BigDecimal resolvedUnitPrice = resolveUnitPrice(dto, latestClose);
-		System.out.println(resolvedUnitPrice);
+		BigDecimal resolvedUnitPrice = resolveUnitPrice(dto, latestClose);//成行の値段計算±10％
 
 		trade.setUser(user);
 		trade.setTicker(ticker);
 		trade.setQuantity(dto.getQuantity());
 		trade.setUnitPrice(resolvedUnitPrice);
+
+		//総受渡金額を計算し保存
 		trade.setTotalPrice(calculateTotalPrice(dto, resolvedUnitPrice));
 		trade.setCurrency("USD");
 		trade.setSettlementCurrency(dto.getSettlementCurrency());
@@ -74,31 +78,40 @@ public class TradeConverter {
 		return trade;
 	}
 
+	//総受渡金額を計算する
 	private BigDecimal calculateTotalPrice(TradeRequestDto dto, BigDecimal resolvedUnitPrice) {
 		BigDecimal quantity = dto.getQuantity();
+
+		//thymeleafで手動で設定した為替レート
 		BigDecimal rate = dto.getExchangeRate();
+
+		//基準となる通貨をusdに設定（米国株のため）
 		String currency = "USD";
+
+		//決済通貨を取得
 		String settlementCurrency = dto.getSettlementCurrency();
 
-		// 1. 如果币种一致，汇率为 1
+		// 基準通貨と決済通貨一緒なら為替レートを1に設定
 		if (currency.equalsIgnoreCase(settlementCurrency)) {
 			rate = BigDecimal.ONE;
 		}
 
-		// 2. 计算原始总价（可保留内部记录）
+		//総受渡金額の計算
 		BigDecimal total = quantity.multiply(resolvedUnitPrice).multiply(rate);
 
-		// 3. 按照结算币种决定取整策略
+		// 通貨による総受渡金額の桁数処理
 		if ("JPY".equalsIgnoreCase(settlementCurrency)) {
-			// JPY 向上取整到整数（例如 143682.01 ➝ 143683）
+			// JPY 切り上げ（例えば：2.01 ➝ 3）
 			return total.setScale(0, RoundingMode.CEILING);
 		} else {
-			// USD 等币种保留两位小数
+			// USD 小数点以下2桁を保留　四捨五入
 			return total.setScale(2, RoundingMode.HALF_UP);
 		}
 	}
 
 	private BigDecimal resolveUnitPrice(TradeRequestDto dto, BigDecimal latestClose) {
+
+		//成行の場合は現在値を±10％し、四捨五入し、小数点以下2桁残す。
 		if ("MARKET".equalsIgnoreCase(dto.getType())) {
 			if ("buy".equalsIgnoreCase(dto.getSide())) {
 				return latestClose.multiply(BigDecimal.valueOf(1.1)).setScale(2, RoundingMode.HALF_UP);
@@ -106,7 +119,8 @@ public class TradeConverter {
 				return latestClose.multiply(BigDecimal.valueOf(0.9)).setScale(2, RoundingMode.HALF_UP);
 			}
 		} else {
-			// LIMIT 类型直接取前端输入
+
+			//指値なら処理いらない
 			return dto.getUnitPrice();
 		}
 	}

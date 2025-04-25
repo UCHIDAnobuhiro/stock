@@ -65,8 +65,8 @@ public class UserWalletService {
 		wallet.setUsdBalance(BigDecimal.ZERO); // 初期USD残高
 
 		LocalDateTime now = LocalDateTime.now();
-		wallet.setCreateAt(now); // 作成日時
-		wallet.setUpdateAt(now); // 更新日時
+		wallet.setCreateAt(now);
+		wallet.setUpdateAt(now);
 
 		return userWalletRepository.save(wallet); // DBへ保存
 	}
@@ -110,7 +110,6 @@ public class UserWalletService {
 
 		//チェックに問題があるなら、そのままreturn
 		if (!isAvailable) {
-			System.out.println("出现问题，不更新订单");
 			return;
 		}
 
@@ -130,13 +129,10 @@ public class UserWalletService {
 		}
 
 		wallet.setUpdateAt(LocalDateTime.now());
-
-		// log作成・保存
-		userWalletLogService.createAndSaveLog(trade, wallet);
-
-		System.out.println("订单正常，保存数据");
 		// DB保存
 		userWalletRepository.save(wallet);
+		// log作成・保存
+		userWalletLogService.createAndSaveLog(trade, wallet);
 	}
 
 }
