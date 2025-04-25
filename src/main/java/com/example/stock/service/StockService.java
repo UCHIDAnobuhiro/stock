@@ -14,6 +14,9 @@ import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -177,6 +180,7 @@ public class StockService {
 	 * @param symbol 銘柄コード（例: "AAPL"）
 	 * @return 最新のローソク足データ（前日終値付き）
 	 */
+	@Cacheable(value = "symbolCache", key = "#symbol")
 	public StockCandleWithPrevCloseDto getLatestStockWithPrevClose(String symbol) {
 		String interval = "1day";
 		LocalDate targetDate = getPreviousBusinessDay(LocalDate.now());
@@ -189,13 +193,13 @@ public class StockService {
 			return stockCandleConverter.fromEntity(candleOpt.get());
 		}
 
-		List<StockCandleWithPrevCloseDto> list = getStockCandleWithPrevCloseDtoList(symbol, "1day", 100);
+		List<StockCandleWithPrevCloseDto> list = getStockCandleWithPrevCloseDtoList(symbol, "1day", 2);
 
 		if (list.isEmpty()) {
 			logger.warn("symbol={} のデータが空です（前日終値付き）", symbol);
 			throw new StockApiException("最新の株価データが存在しませんでした");
 		}
-		saveStockCandles(symbol, interval, 200);
+		saveStockCandles(symbol, interval, 2);
 		return list.get(0); // 最新のデータ（リストは昇順）
 	}
 
@@ -211,8 +215,13 @@ public class StockService {
 	 * @param outputsize 取得するローソク足データの件数
 	 */
 	@Transactional
+	@Caching(evict = {
+			@CacheEvict(value = "symbolCache", key = "#symbol"),
+			@CacheEvict(value = "candlesCache", key = "#symbol + ':' + #interval + ':' + #outputsize")
+	})
 	public void saveStockCandles(String symbol, String interval, int outputsize) {
 		List<StockCandleWithPrevCloseDto> dtoList = getStockCandleWithPrevCloseDtoList(symbol, interval, outputsize);
+		int savedCount = 0;
 
 		for (StockCandleWithPrevCloseDto dto : dtoList) {
 			LocalDateTime datetime = LocalDate.parse(dto.getDatetime()).atStartOfDay();
@@ -222,8 +231,10 @@ public class StockService {
 
 			if (!exists) {
 				stockCandleRepository.save(stockCandleConverter.toEntity(dto));
+				savedCount++;
 			}
 		}
+		logger.info("保存件数: {} 件（銘柄: {}, interval: {}）", savedCount, symbol, interval);
 	}
 
 	/**
@@ -234,7 +245,7 @@ public class StockService {
 	 * @param outputsize 取得するローソク足データの件数
 	 * @return 指定条件に一致する最新のローソク足データのリスト
 	 */
-	// @Cacheable(value = "candlesCache", key = "#symbol + ':' + #interval + ':' + #outputsize")
+	@Cacheable(value = "candlesCache", key = "#symbol + ':' + #interval + ':' + #outputsize", unless = "#result == null || #result.isEmpty()")
 	public List<StockCandle> getSavedCandles(String symbol, String interval, int outputsize) {
 		System.out.println(
 				"データベースにアクセスしています... symbol=" + symbol + ", interval=" + interval + ", outputsize=" + outputsize);
