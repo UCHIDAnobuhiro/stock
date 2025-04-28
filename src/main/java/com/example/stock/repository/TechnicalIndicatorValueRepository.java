@@ -1,6 +1,8 @@
 package com.example.stock.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,4 +20,7 @@ public interface TechnicalIndicatorValueRepository extends JpaRepository<Technic
 			String interval,
 			int period,
 			String indicator);
+
+	Optional<TechnicalIndicatorValue> findBySymbolAndIntervalAndDatetimeAndIndicatorAndLineNameAndPeriod(
+			String symbol, String interval, LocalDateTime datetime, String indicator, String lineName, Integer period);
 }

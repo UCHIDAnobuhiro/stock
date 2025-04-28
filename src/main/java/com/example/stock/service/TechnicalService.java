@@ -2,6 +2,7 @@ package com.example.stock.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,7 +109,23 @@ public class TechnicalService {
 					period, dtoList);
 
 			// 5. DB保存
-			technicalIndicatorValueRepository.saveAll(entities);
+			int savedCount = 0;
+			for (TechnicalIndicatorValue entity : entities) {
+				Optional<TechnicalIndicatorValue> existing = technicalIndicatorValueRepository
+						.findBySymbolAndIntervalAndDatetimeAndIndicatorAndLineNameAndPeriod(
+								entity.getSymbol(),
+								entity.getInterval(),
+								entity.getDatetime(),
+								entity.getIndicator(),
+								entity.getLineName(),
+								entity.getPeriod());
+
+				if (existing.isEmpty()) {
+					technicalIndicatorValueRepository.save(entity);
+					savedCount++;
+				}
+			}
+			logger.info("保存件数: {} 件（銘柄: {}, interval: {}, period: {}）", savedCount, symbol, interval, period);
 
 		} catch (Exception e) {
 			throw new RuntimeException("SMAデータの取得または保存に失敗しました", e);
