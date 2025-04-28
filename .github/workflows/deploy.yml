@@ -41,7 +41,8 @@ jobs:
             - name: GCEでアプリを再起動
               run: |
                   ssh -i private_key -o StrictHostKeyChecking=no \
-                    ${{ secrets.GCE_USER }}@${{ secrets.GCE_HOST }} << 'EOF'
+                    ${{ secrets.GCE_USER }}@${{ secrets.GCE_HOST }} << EOF
                     pkill -f 'java -jar' || true
+                    export GOOGLE_APPLICATION_CREDENTIALS=/home/${{ secrets.GCE_USER }}/credentials.json
                     nohup java -jar /home/${{ secrets.GCE_USER }}/app.jar > app.log 2>&1 &
                   EOF
