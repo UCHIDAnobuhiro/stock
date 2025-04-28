@@ -77,12 +77,23 @@ public class OrderController {
 	public String showOrderCheckPage(@Valid @ModelAttribute TradeRequestDto dto, BindingResult result, Model model) {
 
 		String symbol = tickersService.getTickerById(dto.getTickerId()).getTicker();
+		OrderPageDataDto data = orderPageDataService.getOrderPageData(symbol);
+
+		if (result.hasErrors()) {
+			StringBuilder errorMessages = new StringBuilder();
+			result.getFieldErrors().forEach(error -> {
+				errorMessages.append(error.getDefaultMessage());
+			});
+			model.addAttribute("errorMessage", errorMessages.toString());
+			return returnToOrderPage(model, data, dto);
+		}
+
 		Trade newTrade = tradeConverter.toTradeEntity(dto);
 		Users user = securityUtils.getLoggedInUserOrThrow();
 		boolean isTradeSuccess = true;
 
 		//画面移動に必要なデータが足りない場合はstockへ戻る
-		OrderPageDataDto data = orderPageDataService.getOrderPageData(symbol);
+
 		if (data == null || hasNullField(data)) {
 			if (data != null) {
 				model.addAttribute("ticker", data.getTicker());
@@ -117,11 +128,7 @@ public class OrderController {
 		//エラーが発生するなら
 		if (!isTradeSuccess) {
 			// 入力画面に必要なデータを送り、入力画面へ戻る
-			model.addAttribute("stock", data.getStock());
-			model.addAttribute("ticker", data.getTicker());
-			model.addAttribute("data", data);
-			model.addAttribute("orderType", dto.getSide());
-			return "order";
+			return returnToOrderPage(model, data, dto);
 		}
 
 		// エラーが発生してないなら、注文確定処理（DB保存）
@@ -149,6 +156,15 @@ public class OrderController {
 			e.printStackTrace();
 		}
 		return false;
+	}
+
+	//エラーになったときにorderページに戻るためのめぞ
+	private String returnToOrderPage(Model model, OrderPageDataDto data, TradeRequestDto dto) {
+		model.addAttribute("stock", data.getStock());
+		model.addAttribute("ticker", data.getTicker());
+		model.addAttribute("data", data);
+		model.addAttribute("orderType", dto.getSide());
+		return "order";
 	}
 
 }

@@ -17,7 +17,7 @@
 				<tr class="border-b">
 					<th class="text-right py-3 pr-4">数量</th>
 					<td class="py-3 pl-2">
-						<input type="number" name="quantity" value="1" min="1"
+						<input type="number" name="quantity" value="1"
 							class="p-1 pl-3 border border-gray-300 rounded hover:bg-gray-50 hover:shadow"> 株
 					</td>
 				</tr>
@@ -28,7 +28,7 @@
 							<input type="radio" name="type" value="LIMIT" checked>
 							指値：
 							<span id="unitPriceWrapper">
-								<input type="number" step="0.01" name="unitPrice" min="0.01"
+								<input type="number" step="0.01" name="unitPrice"
 								       th:value="${#numbers.formatDecimal(stock.close, 1, 2)}"
 								       class="p-1 pl-3 border border-gray-300 rounded hover:shadow">
 							</span>

@@ -24,18 +24,18 @@ public class TradeRequestDto {
 	private Long tickerId;
 
 	@NotNull(message = "数量は必須です。")
-	@Positive(message = "数量は正の数である必要があります。")
+	@Positive(message = "数量は正の数を入力してください")
 	private BigDecimal quantity;
 
 	@NotNull(message = "価格は必須です。")
-	@DecimalMin(value = "0.01", message = "価格は0.01以上である必要があります。")
+	@DecimalMin(value = "0.01", message = "価格は0.01以上を入力してください")
 	private BigDecimal unitPrice;
 
 	@NotNull(message = "決済通貨は必須です。")
 	private String settlementCurrency;
 
 	@NotNull(message = "為替レートは必須です。")
-	@DecimalMin(value = "0.01", message = "為替レートは0.01以上である必要があります。")
+	@DecimalMin(value = "0.01", message = "為替レートは0.01以上を入力してください。")
 	private BigDecimal exchangeRate;
 
 	@NotNull(message = "売買区分は必須です。")
