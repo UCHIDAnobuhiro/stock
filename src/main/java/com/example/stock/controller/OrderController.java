@@ -1,6 +1,7 @@
 package com.example.stock.controller;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 
 import jakarta.validation.Valid;
 
@@ -59,6 +60,13 @@ public class OrderController {
 			return "stock";
 		}
 
+		//デフォルトtradeを作成
+		TradeRequestDto trade = new TradeRequestDto();
+		trade.setQuantity(BigDecimal.ONE);
+		trade.setSettlementCurrency("JPY");
+		trade.setType("LIMIT");
+
+		model.addAttribute("trade", trade);
 		model.addAttribute("stock", data.getStock());
 		model.addAttribute("ticker", data.getTicker());
 		model.addAttribute("data", data);
@@ -164,6 +172,7 @@ public class OrderController {
 		model.addAttribute("ticker", data.getTicker());
 		model.addAttribute("data", data);
 		model.addAttribute("orderType", dto.getSide());
+		model.addAttribute("trade", dto);
 		return "order";
 	}
 
