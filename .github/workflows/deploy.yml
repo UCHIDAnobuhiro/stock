@@ -31,6 +31,13 @@ jobs:
                   scp -i private_key -o StrictHostKeyChecking=no \
                     target/*.jar ${{ secrets.GCE_USER }}@${{ secrets.GCE_HOST }}:/home/${{ secrets.GCE_USER }}/app.jar
 
+            - name: GCEにcredentials.jsonをアップロード
+              run: |
+                  echo "${{ secrets.GCP_CREDENTIALS_JSON_BASE64 }}" | base64 -d > credentials.json
+                  scp -i private_key -o StrictHostKeyChecking=no \
+                    credentials.json ${{ secrets.GCE_USER }}@${{ secrets.GCE_HOST }}:/home/${{ secrets.GCE_USER }}/credentials.json
+                  rm credentials.json
+
             - name: GCEでアプリを再起動
               run: |
                   ssh -i private_key -o StrictHostKeyChecking=no \
