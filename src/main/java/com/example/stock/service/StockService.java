@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.transaction.Transactional;
 
@@ -221,20 +223,35 @@ public class StockService {
 	})
 	public void saveStockCandles(String symbol, String interval, int outputsize) {
 		List<StockCandleWithPrevCloseDto> dtoList = getStockCandleWithPrevCloseDtoList(symbol, interval, outputsize);
-		int savedCount = 0;
 
-		for (StockCandleWithPrevCloseDto dto : dtoList) {
-			LocalDateTime datetime = LocalDate.parse(dto.getDatetime()).atStartOfDay();
-			boolean exists = stockCandleRepository
-					.findBySymbolAndIntervalAndDatetime(symbol, interval, datetime)
-					.isPresent();
+		// 1. 保存対象のdatetimeリストを作る
+		List<LocalDateTime> datetimeList = dtoList.stream()
+				.map(dto -> LocalDate.parse(dto.getDatetime()).atStartOfDay())
+				.toList();
 
-			if (!exists) {
-				stockCandleRepository.save(stockCandleConverter.toEntity(dto));
-				savedCount++;
-			}
-		}
-		logger.info("保存件数: {} 件（銘柄: {}, interval: {}）", savedCount, symbol, interval);
+		// 2. 既存のStockCandleをまとめて取得
+		List<StockCandle> existingCandles = stockCandleRepository.findAllBySymbolAndIntervalAndDatetimeIn(symbol,
+				interval, datetimeList);
+
+		// 3. 既存のdatetimeだけSetにまとめる
+		Set<LocalDateTime> existingDatetimes = existingCandles.stream()
+				.map(StockCandle::getDatetime)
+				.collect(Collectors.toSet());
+
+		// 4. 新規だけフィルタリング
+		List<StockCandle> toSave = dtoList.stream()
+				.filter(dto -> {
+					LocalDateTime datetime = LocalDate.parse(dto.getDatetime()).atStartOfDay();
+					return !existingDatetimes.contains(datetime);
+				})
+				.map(StockCandleConverter::toEntity)
+				.toList();
+
+		// 5. まとめてsaveAll
+		stockCandleRepository.saveAll(toSave);
+
+		logger.info("保存件数: {} 件（銘柄: {}, interval: {}）", toSave.size(), symbol, interval);
+
 	}
 
 	/**
