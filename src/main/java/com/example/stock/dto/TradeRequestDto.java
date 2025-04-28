@@ -23,11 +23,11 @@ public class TradeRequestDto {
 	@Positive(message = "銘柄IDは正の数である必要があります。")
 	private Long tickerId;
 
-	@NotNull(message = "数量は必須です。")
+	@NotNull(message = "数量を入力してください")
 	@Positive(message = "数量は正の数を入力してください")
 	private BigDecimal quantity;
 
-	@NotNull(message = "価格は必須です。")
+	@NotNull(message = "価格を入力してください")
 	@DecimalMin(value = "0.01", message = "価格は0.01以上を入力してください")
 	private BigDecimal unitPrice;
 
