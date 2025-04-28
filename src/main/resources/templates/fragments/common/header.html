@@ -1,7 +1,7 @@
 <header class="text-gray-600 body-font w-full"  th:classappend="${extraClass}" th:fragment="header-template">
 	<div class="container mx-auto" th:classappend="${extraClass}">
 		<div class="flex flex-wrap items-center justify-between p-5 w-full">
-		<a th:href="${#authorization.expression('isAuthenticated()') ? '/stock' : '/login'}"
+		<a th:href="${#authentication != null and #authorization.expression('isAuthenticated()') ? '/stock' : '/login'}"
 			class="flex items-center">
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round"
 				stroke-linejoin="round" stroke-width="2" class="w-10 h-10 text-white p-2 bg-indigo-500 rounded-full"
@@ -11,7 +11,7 @@
 			<span class="ml-3 text-2xl">Stock</span>
 		</a>
 		<form th:action="@{/logout}" method="post"
-			th:if="${#authorization.expression('isAuthenticated()')}">
+			th:if="${#authentication != null and #authorization.expression('isAuthenticated()')}">
 			<button type="submit" class="flex items-center title-font font-medium text-gray-900">
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round"
 					stroke-linejoin="round" stroke-width="2" class="w-10 h-10 text-white p-2 bg-indigo-500 rounded-full"

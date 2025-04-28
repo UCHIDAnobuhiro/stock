@@ -26,6 +26,16 @@ jobs:
                     --health-timeout=5s
                     --health-retries=3
 
+            redis:
+                image: redis:7
+                ports:
+                    - 6379:6379
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+
         env:
             DB_URL: jdbc:mysql://127.0.0.1:3306/stock
             DB_USERNAME: testuser
@@ -33,6 +43,7 @@ jobs:
             API_KEY: ${{ secrets.API_KEY }}
             EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
             EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+            GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
             SPRING_PROFILE: test
 
         steps:

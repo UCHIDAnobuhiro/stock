@@ -1,0 +1,18 @@
+<div id="account-information" th:fragment="account-information-template">
+	<span th:text="${data.user.displayName}" class="text-xl font-bold"></span><span>様</span>
+
+	<div class="mt-1">円貨買付可能額:
+		<span th:text="${#numbers.formatDecimal(data.jpyBalance, 1, 'COMMA', 0, 'POINT')}"></span>
+		<span>円</span>
+	</div>
+
+	<div class="mb-1">外貨買付可能額:
+		<span th:text="${#numbers.formatDecimal(data.usdBalance, 1, 'COMMA', 2, 'POINT')}"></span>
+		<span>ドル</span>
+	</div>
+
+	<div>保有状況：
+		<span th:text="${data.ticker.brand + ' (' + data.ticker.ticker + ')'}"></span>
+		<span th:text="${#numbers.formatDecimal(data.quantity, 0, 'COMMA', 0, 'POINT') + '株'}"></span>
+	</div>
+</div>
