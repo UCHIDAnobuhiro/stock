@@ -14,22 +14,13 @@
 	<main class="container mx-auto px-5 flex flex-col flex-1 min-w-[980px] ">
 		<!--基本情報（銘柄＋口座）-->
 		<section class="w-full flex flex-row mb-2">
-			<!--銘柄情報-->
-			<div class="border-2 rounded-lg border-gray-300 border-opacity-50 pt-2 pl-3 w-1/2">
-				<div th:replace="~{fragments/stock/today-information :: today-information-template}"></div>
-			</div>
 			<!--口座情報-->
-			<div class="border-2 rounded-lg border-gray-300 border-opacity-50 pt-2 pl-3 w-1/2 ml-4">
+			<div class="border-2 rounded-lg border-gray-300 border-opacity-50 pt-2 pl-3 w-full ml-4">
 				<div th:replace="~{fragments/order/account-information :: account-information-template}"></div>
 			</div>
 		</section>
-		<!--注文詳細-->
-		<section class="w-full">
-			<div th:replace="~{fragments/order/order-form :: order-form-template}"></div>
-		</section>
 	</main>
 	<div th:insert="~{fragments/common/footer :: footer-template}"></div>
-	<script type="module" src="/js/price-calc.js" defer></script>
 </body>
 
 </html>
