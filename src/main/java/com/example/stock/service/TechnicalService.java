@@ -1,7 +1,10 @@
 package com.example.stock.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,8 +110,29 @@ public class TechnicalService {
 			List<TechnicalIndicatorValue> entities = technicalIndicatorConverter.toEntities(symbol, interval, "SMA",
 					period, dtoList);
 
-			// 5. DB保存
-			technicalIndicatorValueRepository.saveAll(entities);
+			// 5. 一括で既存データを取得（datetimeリストだけまとめる）
+			List<LocalDateTime> datetimeList = entities.stream()
+					.map(TechnicalIndicatorValue::getDatetime)
+					.toList();
+
+			List<TechnicalIndicatorValue> existingEntities = technicalIndicatorValueRepository
+					.findAllBySymbolAndIntervalAndDatetimeInAndIndicatorAndLineNameAndPeriod(
+							symbol, interval, datetimeList, "SMA", "sma", period);
+
+			// 6. 既存のdatetimeだけセット化
+			Set<LocalDateTime> existingDatetimes = existingEntities.stream()
+					.map(TechnicalIndicatorValue::getDatetime)
+					.collect(Collectors.toSet());
+
+			// 7. まだ存在していないデータだけフィルタリング
+			List<TechnicalIndicatorValue> toSave = entities.stream()
+					.filter(entity -> !existingDatetimes.contains(entity.getDatetime()))
+					.toList();
+
+			// 8. まとめてsaveAll
+			technicalIndicatorValueRepository.saveAll(toSave);
+
+			logger.info("保存件数: {} 件（銘柄: {}, interval: {}, period: {}）", toSave.size(), symbol, interval, period);
 
 		} catch (Exception e) {
 			throw new RuntimeException("SMAデータの取得または保存に失敗しました", e);
