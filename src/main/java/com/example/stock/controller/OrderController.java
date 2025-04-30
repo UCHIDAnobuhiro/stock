@@ -87,6 +87,7 @@ public class OrderController {
 		String symbol = tickersService.getTickerById(dto.getTickerId()).getTicker();
 		OrderPageDataDto data = orderPageDataService.getOrderPageData(symbol);
 
+		// 入力エラー
 		if (result.hasErrors()) {
 			StringBuilder errorMessages = new StringBuilder();
 			result.getFieldErrors().forEach(error -> {
@@ -108,13 +109,6 @@ public class OrderController {
 				model.addAttribute("stock", data.getStock());
 			}
 			return "stock";
-		}
-
-		// 入力エラー
-		if (result.hasErrors()) {
-			isTradeSuccess = false;
-			result.getFieldErrors().forEach(e -> System.out.println(e.getField() + ": " + e.getDefaultMessage()));
-			model.addAttribute("errorMessage", "入力に誤りがあります");
 		}
 
 		// パスワード確認
@@ -140,9 +134,7 @@ public class OrderController {
 		}
 
 		// エラーが発生してないなら、注文確定処理（DB保存）
-		tradeService.saveTrade(newTrade);
-		userWalletService.applyTradeToWallet(newTrade);
-		userStockService.applyTradeToUserStock(newTrade);
+		tradeService.executeTrade(newTrade);
 
 		// 最新データ再取得し確認画面へ遷移
 		OrderPageDataDto updatedData = orderPageDataService.getOrderPageData(symbol);
