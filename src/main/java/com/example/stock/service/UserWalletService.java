@@ -11,7 +11,6 @@ import com.example.stock.model.Trade;
 import com.example.stock.model.UserWallet;
 import com.example.stock.model.Users;
 import com.example.stock.repository.UserWalletRepository;
-import com.example.stock.util.TradeValidationUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +22,7 @@ public class UserWalletService {
 	private final UserWalletRepository userWalletRepository;
 	private final StockService stockService;
 	private final UserWalletLogService userWalletLogService;
+	//	private final UserStockService userStockService;
 
 	/**
 	 * 指定されたユーザーに対応するウォレットを取得します。
@@ -81,39 +81,24 @@ public class UserWalletService {
 		UserWallet wallet = getWalletByUser(trade.getUser());
 		BigDecimal amount = trade.getTotalPrice();
 		String currency = trade.getSettlementCurrency();
-		boolean isAvailable = true;
-
-		// チェック：残高・価格制限・通貨
-		if (trade.getSide() == 0) { // 買い（残高減少）
-			if (!TradeValidationUtil.isBalanceEnough(trade, wallet)) {
-				log.error("【残高エラー】取引ID：{}, ユーザーID: {}, 通貨: {}, 必要金額: {}, 残高: {}",
-						trade.getId(), trade.getUser().getId(), currency, amount,
-						"JPY".equalsIgnoreCase(currency) ? wallet.getJpyBalance() : wallet.getUsdBalance());
-				isAvailable = false;
-			}
-			if (!TradeValidationUtil.isWithinLimit(trade, stockService)) {
-				BigDecimal[] range = TradeValidationUtil.getPriceLimitRange(trade, stockService);
-				log.error("【価格制限エラー】取引ID：{}, ユーザーID: {}, 単価: {}, 許容範囲: {} ～ {}",
-						trade.getId(), trade.getUser().getId(), trade.getUnitPrice(),
-						range[0], range[1]);
-				isAvailable = false;
-			}
-		} else if (trade.getSide() == 1) {
-			// 売り侧はチェック不要（今の仕様では無条件で加算可能）
-		}
 
 		// 通貨チェック
 		if (!"JPY".equalsIgnoreCase(currency) && !"USD".equalsIgnoreCase(currency)) {
 			log.error("【通貨エラー】取引ID：{}, ユーザーID: {}, 未対応の通貨: {}", trade.getId(), trade.getUser().getId(), currency);
-			isAvailable = false;
+			throw new IllegalStateException("未対応の通貨です: " + currency);
 		}
 
-		//チェックに問題があるなら、そのままreturn
-		if (!isAvailable) {
-			return;
+		// 【買い注文】残高チェック（最終検証）
+		if (trade.getSide() == 0) {
+			BigDecimal balance = "JPY".equalsIgnoreCase(currency) ? wallet.getJpyBalance() : wallet.getUsdBalance();
+			if (balance.compareTo(amount) < 0) {
+				log.error("【残高エラー】取引ID：{}, ユーザーID: {}, 通貨: {}, 必要金額: {}, 残高: {}",
+						trade.getId(), trade.getUser().getId(), currency, amount, balance);
+				throw new IllegalStateException("【最終検証】残高不足");
+			}
 		}
 
-		// チェックをすべて通過後、残高の変更を行う
+		// 残高の変更を行う
 		if (trade.getSide() == 0) {
 			if ("JPY".equalsIgnoreCase(currency)) {
 				wallet.setJpyBalance(wallet.getJpyBalance().subtract(amount));
