@@ -36,7 +36,7 @@
 			</form>
 
 			<!-- ロゴ結果の表示 -->
-			<div th:if="${logos != null}" class="mt-8">
+			<div th:if="${logos != null}" class="mt-8 flex flex-col justify-center">
 				<h2 class="text-xl font-semibold mb-3">検出されたロゴ:</h2>
 				<ul class="list-disc list-inside space-y-1">
 					<li th:each="logo : ${logos}" th:text="${logo}"></li>
@@ -46,6 +46,9 @@
 					<div class="gemini-card whitespace-pre-wrap break-words bg-gray-100 p-4 rounded-lg text-sm leading-relaxed"
 						th:utext="${summaryHTML}"></div>
 				</div>
+				<button class="mt-6 mx-auto bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
+					株価画面へ
+				</button>
 			</div>
 		</div>
 	</main>
