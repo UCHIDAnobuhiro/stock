@@ -30,6 +30,7 @@ import com.example.stock.dto.TradeRequestDto;
 import com.example.stock.model.Tickers;
 import com.example.stock.model.Trade;
 import com.example.stock.model.Users;
+import com.example.stock.repository.TradeRepository;
 import com.example.stock.security.SecurityUtils;
 import com.example.stock.service.LogoDetectionService;
 import com.example.stock.service.OrderPageDataService;
@@ -60,6 +61,8 @@ public class OrderControllerTest {
 	private PasswordEncoder passwordEncoder;
 	@MockBean
 	private SecurityUtils securityUtils;
+	@MockBean
+	private TradeRepository tradeRepository;
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -223,9 +226,8 @@ public class OrderControllerTest {
 
 		mockMvc.perform(post("/stock/order/submit")
 				.flashAttr("tradeRequestDto", testRequestDto))
-				.andExpect(status().isOk())
-				.andExpect(view().name("order-check"))
-				.andExpect(model().attributeExists("data"));
+				.andExpect(status().is3xxRedirection())
+				.andExpect(view().name("redirect:/stock/order/check"));
 
 		verify(tradeService).executeTrade(trade);
 	}
