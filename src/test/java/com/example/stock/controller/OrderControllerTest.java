@@ -227,9 +227,7 @@ public class OrderControllerTest {
 				.andExpect(view().name("order-check"))
 				.andExpect(model().attributeExists("data"));
 
-		verify(tradeService).saveTrade(trade);
-		verify(userWalletService).applyTradeToWallet(trade);
-		verify(userStockService).applyTradeToUserStock(trade);
+		verify(tradeService).executeTrade(trade);
 	}
 
 }

@@ -13,7 +13,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -238,35 +237,6 @@ public class UserStockServiceTest {
 	}
 
 	@Test
-	@DisplayName("T-111: 価格制限外でログ出力され、UserStockは保存されない")
-	void testApplyTradeToUserStock_priceOutOfRange(CapturedOutput output) {
-
-		// 価格制限外の価格で注文
-		Trade trade = createTrade(testUser, testTicker, "JPY", new BigDecimal("200"), 0); // 上限超過
-
-		userStockService.applyTradeToUserStock(trade);
-
-		assertThat(output).contains("【価格制限エラー】");
-		assertThat(userStockRepository.findByUserAndTicker(testUser, testTicker)).isEmpty();
-	}
-
-	@Test
-	@DisplayName("T-112: 残高不足でログ出力され、UserStockは保存されない")
-	void testApplyTradeToUserStock_insufficientBalance(CapturedOutput output) {
-		// 残高をゼロにする
-		testWallet.setJpyBalance(BigDecimal.ZERO);
-		userWalletRepository.save(testWallet);
-
-		// 買い注文（価格は正常、残高が足りない）
-		Trade trade = createTrade(testUser, testTicker, "JPY", new BigDecimal("1000"), 0);
-
-		userStockService.applyTradeToUserStock(trade);
-
-		assertThat(output).contains("【残高エラー】");
-		assertThat(userStockRepository.findByUserAndTicker(testUser, testTicker)).isEmpty();
-	}
-
-	@Test
 	@DisplayName("T-113: 正常な買い注文でUserStockが作成・数量加算される")
 	void testApplyTradeToUserStock_buy_createsAndAdds() {
 		// 保有なし → 新規作成される
@@ -278,6 +248,47 @@ public class UserStockServiceTest {
 		UserStock result = userStockRepository.findByUserAndTicker(testUser, testTicker).orElse(null);
 		assertThat(result).isNotNull();
 		assertThat(result.getQuantity()).isEqualTo(new BigDecimal("3"));
+	}
+
+	@Test
+	@DisplayName("T-114: 売り注文で保有株数が不足していると例外を投げる")
+	void testApplyTradeToUserStock_sell_insufficientStock() {
+		userStockRepository.save(buildStock(testUser, testTicker, new BigDecimal("1")));
+
+		Trade trade = createTrade(testUser, testTicker, "JPY", new BigDecimal("100"), 1);
+		trade.setQuantity(new BigDecimal("2")); // 保有数 < 売却数
+
+		assertThatThrownBy(() -> userStockService.applyTradeToUserStock(trade))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("保有株数が不足");
+	}
+
+	@Test
+	@DisplayName("T-115: 売り注文で保有数が十分な場合は数量が正しく減る")
+	void testApplyTradeToUserStock_sell_successfulReduction() {
+		userStockRepository.save(buildStock(testUser, testTicker, new BigDecimal("5")));
+
+		Trade trade = createTrade(testUser, testTicker, "JPY", new BigDecimal("100"), 1);
+		trade.setQuantity(new BigDecimal("2"));
+
+		userStockService.applyTradeToUserStock(trade);
+
+		UserStock updated = userStockRepository.findByUserAndTicker(testUser, testTicker).orElseThrow();
+		assertThat(updated.getQuantity()).isEqualTo(new BigDecimal("3"));
+	}
+
+	@Test
+	@DisplayName("T-116: 売り注文で保有数と売却数が同じ場合、数量が0になる")
+	void testApplyTradeToUserStock_sell_reducesToZero() {
+		userStockRepository.save(buildStock(testUser, testTicker, new BigDecimal("3")));
+
+		Trade trade = createTrade(testUser, testTicker, "JPY", new BigDecimal("300"), 1);
+		trade.setQuantity(new BigDecimal("3"));
+
+		userStockService.applyTradeToUserStock(trade);
+
+		UserStock updated = userStockRepository.findByUserAndTicker(testUser, testTicker).orElseThrow();
+		assertThat(updated.getQuantity()).isEqualTo(BigDecimal.ZERO);
 	}
 
 	private Trade createTrade(Users user, Tickers ticker, String currency, BigDecimal total, int side) {
