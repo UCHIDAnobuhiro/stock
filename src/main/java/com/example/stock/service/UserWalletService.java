@@ -20,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class UserWalletService {
 	private final UserWalletRepository userWalletRepository;
-	private final StockService stockService;
 	private final UserWalletLogService userWalletLogService;
 	//	private final UserStockService userStockService;
 
@@ -81,6 +80,7 @@ public class UserWalletService {
 		UserWallet wallet = getWalletByUser(trade.getUser());
 		BigDecimal amount = trade.getTotalPrice();
 		String currency = trade.getSettlementCurrency();
+		BigDecimal balance = "JPY".equalsIgnoreCase(currency) ? wallet.getJpyBalance() : wallet.getUsdBalance();
 
 		// 通貨チェック
 		if (!"JPY".equalsIgnoreCase(currency) && !"USD".equalsIgnoreCase(currency)) {
@@ -90,7 +90,6 @@ public class UserWalletService {
 
 		// 【買い注文】残高チェック（最終検証）
 		if (trade.getSide() == 0) {
-			BigDecimal balance = "JPY".equalsIgnoreCase(currency) ? wallet.getJpyBalance() : wallet.getUsdBalance();
 			if (balance.compareTo(amount) < 0) {
 				log.error("【残高エラー】取引ID：{}, ユーザーID: {}, 通貨: {}, 必要金額: {}, 残高: {}",
 						trade.getId(), trade.getUser().getId(), currency, amount, balance);
@@ -118,6 +117,9 @@ public class UserWalletService {
 		userWalletRepository.save(wallet);
 		// log作成・保存
 		userWalletLogService.createAndSaveLog(trade, wallet);
+
+		log.info("【口座情報更新】ユーザーID: {}, 通貨: {}, 処理数量: {}, 残り: {}",
+				trade.getUser().getId(), currency, amount, balance);
 	}
 
 }
