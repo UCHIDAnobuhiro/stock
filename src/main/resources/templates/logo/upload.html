@@ -46,9 +46,10 @@
 					<div class="gemini-card whitespace-pre-wrap break-words bg-gray-100 p-4 rounded-lg text-sm leading-relaxed"
 						th:utext="${summaryHTML}"></div>
 				</div>
-				<button class="mt-6 mx-auto bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
-					株価画面へ
-				</button>
+				<a th:href="@{/stock(symbol=${symbol})}"
+				   class="mt-6 mx-auto bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition block text-center">
+				    株価画面へ
+				</a>
 			</div>
 		</div>
 	</main>

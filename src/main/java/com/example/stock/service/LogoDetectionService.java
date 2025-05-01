@@ -12,8 +12,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.stock.dto.LogoSummaryWithTickers;
+import com.example.stock.model.Tickers;
 import com.example.stock.prompt.PromptLoader;
 import com.example.stock.prompt.PromptType;
+import com.example.stock.repository.TickersRepository;
 import com.google.cloud.vision.v1.AnnotateImageRequest;
 import com.google.cloud.vision.v1.AnnotateImageResponse;
 import com.google.cloud.vision.v1.EntityAnnotation;
@@ -23,7 +26,6 @@ import com.google.cloud.vision.v1.ImageAnnotatorClient;
 import com.google.protobuf.ByteString;
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
-import com.vladsch.flexmark.util.ast.Node;
 
 import lombok.RequiredArgsConstructor;
 import okhttp3.MediaType;
@@ -39,6 +41,7 @@ public class LogoDetectionService {
 	private final ImageAnnotatorClient visionClient;
 	private final PromptLoader loader;
 	private final OkHttpClient client;
+	private final TickersRepository tickersRepository;
 
 	@Value("${gemini.api.url}")
 	private String geminiApiUrl;
@@ -126,14 +129,9 @@ public class LogoDetectionService {
 				.collect(Collectors.toList());
 	}
 
-	public String summarizeWithGemini(String visionJson) throws IOException {
-		// Gemini API エンドポイント
+	public LogoSummaryWithTickers summarizeWithGemini(String visionJson) throws IOException {
 		String url = geminiApiUrl + geminiApiKey;
-
-		// Geminiに渡すプロンプト
 		String prompt = loader.loadPrompt(PromptType.MARKDOWN, visionJson);
-
-		// Gemini用のJSONリクエストボディ
 		String requestBody = loader.loadRequestJson(prompt);
 
 		Request request = new Request.Builder()
@@ -147,7 +145,6 @@ public class LogoDetectionService {
 			}
 			String responseBody = response.body().string();
 			JSONObject obj = new JSONObject(responseBody);
-			// Geminiのレスポンスから "text" を抽出
 			String markdown = obj.getJSONArray("candidates")
 					.getJSONObject(0)
 					.getJSONObject("content")
@@ -155,15 +152,16 @@ public class LogoDetectionService {
 					.getJSONObject(0)
 					.getString("text");
 
-			// Tickerの行を抽出
 			String ticker = extractTicker(markdown);
-			System.out.println(ticker);
+			String brand = extractBrand(markdown);
 
-			// Markdown → HTML
+			Tickers entity = getOrSaveTicker(ticker, brand);
+
 			Parser parser = Parser.builder().build();
 			HtmlRenderer renderer = HtmlRenderer.builder().build();
-			Node document = parser.parse(markdown);
-			return renderer.render(document);
+			String html = renderer.render(parser.parse(markdown));
+
+			return new LogoSummaryWithTickers(entity, html);
 		}
 	}
 
@@ -175,6 +173,41 @@ public class LogoDetectionService {
 			}
 		}
 		return "";
+	}
+
+	private String extractBrand(String markdown) {
+		String[] lines = markdown.split("\n");
+		for (int i = 0; i < lines.length - 1; i++) {
+			if (lines[i].trim().contains("企業名")) {
+				String raw = lines[i + 1].trim();
+				return raw.replaceAll("[（(].*?[）)]", "").trim();
+
+			}
+		}
+		return "";
+	}
+
+	/**
+	 * TickersエンティティをDBに保存（既存データがなければ）。
+	 *
+	 * @param ticker ティッカー（例: "KO"）
+	 * @param brand ブランド名（例: "The Coca-Cola Company"）
+	 */
+	public Tickers getOrSaveTicker(String ticker, String brand) {
+		if (ticker == null || ticker.isBlank() || brand == null || brand.isBlank()) {
+			return null;
+		}
+
+		Tickers existing = tickersRepository.findByTicker(ticker);
+		if (existing != null) {
+			return existing;
+		}
+
+		Tickers newTicker = new Tickers();
+		newTicker.setTicker(ticker);
+		newTicker.setBrand(brand);
+		tickersRepository.save(newTicker);
+		return newTicker;
 	}
 
 }
