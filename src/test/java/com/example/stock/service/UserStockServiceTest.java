@@ -237,7 +237,7 @@ public class UserStockServiceTest {
 	}
 
 	@Test
-	@DisplayName("T-113: 正常な買い注文でUserStockが作成・数量加算される")
+	@DisplayName("T-111: 正常な買い注文でUserStockが作成・数量加算される")
 	void testApplyTradeToUserStock_buy_createsAndAdds() {
 		// 保有なし → 新規作成される
 		Trade trade = createTrade(testUser, testTicker, "JPY", new BigDecimal("100"), 0);
@@ -251,7 +251,7 @@ public class UserStockServiceTest {
 	}
 
 	@Test
-	@DisplayName("T-114: 売り注文で保有株数が不足していると例外を投げる")
+	@DisplayName("T-112: 売り注文で保有株数が不足していると例外を投げる")
 	void testApplyTradeToUserStock_sell_insufficientStock() {
 		userStockRepository.save(buildStock(testUser, testTicker, new BigDecimal("1")));
 
@@ -264,7 +264,7 @@ public class UserStockServiceTest {
 	}
 
 	@Test
-	@DisplayName("T-115: 売り注文で保有数が十分な場合は数量が正しく減る")
+	@DisplayName("T-113: 売り注文で保有数が十分な場合は数量が正しく減る")
 	void testApplyTradeToUserStock_sell_successfulReduction() {
 		userStockRepository.save(buildStock(testUser, testTicker, new BigDecimal("5")));
 
@@ -278,7 +278,7 @@ public class UserStockServiceTest {
 	}
 
 	@Test
-	@DisplayName("T-116: 売り注文で保有数と売却数が同じ場合、数量が0になる")
+	@DisplayName("T-114: 売り注文で保有数と売却数が同じ場合、数量が0になる")
 	void testApplyTradeToUserStock_sell_reducesToZero() {
 		userStockRepository.save(buildStock(testUser, testTicker, new BigDecimal("3")));
 
