@@ -10,6 +10,10 @@ class ChartStyleConfig {
 		24: "#26c6da",
 		60: "#8d6e63"
 	};
+	#bbandsColors = {
+		upper: "#e57373", // 赤系
+		lower: "#64b5f6", // 青系
+	};
 	#trendLineBorderColor = "rgba(0, 0, 0, 1)";
 	#trendLineBorderWidth = 2;
 	#showAmount =100;
@@ -32,6 +36,19 @@ class ChartStyleConfig {
 	setSMAColor(period, color) {
 		this.#smaColorMap[period] = color;
 	}
+	
+	getBollingerBandColor(lineType) {
+		return this.#bbandsColors[lineType] || "#888";
+	}
+	setBollingerBandColor(lineType, color) {
+		this.#bbandsColors[lineType] = color;
+	}
+	
+	getBollingerBandMiddleColor(period) {
+		return this.getSMAColor(period);
+	}
+
+	
 }
 
 export default new ChartStyleConfig();

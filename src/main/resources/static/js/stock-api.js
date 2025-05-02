@@ -12,8 +12,9 @@ import stockConfig from './config/stock-config.js';
  * const data = await fetchStockData();
  * console.log(data[0].close); // 終値を出力
  */
-export const fetchStockData = async () => {
-	const url = `/api/stocks/list?symbol=${stockConfig.symbol}&interval=${stockConfig.interval}&outputsize=${stockConfig.outputsize}`;
+export const fetchStockData = async (extra=0) => {
+	const actualOutputsize = stockConfig.outputsize + extra;
+	const url = `/api/stocks/list?symbol=${stockConfig.symbol}&interval=${stockConfig.interval}&outputsize=${actualOutputsize}`;
 	const res = await fetch(url);
 	const json = await res.json();
 
@@ -38,12 +39,13 @@ export const fetchStockData = async () => {
  * console.log(smaList[0].timeperiod); // 例: 5
  * console.log(smaList[0].values[0].sma); // 例: 220.12
  */
-export const fetchSMAData = async () => {
+export const fetchSMAData = async (extra = 0) => {
 	const interval = stockConfig.interval;
 	const timePeriods = stockConfig.getSMAPeriods();
+	const actualOutputsize = stockConfig.outputsize + extra;
 
 	const fetchOne = async (period) => {
-		const url = `/api/stocks/technical/SMA?symbol=${stockConfig.symbol}&interval=${interval}&timeperiod=${period}&outputsize=${stockConfig.outputsize}`;
+		const url = `/api/stocks/technical/SMA?symbol=${stockConfig.symbol}&interval=${interval}&timeperiod=${period}&outputsize=${actualOutputsize}`;
 		const res = await fetch(url);
 		const json = await res.json();
 		if (json.status === "error") {
