@@ -8,6 +8,12 @@ class StockConfig {
 		"1week": [13, 26, 52],
 		"1month": [9, 24, 60]
 	};
+	#ichimokuPeriodMap = {
+		//転換線期間、kijun+1=基準線期間、先行線、span+1=スパン期間
+		"1day": { tenkan: 9, kijun: 25, senkouB: 52, span: 25 },
+		"1week": { tenkan: 13, kijun: 25, senkouB: 52, span: 25 },
+		"1month": { tenkan: 9, kijun: 23, senkouB: 60, span: 25 }
+	};
 
 	get symbol() { return this.#symbol; }
 	set symbol(v) { this.#symbol = v; }
@@ -15,7 +21,7 @@ class StockConfig {
 	set interval(v) { this.#interval = v; }
 	get outputsize() { return this.#outputsize; }
 	set outputsize(v) { this.#outputsize = v; }
-	
+
 	getSMAPeriods() {
 		return this.#smaPeriodMap[this.#interval] || [];
 	}
@@ -23,6 +29,13 @@ class StockConfig {
 	//set SMAPeriods()は一つのパラメータまでなので、メソッドのほうがわかりやすい。
 	setSMAPeriods(interval, periods) {
 		this.#smaPeriodMap[interval] = periods;
+	}
+
+	getIchimokuPeriods() {
+		return this.#ichimokuPeriodMap[this.#interval] || { tenkan: 9, kijun: 25, senkouB: 52, span: 26 };
+	}
+	setIchimokuPeriods(interval, config) {
+		this.#ichimokuPeriodMap[interval] = config;
 	}
 }
 

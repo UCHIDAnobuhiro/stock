@@ -3,6 +3,7 @@ import stockConfig from './config/stock-config.js';//銘柄に関する変数配
 import chartStyleConfig from './config/chart-style-config.js';//グラフに関する変数配置ファイルをimport
 import { trendlineAnnotations, enableTrendlineDrawing } from './trendline.js';　//トレンドラインのファイルを導入
 import { calculateBollingerBands } from './bollinger-calc.js';
+import { calculateIchimoku } from './ichimoku-calc.js';
 
 // グローバル変数：チャートインスタンスを保持しておく
 let candleChart = null;
@@ -132,6 +133,93 @@ export const renderCharts = async () => {
 			}
 		}
 	}
+
+	if (isIchimokuChecked) {
+		const ichimokuPeriods = stockConfig.getIchimokuPeriods();
+		const ichimoku = calculateIchimoku(candleData, {
+			tenkanPeriod: ichimokuPeriods.tenkan,
+			kijunPeriod: ichimokuPeriods.kijun,
+			senkouBPeriod: ichimokuPeriods.senkouB,
+			chikouOffsetPeriod:ichimokuPeriods.span
+		});
+
+		ichimokuDatasets = [
+			{
+				type: "line",
+				label: "転換線",
+				data: ichimoku.tenkan,
+				borderColor: "orange",
+				borderWidth: 1,
+				pointRadius: 0,
+				order: 5
+			},
+			{
+				type: "line",
+				label: "基準線",
+				data: ichimoku.kijun,
+				borderColor: "blue",
+				borderWidth: 1,
+				pointRadius: 0,
+				order: 5
+			},
+			{
+				type: "line",
+				label: "先行線1",
+				data: ichimoku.senkouA,
+				borderColor: "green",
+				borderWidth: 1,
+				pointRadius: 0,
+				fill: {
+					target: "+1",
+					above: "rgba(144,238,144,0.4)",
+					below: "rgba(255,182,193,0.4)"
+				},
+				order: 4
+			},
+			{
+				type: "line",
+				label: "先行線2",
+				data: ichimoku.senkouB,
+				borderColor: "red",
+				borderWidth: 1,
+				pointRadius: 0,
+				order: 4
+			},
+			{
+				type: "line",
+				label: "遅行線",
+				data: ichimoku.chikou,
+				borderColor: "purple",
+				borderWidth: 1,
+				pointRadius: 0,
+				order: 3
+			}
+		];
+
+		const padNullToLabels = (labels, data) => {
+			const map = new Map(data.map(d => [d.x, d.y]));
+			return labels.map(label => ({
+				x: label,
+				y: map.has(label) ? map.get(label) : null
+			}));
+		};
+
+		ichimokuDatasets = ichimokuDatasets.map(ds => {
+			if (ds.label === '遅行線') {
+					const filled = padNullToLabels(labels, ds.data);
+					return {
+						...ds,
+						data: filled.slice(-stockConfig.outputsize)
+					};
+			} else {
+				return {
+					...ds,
+					data: ds.data.slice(-stockConfig.outputsize)
+				};
+			}
+		});
+
+	}
 	
 	// チャートが既にあれば破棄してから再生成（再描画時に必要）
 	if (candleChart) {
@@ -152,8 +240,9 @@ export const renderCharts = async () => {
 	labels = labels.slice(-stockConfig.outputsize);
 	}
 	
+	console.log(ichimokuDatasets);
 	// チャートを生成・描画
-	candleChart = createCandleChart(labels, candleData, volumeData, SMADatasets, bbandsDatasets);
+	candleChart = createCandleChart(labels, candleData, volumeData, SMADatasets, bbandsDatasets,ichimokuDatasets);
 	volumeChart = createVolumeChart(labels, volumeData);
 	setTimeout(() => {
 		enableTrendlineDrawing(candleChart);
@@ -161,7 +250,7 @@ export const renderCharts = async () => {
 }
 
 // ローソク足チャートの作成関数
-const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets) => {
+const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets,ichimokuDatasets) => {
 	let tooltipEl = null;
 	let shouldHideTooltip = false; // 表示/非表示を制御するフラグ
 
@@ -176,7 +265,8 @@ const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets
 				backgroundColor: { up: "#26a69a", down: "#ef5350" }
 			},
 			...SMADatasets,
-			...bbandsDatasets
+			...bbandsDatasets,
+			...ichimokuDatasets
 			]
 		},
 		options: {
