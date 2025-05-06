@@ -1,7 +1,7 @@
-import { fetchStockData, fetchSMAData } from './stock-api.js';//chart.jsに使うデータをとってくる
-import stockConfig from './config/stock-config.js';//銘柄に関する変数配置ファイルをimport
-import chartStyleConfig from './config/chart-style-config.js';//グラフに関する変数配置ファイルをimport
-import { trendlineAnnotations, enableTrendlineDrawing } from './trendline.js';　//トレンドラインのファイルを導入
+import { fetchStockData, fetchSMAData } from './stock-api.js'; // chart.jsに使うデータをとってくる
+import stockConfig from './config/stock-config.js'; // 銘柄に関する変数配置ファイルをimport
+import chartStyleConfig from './config/chart-style-config.js'; // グラフに関する変数配置ファイルをimport
+import { trendlineAnnotations, enableTrendlineDrawing } from './trendline.js'; // トレンドラインのファイルを導入
 import { calculateBollingerBands } from './bollinger-calc.js';
 import { calculateIchimoku } from './ichimoku-calc.js';
 
@@ -9,31 +9,36 @@ import { calculateIchimoku } from './ichimoku-calc.js';
 let candleChart = null;
 let volumeChart = null;
 
-stockConfig.showAmount = document.getElementById("rowSelector").value; //同時に表示するデータ数 本数selectorのdefault値をとる
+// デフォルトの表示本数をセレクターから取得
+stockConfig.showAmount = document.getElementById("rowSelector").value;
 
 // チャートの描画処理（ローソク足と出来高チャートの生成）
 export const renderCharts = async () => {
-	//既存のトレンドラインを削除
+	// 既存のトレンドラインを削除
 	for (const key in trendlineAnnotations) {
 		delete trendlineAnnotations[key];
 	}
+
+	// チェックされたインジケーターの確認
 	const isSmaChecked = document.querySelector('input[value="sma"]').checked;
 	const isBbandsChecked = document.querySelector('input[value="bbands"]').checked;
 	const isIchimokuChecked = document.querySelector('input[value="ichimoku"]').checked;
+
 	let extra = 0;
 
-	//
+	// ボリンジャーバンド用に余分なデータ期間を確保
 	if (isBbandsChecked) {
-		const periods = stockConfig.getSMAPeriods(); // e.g., [5, 25, 75]
-		extra = periods[1]; // => 25
+		const periods = stockConfig.getSMAPeriods(); // 例：[5, 25, 75]
+		extra = periods[1]; // 中央の期間を使用 → 25
 	}
 
+	// 一目均衡表用に最大必要期間を確保（先行スパンB + 基準線）
 	if (isIchimokuChecked) {
 		const ichi = stockConfig.getIchimokuPeriods(); // {tenkan, kijun, senkouB}
 		extra = Math.max(extra, ichi.senkouB + ichi.kijun); // 通常 52 + 26 = 78
 	}
-	
-	const data = await fetchStockData(extra); // データ取得200+25個
+
+	const data = await fetchStockData(extra); // データ取得（余分な日数を含める）
 
 	// x軸用のラベル（日付）
 	let labels = data.map(d => d.datetime);
@@ -55,10 +60,12 @@ export const renderCharts = async () => {
 
 	let SMADatasets = [];
 	let bbandsDatasets = [];
-	let ichimokuDatasets=[];
-	//SMAのデータsetを
+	let ichimokuDatasets = [];
+
+	// SMAまたはBollinger Bandsが選択されている場合
 	if (isSmaChecked || isBbandsChecked) {
 		const SMAResults = await fetchSMAData(extra);
+
 		SMADatasets = SMAResults.map(sma => ({
 			type: "line",
 			label: `SMA (${sma.timeperiod})`,
@@ -71,18 +78,15 @@ export const renderCharts = async () => {
 		}));
 
 		if (isBbandsChecked) {
-
-			//中央線設定 "1day": [5, 25, 75]の場合は25の線
-			const midSMA = SMAResults[1];
+			const midSMA = SMAResults[1]; // 中央線（例：25期間）
 			const smaArray = midSMA.values.map(d => ({
 				x: d.datetime,
 				y: parseFloat(d.indicators.sma)
 			}));
 
-			//毎日の終値を取得
-			const closePrices = candleData.map(d => d.c);
+			const closePrices = candleData.map(d => d.c); // 終値配列
 
-			//+2σと-2σを計算する。
+			// ボリンジャーバンドの上下線を計算
 			const { upperBand, lowerBand } = calculateBollingerBands(
 				smaArray,
 				closePrices,
@@ -99,7 +103,7 @@ export const renderCharts = async () => {
 					pointRadius: 0,
 					fill: false,
 					order: 10,
-					borderDash: [5, 5] // 虛線
+					borderDash: [5, 5]
 				},
 				{
 					type: "line",
@@ -120,29 +124,34 @@ export const renderCharts = async () => {
 					pointRadius: 0,
 					fill: false,
 					order: 10,
-					borderDash: [5, 5] // 虛線
+					borderDash: [5, 5]
 				}
 			];
-			
+
+			// 出力サイズに合わせて切り捨て
 			bbandsDatasets = bbandsDatasets.map(ds => ({
-					...ds,
-					data: ds.data.slice(-stockConfig.outputsize)
-				}));
+				...ds,
+				data: ds.data.slice(-stockConfig.outputsize)
+			}));
+
+			// SMAが未チェックなら中央線は表示しない
 			if (!isSmaChecked) {
 				SMADatasets = [];
 			}
 		}
 	}
 
+	// 一目均衡表がチェックされている場合の処理
 	if (isIchimokuChecked) {
 		const ichimokuPeriods = stockConfig.getIchimokuPeriods();
 		const ichimoku = calculateIchimoku(candleData, {
 			tenkanPeriod: ichimokuPeriods.tenkan,
 			kijunPeriod: ichimokuPeriods.kijun,
 			senkouBPeriod: ichimokuPeriods.senkouB,
-			chikouOffsetPeriod:ichimokuPeriods.span
+			chikouOffsetPeriod: ichimokuPeriods.span
 		});
 
+		// 一目均衡表のラインを設定
 		ichimokuDatasets = [
 			{
 				type: "line",
@@ -196,32 +205,18 @@ export const renderCharts = async () => {
 			}
 		];
 
-		const padNullToLabels = (labels, data) => {
-			const map = new Map(data.map(d => [d.x, d.y]));
-			return labels.map(label => ({
-				x: label,
-				y: map.has(label) ? map.get(label) : null
-			}));
-		};
+		console.log(ichimokuDatasets);
 
+		// 一目均衡表は未来の分も含めて表示する必要があるため、span分を含めてスライス
 		ichimokuDatasets = ichimokuDatasets.map(ds => {
-			if (ds.label === '遅行線') {
-					const filled = padNullToLabels(labels, ds.data);
-					return {
-						...ds,
-						data: filled.slice(-stockConfig.outputsize)
-					};
-			} else {
-				return {
-					...ds,
-					data: ds.data.slice(-stockConfig.outputsize)
-				};
-			}
+			return {
+				...ds,
+				data: ds.data.slice(-stockConfig.outputsize - ichimokuPeriods.span)
+			};
 		});
-
 	}
-	
-	// チャートが既にあれば破棄してから再生成（再描画時に必要）
+
+	// 再描画のため、既存のチャートがあれば破棄
 	if (candleChart) {
 		candleChart.destroy();
 	}
@@ -229,20 +224,31 @@ export const renderCharts = async () => {
 		volumeChart.destroy();
 	}
 
-	//計算用の余計なデータを消す
-	if(isBbandsChecked||isIchimokuChecked){
-	SMADatasets = SMADatasets.map(ds => ({
-		...ds,
-		data: ds.data.slice(-stockConfig.outputsize)
-	}));
-	candleData = candleData.slice(-stockConfig.outputsize);
-	volumeData = volumeData.slice(-stockConfig.outputsize);
-	labels = labels.slice(-stockConfig.outputsize);
+	// 計算用に多く取得したデータを出力サイズ分に切り詰め
+	if (isBbandsChecked || isIchimokuChecked) {
+		SMADatasets = SMADatasets.map(ds => ({
+			...ds,
+			data: ds.data.slice(-stockConfig.outputsize)
+		}));
+
+		candleData = candleData.slice(-stockConfig.outputsize);
+		volumeData = volumeData.slice(-stockConfig.outputsize);
+		labels = labels.slice(-stockConfig.outputsize);
+
+		console.log(labels);
+
+		// 一目均衡表がオンなら未来の日付をlabelsに追加（先行スパン描画用）
+		const lastDate = labels[labels.length - 1];
+		if (isIchimokuChecked) {
+			for (let i = 1; i < 25; i++) {
+				const futureDate = addDays(lastDate, i); // 実際の日付を使用
+				labels.push(futureDate);
+			}
+		}
 	}
-	
-	console.log(ichimokuDatasets);
+
 	// チャートを生成・描画
-	candleChart = createCandleChart(labels, candleData, volumeData, SMADatasets, bbandsDatasets,ichimokuDatasets);
+	candleChart = createCandleChart(labels, candleData, volumeData, SMADatasets, bbandsDatasets, ichimokuDatasets);
 	volumeChart = createVolumeChart(labels, volumeData);
 	setTimeout(() => {
 		enableTrendlineDrawing(candleChart);
@@ -250,7 +256,7 @@ export const renderCharts = async () => {
 }
 
 // ローソク足チャートの作成関数
-const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets,ichimokuDatasets) => {
+const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets, ichimokuDatasets) => {
 	let tooltipEl = null;
 	let shouldHideTooltip = false; // 表示/非表示を制御するフラグ
 
@@ -517,12 +523,10 @@ const syncChangeScale = (sourceChart, targetChart) => {
 	}
 };
 
-function hideTooltip(tooltipEl) {
-	if (tooltipEl) {
-		tooltipEl.style.opacity = 0;
-		tooltipEl.style.left = '-9999px';
-		tooltipEl.style.top = '-9999px';
-	}
+function addDays(dateStr, days) {
+	const date = new Date(dateStr);
+	date.setDate(date.getDate() + days);
+	return date.toISOString().slice(0, 10);
 }
 
 // セレクタ変更時に interval を更新してチャート再描画
