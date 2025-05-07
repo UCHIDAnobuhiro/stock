@@ -4,7 +4,8 @@
 		<form th:action="@{/stock/order/submit}" method="post" class="w-full">
 			<input type="hidden" name="side" th:value="${orderType}" />
 			<div class="text-center text-3xl font-bold mt-8 mb-4"
-				th:text="${orderType == 'buy' ? '買い注文' : (orderType == 'sell' ? '売り注文' : '')}">
+			     th:classappend="${orderType == 'buy' ? ' text-red-600' : (orderType == 'sell' ? ' text-green-600' : '')}"
+			     th:text="${orderType == 'buy' ? '買い注文' : (orderType == 'sell' ? '売り注文' : '')}">
 			</div>
 			<table class="mx-auto pl-10">
 				<tr class="border-b">
