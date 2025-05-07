@@ -43,6 +43,16 @@ jobs:
                   ssh -i private_key -o StrictHostKeyChecking=no \
                     ${{ secrets.GCE_USER }}@${{ secrets.GCE_HOST }} << EOF
                     pkill -f 'java -jar' || true
+                    
                     export GOOGLE_APPLICATION_CREDENTIALS=/home/${{ secrets.GCE_USER }}/credentials.json
+                    export DB_URL=\$(gcloud secrets versions access latest --secret=DB_URL)
+                    export DB_USERNAME=\$(gcloud secrets versions access latest --secret=DB_USERNAME)
+                    export DB_PASSWORD=\$(gcloud secrets versions access latest --secret=DB_PASSWORD)
+                    export API_KEY=\$(gcloud secrets versions access latest --secret=API_KEY)
+                    export GEMINI_API_KEY=\$(gcloud secrets versions access latest --secret=GEMINI_API_KEY)
+                    export EMAIL_ADDRESS=\$(gcloud secrets versions access latest --secret=EMAIL_ADDRESS)
+                    export EMAIL_PASSWORD=\$(gcloud secrets versions access latest --secret=EMAIL_PASSWORD)
                     nohup java -jar /home/${{ secrets.GCE_USER }}/app.jar > app.log 2>&1 &
+                    
+                    rm /home/${{ secrets.GCE_USER }}/credentials.json
                   EOF
