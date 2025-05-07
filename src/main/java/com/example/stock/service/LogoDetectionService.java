@@ -194,7 +194,8 @@ public class LogoDetectionService {
 	 * @param brand ブランド名（例: "The Coca-Cola Company"）
 	 */
 	public Tickers getOrSaveTicker(String ticker, String brand) {
-		if (ticker == null || ticker.isBlank() || brand == null || brand.isBlank()) {
+		if (ticker == null || ticker.isBlank() || brand == null || brand.isBlank()
+				|| ticker.equals("なし") || !ticker.matches("^[A-Za-z0-9]+$")) {
 			return null;
 		}
 
