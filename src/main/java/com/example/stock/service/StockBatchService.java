@@ -29,7 +29,7 @@ public class StockBatchService {
 			"1week", List.of(13, 26, 52),
 			"1month", List.of(9, 24, 60));
 
-	@Scheduled(cron = "0 30 16  * * *")
+	@Scheduled(cron = "0 45 16  * * *", zone = "Asia/Tokyo")
 	public void runRateLimitedBatch() {
 		log.info("=== バッチ処理開始 ===");
 		List<String> symbols = tickersRepository.findAllTickers();
