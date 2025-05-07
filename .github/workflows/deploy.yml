@@ -26,11 +26,6 @@ jobs:
                   echo "${{ secrets.SSH_KEY }}" > private_key
                   chmod 600 private_key
 
-            - name: GCEにjarファイルをアップロード
-              run: |
-                  scp -i private_key -o StrictHostKeyChecking=no \
-                    target/*.jar ${{ secrets.GCE_USER }}@${{ secrets.GCE_HOST }}:/home/${{ secrets.GCE_USER }}/app.jar
-
             - name: GCEにcredentials.jsonをアップロード
               run: |
                   echo "${{ secrets.GCP_CREDENTIALS_JSON_BASE64 }}" | base64 -d > credentials.json
@@ -44,7 +39,6 @@ jobs:
                     ${{ secrets.GCE_USER }}@${{ secrets.GCE_HOST }} << 'EOF'
                     pkill -f 'java -jar' || true
                     
-                    export GOOGLE_APPLICATION_CREDENTIALS=/home/${{ secrets.GCE_USER }}/credentials.json
                     export DB_URL=$(gcloud secrets versions access latest --secret=DB_URL)
                     export DB_USERNAME=$(gcloud secrets versions access latest --secret=DB_USERNAME)
                     export DB_PASSWORD=$(gcloud secrets versions access latest --secret=DB_PASSWORD)
