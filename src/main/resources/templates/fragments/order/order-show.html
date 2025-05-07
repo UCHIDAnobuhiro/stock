@@ -1,0 +1,77 @@
+<div id="order-show" th:fragment="order-show-template">
+	<div id="order-show-container"
+		class="w-full flex flex-col justify-center items-center border-2 rounded-lg border-gray-300 border-opacity-50">
+		<div class="flex flex-row text-center text-3xl font-bold mt-8 mb-4">
+			<div class="inline-block animate-bounce transition duration-500 ease-out scale-95 hover:scale-100">
+				<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+					stroke="#6366F1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+					class="transition-transform duration-700 ease-out transform">
+					<circle cx="12" cy="12" r="10" fill="#E0E7FF" />
+					<path d="M9 12l2 2l4 -4" />
+				</svg>
+			</div>
+			<span class="ml-5">注文成功しました</span>
+		</div>
+		<table class="mx-auto pl-10">
+			<tr class="border-b">
+				<th class="text-right py-3 pr-4">注文時間</th>
+				<td class="py-3 pl-2">
+					<span th:text="${#temporals.format(trade.updateAt, 'yyyy/MM/dd HH時mm分ss秒')}"></span>
+				</td>
+			</tr>
+			<tr class="border-b">
+				<th class="text-right py-3 pr-4">注文方法</th>
+				<td class="py-3 pl-2">
+					<span th:text="${trade.side == 0 ? '買い' : (trade.side == 1 ? '売り' : '')}"></span>
+				</td>
+			</tr>
+			<tr class="border-b">
+				<th class="text-right py-3 pr-4">銘柄名</th>
+				<td class="py-3 pl-2">
+					<span th:text="${data.ticker.brand + ' (' + data.ticker.ticker + ')'}"></span>
+				</td>
+			</tr>
+			<tr class="border-b">
+				<th class="text-right py-3 pr-4">数量</th>
+				<td class="py-3 pl-2">
+					<span th:text="${#numbers.formatDecimal(trade.quantity, 0, 'COMMA', 0, 'POINT') + '株'}"></span>
+				</td>
+			</tr>
+			<tr class="border-b">
+				<th class="text-right py-3 pr-4">価格</th>
+				<td class="py-3 pl-2">
+					<span th:text="${trade.unitPrice+'ドル'}"></span>
+				</td>
+			</tr>
+			<tr class="border-b">
+				<th class="text-right py-3 pr-4">受渡金額</th>
+				<td class="py-3 pl-2">
+					<th:block th:switch="${trade.settlementCurrency}">
+						<!-- JPY -->
+						<span th:case="'JPY'"
+							th:text="${#numbers.formatDecimal(trade.totalPrice, 1, 'COMMA', 0, 'POINT')} + ' 円'">
+							円</span>
+						<!-- USD -->
+						<span th:case="'USD'"
+							th:text="${#numbers.formatDecimal(trade.totalPrice, 1, 'COMMA', 2, 'POINT')} + ' ドル'">
+							ドル</span>
+					</th:block>
+				</td>
+			</tr>
+			<tr class="border-b">
+				<th class="text-right py-3 pr-4">為替レート</th>
+				<td class="py-3 pl-2">
+					<span th:text="${trade.exchangeRate}"></span>
+					<span>円/USドル</span>
+				</td>
+			</tr>
+		</table>
+		<!-- ボタン -->
+		<div class="flex flex-row relative mb-4 mt-6 items-center justify-center">
+			<a th:href="@{/stock}" class="inline-flex items-center justify-center leading-none text-white 
+						bg-indigo-500 border-0 py-2 px-4 focus:outline-none hover:bg-indigo-600 rounded text-lg">
+				戻る
+			</a>
+		</div>
+	</div>
+</div>

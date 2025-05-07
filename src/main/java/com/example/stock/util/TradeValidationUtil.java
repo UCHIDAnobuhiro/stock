@@ -6,6 +6,7 @@ import java.math.RoundingMode;
 import com.example.stock.model.Trade;
 import com.example.stock.model.UserWallet;
 import com.example.stock.service.StockService;
+import com.example.stock.service.UserStockService;
 
 public class TradeValidationUtil {
 
@@ -69,5 +70,22 @@ public class TradeValidationUtil {
 		BigDecimal upper = closePrice.multiply(BigDecimal.valueOf(1.1)).setScale(2, RoundingMode.HALF_UP);
 
 		return new BigDecimal[] { lower, upper };
+	}
+
+	/**
+	 * 売り注文の場合、保有数以上の売却を防ぐチェック
+	 * @param trade 売り注文
+	 * @param wallet 該当ユーザーのウォレット
+	 * @param userStockService ユーザーの保有株数を取得できるサービス
+	 * @return boolean（true: OK, false: 保有数不足）
+	 */
+	public static boolean isSellQuantityEnough(Trade trade, UserStockService userStockService) {
+		if (trade.getSide() != 1) {
+			return true; // 買い注文はチェック不要
+		}
+
+		BigDecimal holdingQuantity = userStockService.getStockQuantityByUserAndTicker(trade.getUser(),
+				trade.getTicker().getTicker());
+		return holdingQuantity.compareTo(trade.getQuantity()) >= 0;
 	}
 }
