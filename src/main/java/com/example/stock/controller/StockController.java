@@ -20,7 +20,6 @@ import com.example.stock.model.Tickers;
 import com.example.stock.model.Users;
 import com.example.stock.security.SecurityUtils;
 import com.example.stock.service.FavoritesService;
-import com.example.stock.service.OrderPageDataService;
 import com.example.stock.service.StockService;
 import com.example.stock.service.TickersService;
 
@@ -34,11 +33,10 @@ public class StockController {
 	private final FavoritesService favoritesService;
 	private final StockService stockService;
 	private final SecurityUtils securityUtils;
-	private final OrderPageDataService orderPageDataService;
 
 	//stock.htmlを最初にallのtickersリストを表示
 	@GetMapping("/stock")
-	public String stockPage(Model model) {
+	public String stockPage(@RequestParam(name = "symbol", defaultValue = "AAPL") String symbol, Model model) {
 		try {
 			//基本情報を取得
 			Users user = securityUtils.getLoggedInUserOrThrow();
@@ -46,7 +44,6 @@ public class StockController {
 			List<Favorites> favorites = favoritesService.findFavoritesByUsers(user);
 
 			// 銘柄の当日の情報を取得
-			String symbol = "AAPL";
 			StockCandleWithPrevCloseDto latest = stockService.getLatestStockWithPrevClose(symbol);
 			Tickers ticker = tickersService.getTickersBySymbol(symbol);
 			model.addAttribute("stock", latest);
