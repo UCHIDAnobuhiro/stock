@@ -54,5 +54,4 @@ jobs:
                     export EMAIL_PASSWORD=$(gcloud secrets versions access latest --secret=EMAIL_PASSWORD)
                     nohup java -jar /home/${{ secrets.GCE_USER }}/app.jar > app.log 2>&1 &
                     
-                    rm /home/${{ secrets.GCE_USER }}/credentials.json
                   EOF
