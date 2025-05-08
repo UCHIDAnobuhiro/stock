@@ -1,6 +1,9 @@
 package com.example.stock.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 import jakarta.validation.Valid;
 
@@ -10,6 +13,7 @@ import org.springframework.validation.annotation.Validated;
 
 import com.example.stock.model.Trade;
 import com.example.stock.model.UserWallet;
+import com.example.stock.model.Users;
 import com.example.stock.repository.TradeRepository;
 import com.example.stock.util.TradeValidationUtil;
 
@@ -91,4 +95,31 @@ public class TradeService {
 			throw new IllegalStateException("保有株数が不足です。注文を修正してください。");
 		}
 	}
+
+	public List<Trade> getTradesByUser(Users user) {
+		return tradeRepository.findByUserOrderByCreateAtDesc(user);
+	}
+
+	/**
+	 * ユーザーの取引履歴を検索します。
+	 *
+	 * @param user ログイン中のユーザー
+	 * @param date フィルター対象の日付範囲（"today", "1week", "1month", "all"）
+	 * @param tickerKeyword ティッカーの検索キーワード（連続部分一致）
+	 * @return 該当する取引リスト（新しい順）
+	 */
+	public List<Trade> searchTrades(Users user, String date, String tickerKeyword) {
+		LocalDateTime from = switch (date) {
+		case "today" -> LocalDate.now().atStartOfDay();
+		case "1week" -> LocalDate.now().with(java.time.DayOfWeek.MONDAY).atStartOfDay();
+		case "1month" -> LocalDate.now().withDayOfMonth(1).atStartOfDay();
+		default -> LocalDateTime.of(2000, 1, 1, 0, 0); // "all"
+		};
+
+		return tradeRepository.findByUserAndCreateAtAfterOrderByCreateAtDesc(user, from).stream()
+				.filter(t -> tickerKeyword == null || tickerKeyword.isBlank()
+						|| t.getTicker().getTicker().toLowerCase().contains(tickerKeyword.toLowerCase()))
+				.toList();
+	}
+
 }
