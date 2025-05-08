@@ -1,0 +1,63 @@
+<div id="trade-log-show" th:fragment="trade-log-show-template" class="flex flex-col justify-center items-center">
+	<div class="text-center text-3xl font-bold mt-8 mb-4">
+		取引履歴
+	</div>
+	<!--検索欄-->
+	<div class="mb-4 flex items-center space-x-4">
+		<!-- 時間範囲選択 -->
+		<select id="dateFilter" class="border px-3 py-1 rounded">
+			<option value="today">当日</option>
+			<option value="1week">今週</option>
+			<option value="1month">今月</option>
+			<option value="all">すべて</option>
+		</select>
+		<!-- 銘柄コード検索欄 -->
+		<input id="tickerFilter" type="text" placeholder="銘柄コードを入力" class="border px-3 py-1 rounded" />
+		<button id="tradeSearchBtn" class="bg-indigo-500 text-white px-4 py-1 rounded hover:bg-indigo-700 font-bold shadow">
+			検索
+		</button>
+	</div>
+
+	<!--取引履歴の詳細表示-->
+	<div id="trade-log-table" th:fragment="trade-table-fragment">
+		<table class="min-w-full table-auto border-collapse border border-gray-300 text-sm">
+			<thead class="bg-gray-100">
+				<tr>
+					<th class="border px-4 py-2">日時</th>
+					<th class="border px-4 py-2">銘柄</th>
+					<th class="border px-4 py-2">株数</th>
+					<th class="border px-4 py-2">単価</th>
+					<th class="border px-4 py-2">受渡金額</th>
+					<th class="border px-4 py-2">決済通貨</th>
+					<th class="border px-4 py-2">為替レート</th>
+					<th class="border px-4 py-2">売買</th>
+					<th class="border px-4 py-2">ステータス</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr th:each="trade : ${trades}" class="hover:bg-gray-200">
+					<td class="border px-4 py-2" th:text="${#temporals.format(trade.createAt, 'yyyy-MM-dd HH:mm')}">
+					</td>
+					<td class="border px-4 py-2" th:text="${trade.ticker.ticker}"></td>
+					<td class="border px-4 py-2"
+						th:text="${#numbers.formatDecimal(trade.quantity, 1, 'COMMA', 0, 'POINT')}"></td>
+					<td class="border px-4 py-2"
+						th:text="${#numbers.formatDecimal(trade.unitPrice, 1, 'COMMA', 2, 'POINT')}"></td>
+					<td class="border px-4 py-2"
+						th:text="${#numbers.formatDecimal(trade.totalPrice, 1, 'COMMA', 2, 'POINT')}"></td>
+					<td class="border px-4 py-2" th:text="${trade.settlementCurrency}"></td>
+					<td class="border px-4 py-2">
+						<span th:if="${trade.currency != trade.settlementCurrency}"
+						      th:text="${trade.exchangeRate}"></span>
+						<span th:unless="${trade.currency != trade.settlementCurrency}">-</span>
+					</td>
+					<td class="border px-4 py-2" th:text="${trade.side == 0 ? '購入' : '売却'}"></td>
+					<td class="border px-4 py-2" th:text="${trade.status == 4 ? '成功' : 'その他'}"></td>
+				</tr>
+			</tbody>
+			<div th:if="${errorMessage}" class="text-center text-red-600 font-bold mb-1">
+				<span th:text="${errorMessage}"></span>
+			</div>
+		</table>
+	</div>
+</div>
