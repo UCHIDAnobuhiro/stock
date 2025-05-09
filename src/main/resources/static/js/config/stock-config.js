@@ -15,7 +15,7 @@ class StockConfig {
 	set interval(v) { this.#interval = v; }
 	get outputsize() { return this.#outputsize; }
 	set outputsize(v) { this.#outputsize = v; }
-	
+
 	getSMAPeriods() {
 		return this.#smaPeriodMap[this.#interval] || [];
 	}
@@ -24,6 +24,26 @@ class StockConfig {
 	setSMAPeriods(interval, periods) {
 		this.#smaPeriodMap[interval] = periods;
 	}
+
+	/**
+	* ページ内の DOM から ticker を取得し symbol を初期化する
+	*/
+	initFromDOM() {
+		const el = document.getElementById("tickerNameAndCode");
+		if (el) {
+			const text = el.innerText;
+			const match = text.match(/\(([^)]+)\)/); // 括弧内の ticker を抽出
+			if (match && match[1]) {
+				this.#symbol = match[1];
+				console.log("StockConfig: symbol 初期化成功:", this.#symbol);
+			} else {
+				console.warn("StockConfig: ticker コードが見つかりません");
+			}
+		} else {
+			console.warn("StockConfig: #tickerNameAndCode 要素が存在しません");
+		}
+	}
+
 }
 
 export default new StockConfig();
