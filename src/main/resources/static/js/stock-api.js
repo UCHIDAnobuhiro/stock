@@ -39,13 +39,25 @@ export const fetchStockData = async (extra=0) => {
  * console.log(smaList[0].timeperiod); // 例: 5
  * console.log(smaList[0].values[0].sma); // 例: 220.12
  */
-export const fetchSMAData = async (extra = 0) => {
+export const fetchSMAData = async (extra = 0,dataLength) => {
 	const interval = stockConfig.interval;
 	const timePeriods = stockConfig.getSMAPeriods();
-	const actualOutputsize = stockConfig.outputsize + extra;
-
+	let actualOutputsize = stockConfig.outputsize + extra;
+	
 	const fetchOne = async (period) => {
+		
+		if (period > dataLength) {
+			console.warn(`Skipping SMA(${period}) — Not enough candle data (${dataLength})`);
+			return null;
+		}
+
+		//ロウソク足データが少ない場合、それに合わせてsmaも少なめにfetchする。
+		if (dataLength < stockConfig.outputsize) {
+			actualOutputsize =extra+ dataLength - period + 1;
+		}
+		
 		const url = `/api/stocks/technical/SMA?symbol=${stockConfig.symbol}&interval=${interval}&timeperiod=${period}&outputsize=${actualOutputsize}`;
+		console.log(url);
 		const res = await fetch(url);
 		const json = await res.json();
 		if (json.status === "error") {

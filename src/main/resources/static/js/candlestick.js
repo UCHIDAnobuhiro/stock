@@ -5,9 +5,15 @@ import { trendlineAnnotations, enableTrendlineDrawing } from './trendline.js'; /
 import { calculateBollingerBands } from './bollinger-calc.js';
 import { calculateIchimoku } from './ichimoku-calc.js';
 
+//ロゴ画面から遷移時にsymbolを更新してから、chartを描く
+document.addEventListener("DOMContentLoaded", () => {
+	stockConfig.initFromDOM();  // DOM から symbol を取得
+});
+
 // グローバル変数：チャートインスタンスを保持しておく
 let candleChart = null;
 let volumeChart = null;
+let labels;
 
 // デフォルトの表示本数をセレクターから取得
 stockConfig.showAmount = document.getElementById("rowSelector").value;
@@ -41,7 +47,18 @@ export const renderCharts = async () => {
 	const data = await fetchStockData(extra); // データ取得（余分な日数を含める）
 
 	// x軸用のラベル（日付）
-	let labels = data.map(d => d.datetime);
+	if (data.length == stockConfig.outputsize) {
+		labels = data.map(d => d.datetime);
+	}
+	else {
+		//データの数が200より少ない場合はappleからlableをとる
+		const beforeSymbol = stockConfig.symbol;
+		stockConfig.symbol = "AAPL";
+		const appleData = await fetchStockData();
+		labels = appleData.map(d => d.datetime);
+
+		stockConfig.symbol = beforeSymbol;
+	}
 
 	// ローソク足用のデータ構造に整形
 	let candleData = data.map(d => ({
@@ -64,12 +81,27 @@ export const renderCharts = async () => {
 
 	// SMAまたはBollinger Bandsが選択されている場合
 	if (isSmaChecked || isBbandsChecked) {
-		const SMAResults = await fetchSMAData(extra);
+		let SMAResults = await fetchSMAData(extra, data.length);
+
+		SMAResults = SMAResults.map(sma => ({
+			...sma,
+			values: sma.values.map(d => {
+				const smaValue = parseFloat(d.indicators?.sma ?? 0);
+				return {
+					...d,
+					indicators: {
+						...d.indicators,
+						sma: smaValue === 0 ? null : smaValue
+					}
+				};
+			})
+		}));
 
 		SMADatasets = SMAResults.map(sma => ({
 			type: "line",
 			label: `SMA (${sma.timeperiod})`,
-			data: sma.values.map(d => ({ x: d.datetime, y: parseFloat(d.indicators.sma) })),
+			data: sma.values
+				.map(d => ({ x: d.datetime, y: parseFloat(d.indicators.sma) })),
 			borderColor: chartStyleConfig.getSMAColor(sma.timeperiod),
 			borderWidth: 2,
 			pointRadius: 0,
@@ -205,7 +237,6 @@ export const renderCharts = async () => {
 			}
 		];
 
-		console.log(ichimokuDatasets);
 
 		// 一目均衡表は未来の分も含めて表示する必要があるため、span分を含めてスライス
 		ichimokuDatasets = ichimokuDatasets.map(ds => {
@@ -235,7 +266,6 @@ export const renderCharts = async () => {
 		volumeData = volumeData.slice(-stockConfig.outputsize);
 		labels = labels.slice(-stockConfig.outputsize);
 
-		console.log(labels);
 
 		// 一目均衡表がオンなら未来の日付をlabelsに追加（先行スパン描画用）
 		const lastDate = labels[labels.length - 1];
@@ -324,21 +354,24 @@ const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets
 
 						//tooltipの作成
 						if (!tooltipEl && !shouldHideTooltip) {
-							tooltipEl = document.createElement('div');
-							tooltipEl.id = 'custom-tooltip';
-							tooltipEl.style.position = 'absolute';
-							tooltipEl.style.pointerEvents = 'none';
-							tooltipEl.style.background = 'rgba(0, 0, 0, 0.4)';
-							tooltipEl.style.borderRadius = '6px';
-							tooltipEl.style.padding = '8px 10px';
-							tooltipEl.style.fontFamily = 'sans-serif';
-							tooltipEl.style.fontSize = '13px';
-							tooltipEl.style.color = '#fff';
-							tooltipEl.style.boxShadow = '0 2px 6px rgba(0,0,0,0.25)';
-							tooltipEl.style.whiteSpace = 'nowrap';
-							tooltipEl.style.zIndex = 999;
-							tooltipEl.style.opacity = '1';
-							document.body.appendChild(tooltipEl);
+							tooltipEl = document.getElementById('custom-tooltip');
+							if (!tooltipEl) {
+								tooltipEl = document.createElement('div');
+								tooltipEl.id = 'custom-tooltip';
+								tooltipEl.style.position = 'absolute';
+								tooltipEl.style.pointerEvents = 'none';
+								tooltipEl.style.background = 'rgba(0, 0, 0, 0.4)';
+								tooltipEl.style.borderRadius = '6px';
+								tooltipEl.style.padding = '8px 10px';
+								tooltipEl.style.fontFamily = 'sans-serif';
+								tooltipEl.style.fontSize = '13px';
+								tooltipEl.style.color = '#fff';
+								tooltipEl.style.boxShadow = '0 2px 6px rgba(0,0,0,0.25)';
+								tooltipEl.style.whiteSpace = 'nowrap';
+								tooltipEl.style.zIndex = 999;
+								tooltipEl.style.opacity = '1';
+								document.body.appendChild(tooltipEl);
+							}
 						}
 						// コンテンツ描画
 						const tooltipItems = tooltip.dataPoints;
