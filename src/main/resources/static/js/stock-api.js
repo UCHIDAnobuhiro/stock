@@ -54,7 +54,7 @@ export const fetchSMAData = async (extra = 0,dataLength) => {
 
 		//ロウソク足データが少ない場合、それに合わせてsmaも少なめにfetchする。
 		if (dataLength < stockConfig.outputsize) {
-			actualOutputsize =extra+ dataLength - period + 1;
+			actualOutputsize = extra + dataLength - period + 1;
 		}
 		
 		const url = `/api/stocks/technical/SMA?symbol=${stockConfig.symbol}&interval=${interval}&timeperiod=${period}&outputsize=${actualOutputsize}`;

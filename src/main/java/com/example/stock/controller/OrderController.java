@@ -3,6 +3,7 @@ package com.example.stock.controller;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,12 +20,11 @@ import com.example.stock.dto.OrderPageDataDto;
 import com.example.stock.dto.TradeRequestDto;
 import com.example.stock.model.Trade;
 import com.example.stock.model.Users;
+import com.example.stock.repository.TradeRepository;
 import com.example.stock.security.SecurityUtils;
 import com.example.stock.service.OrderPageDataService;
 import com.example.stock.service.TickersService;
 import com.example.stock.service.TradeService;
-import com.example.stock.service.UserStockService;
-import com.example.stock.service.UserWalletService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,10 +36,9 @@ public class OrderController {
 	private final TradeService tradeService;
 	private final TickersService tickersService;
 	private final TradeConverter tradeConverter;
-	private final UserWalletService userWalletService;
-	private final UserStockService userStockService;
 	private final PasswordEncoder passwordEncoder;
 	private final SecurityUtils securityUtils;
+	private final TradeRepository tradeRepository;
 
 	/**
 	 * 注文ページの初期表示
@@ -75,18 +74,21 @@ public class OrderController {
 	}
 
 	/**
-	 * 注文確認処理
+	 * 注文確認処理（POST）
 	 * @param dto フォームからの入力
 	 * @param result バリデーション結果
 	 * @param model ビュー描画用モデル
-	 * @return 注文確認画面または入力画面
+	 * @return リダイレクト or 入力画面
 	 */
 	@PostMapping("/stock/order/submit")
-	public String showOrderCheckPage(@Valid @ModelAttribute TradeRequestDto dto, BindingResult result, Model model) {
+	public String showOrderCheckPage(@Valid @ModelAttribute TradeRequestDto dto, BindingResult result, Model model,
+			HttpSession session) {
+		Users user = securityUtils.getLoggedInUserOrThrow();
 
 		String symbol = tickersService.getTickerById(dto.getTickerId()).getTicker();
 		OrderPageDataDto data = orderPageDataService.getOrderPageData(symbol);
 
+		// 入力エラー
 		if (result.hasErrors()) {
 			StringBuilder errorMessages = new StringBuilder();
 			result.getFieldErrors().forEach(error -> {
@@ -97,24 +99,15 @@ public class OrderController {
 		}
 
 		Trade newTrade = tradeConverter.toTradeEntity(dto);
-		Users user = securityUtils.getLoggedInUserOrThrow();
 		boolean isTradeSuccess = true;
 
-		//画面移動に必要なデータが足りない場合はstockへ戻る
-
+		// 画面移動に必要なデータが足りない場合はstockへ戻る
 		if (data == null || hasNullField(data)) {
 			if (data != null) {
 				model.addAttribute("ticker", data.getTicker());
 				model.addAttribute("stock", data.getStock());
 			}
 			return "stock";
-		}
-
-		// 入力エラー
-		if (result.hasErrors()) {
-			isTradeSuccess = false;
-			result.getFieldErrors().forEach(e -> System.out.println(e.getField() + ": " + e.getDefaultMessage()));
-			model.addAttribute("errorMessage", "入力に誤りがあります");
 		}
 
 		// パスワード確認
@@ -133,20 +126,46 @@ public class OrderController {
 			}
 		}
 
-		//エラーが発生するなら
+		// エラーが発生するなら入力画面に戻る
 		if (!isTradeSuccess) {
-			// 入力画面に必要なデータを送り、入力画面へ戻る
 			return returnToOrderPage(model, data, dto);
 		}
 
-		// エラーが発生してないなら、注文確定処理（DB保存）
-		tradeService.saveTrade(newTrade);
-		userWalletService.applyTradeToWallet(newTrade);
-		userStockService.applyTradeToUserStock(newTrade);
+		// エラーがなければ、注文確定処理（DB保存）
+		tradeService.executeTrade(newTrade);
 
-		// 最新データ再取得し確認画面へ遷移
-		OrderPageDataDto updatedData = orderPageDataService.getOrderPageData(symbol);
-		model.addAttribute("data", updatedData);
+		// tradeId を session に保存（確認画面で使用）
+		session.setAttribute("confirmedTradeId", newTrade.getId());
+
+		// GETにリダイレクト（リロード対応のため）
+		return "redirect:/stock/order/check";
+	}
+
+	/**
+	 * 注文確認画面の表示（GET）
+	 * @param tradeId DB保存された注文ID
+	 * @param model ビュー描画用モデル
+	 * @return 注文確認画面
+	 */
+	@GetMapping("/stock/order/check")
+	public String showOrderConfirmationPage(Model model, HttpSession session) {
+		Users user = securityUtils.getLoggedInUserOrThrow();
+		Long tradeId = (Long) session.getAttribute("confirmedTradeId");
+		if (tradeId == null) {
+			return "redirect:/stock";
+		}
+
+		//ログイン中のユーザーのデータであるかをチェック 
+		Trade trade = tradeRepository.findById(tradeId).orElse(null);
+		if (trade == null || !trade.getUser().getId().equals(user.getId())) {
+			return "redirect:/stock"; // 他人のデータアクセス防止
+		}
+
+		model.addAttribute("trade", trade);
+		OrderPageDataDto data = orderPageDataService.getOrderPageData(trade.getTicker().getTicker());
+		model.addAttribute("data", data);
+		model.addAttribute("ticker", data.getTicker());
+		model.addAttribute("stock", data.getStock());
 		return "order-check";
 	}
 
