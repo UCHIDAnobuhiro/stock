@@ -4,9 +4,15 @@ import chartStyleConfig from './config/chart-style-config.js';//グラフに関�
 import { trendlineAnnotations, enableTrendlineDrawing } from './trendline.js';　//トレンドラインのファイルを導入
 import { calculateBollingerBands } from './bollinger-calc.js';
 
+//ロゴ画面から遷移時にsymbolを更新してから、chartを描く
+document.addEventListener("DOMContentLoaded", () => {
+	stockConfig.initFromDOM();  // DOM から symbol を取得
+});
+
 // グローバル変数：チャートインスタンスを保持しておく
 let candleChart = null;
 let volumeChart = null;
+let labels;
 
 stockConfig.showAmount = document.getElementById("rowSelector").value; //同時に表示するデータ数 本数selectorのdefault値をとる
 
@@ -35,8 +41,19 @@ export const renderCharts = async () => {
 	const data = await fetchStockData(extra); // データ取得200+25個
 
 	// x軸用のラベル（日付）
-	let labels = data.map(d => d.datetime);
+	if (data.length == stockConfig.outputsize) {
+			labels = data.map(d => d.datetime);
+		}
+		else {
+			//データの数が200より少ない場合はappleからlableをとる
+			const beforeSymbol = stockConfig.symbol;
+			stockConfig.symbol = "AAPL";
+			const appleData = await fetchStockData();
+			labels = appleData.map(d => d.datetime);
 
+			stockConfig.symbol = beforeSymbol;
+		}
+		
 	// ローソク足用のデータ構造に整形
 	let candleData = data.map(d => ({
 		x: d.datetime,
@@ -57,7 +74,22 @@ export const renderCharts = async () => {
 	let ichimokuDatasets=[];
 	//SMAのデータsetを
 	if (isSmaChecked || isBbandsChecked) {
-		const SMAResults = await fetchSMAData(extra);
+		let SMAResults = await fetchSMAData(extra, data.length);
+
+		SMAResults = SMAResults.map(sma => ({
+			...sma,
+			values: sma.values.map(d => {
+				const smaValue = parseFloat(d.indicators?.sma ?? 0);
+				return {
+					...d,
+					indicators: {
+						...d.indicators,
+						sma: smaValue === 0 ? null : smaValue
+					}
+				};
+			})
+		}));
+		
 		SMADatasets = SMAResults.map(sma => ({
 			type: "line",
 			label: `SMA (${sma.timeperiod})`,
@@ -228,21 +260,24 @@ const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets
 
 						//tooltipの作成
 						if (!tooltipEl && !shouldHideTooltip) {
-							tooltipEl = document.createElement('div');
-							tooltipEl.id = 'custom-tooltip';
-							tooltipEl.style.position = 'absolute';
-							tooltipEl.style.pointerEvents = 'none';
-							tooltipEl.style.background = 'rgba(0, 0, 0, 0.4)';
-							tooltipEl.style.borderRadius = '6px';
-							tooltipEl.style.padding = '8px 10px';
-							tooltipEl.style.fontFamily = 'sans-serif';
-							tooltipEl.style.fontSize = '13px';
-							tooltipEl.style.color = '#fff';
-							tooltipEl.style.boxShadow = '0 2px 6px rgba(0,0,0,0.25)';
-							tooltipEl.style.whiteSpace = 'nowrap';
-							tooltipEl.style.zIndex = 999;
-							tooltipEl.style.opacity = '1';
-							document.body.appendChild(tooltipEl);
+							tooltipEl = document.getElementById('custom-tooltip');
+							if (!tooltipEl) {
+								tooltipEl = document.createElement('div');
+								tooltipEl.id = 'custom-tooltip';
+								tooltipEl.style.position = 'absolute';
+								tooltipEl.style.pointerEvents = 'none';
+								tooltipEl.style.background = 'rgba(0, 0, 0, 0.4)';
+								tooltipEl.style.borderRadius = '6px';
+								tooltipEl.style.padding = '8px 10px';
+								tooltipEl.style.fontFamily = 'sans-serif';
+								tooltipEl.style.fontSize = '13px';
+								tooltipEl.style.color = '#fff';
+								tooltipEl.style.boxShadow = '0 2px 6px rgba(0,0,0,0.25)';
+								tooltipEl.style.whiteSpace = 'nowrap';
+								tooltipEl.style.zIndex = 999;
+								tooltipEl.style.opacity = '1';
+								document.body.appendChild(tooltipEl);
+							}
 						}
 						// コンテンツ描画
 						const tooltipItems = tooltip.dataPoints;
