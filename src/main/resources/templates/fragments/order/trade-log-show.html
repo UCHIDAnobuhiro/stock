@@ -52,7 +52,7 @@
 						<span th:unless="${trade.currency != trade.settlementCurrency}">-</span>
 					</td>
 					<td class="border px-4 py-2" th:text="${trade.side == 0 ? '購入' : '売却'}"></td>
-					<td class="border px-4 py-2" th:text="${trade.status == 4 ? '成功' : 'その他'}"></td>
+					<td class="border px-4 py-2" th:text="${trade.status == 4 ? '約定' : 'その他'}"></td>
 				</tr>
 			</tbody>
 			<div th:if="${errorMessage}" class="text-center text-red-600 font-bold mb-1">
