@@ -17,6 +17,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import com.example.stock.dto.LogoSummaryWithTickers;
+import com.example.stock.model.Tickers;
 import com.example.stock.service.LogoDetectionService;
 
 @WebMvcTest(LogoDetectionController.class)
@@ -68,11 +70,18 @@ public class LogoDetectionControllerTest {
 		MockMultipartFile validFile = new MockMultipartFile(
 				"file", "test.jpg", "image/jpeg", new byte[] { 1, 2, 3 });
 
+		Tickers mockTicker = new Tickers();
+		mockTicker.setTicker("GOOGL");
+		mockTicker.setBrand("Google LLC");
+
+		LogoSummaryWithTickers mockSummary = new LogoSummaryWithTickers(
+				mockTicker,
+				"<h1>Google</h1><p>企業概要です。</p>");
+
 		given(logoDetectionService.validateImageFile(validFile)).willReturn(null);
 		given(logoDetectionService.detectLogos(validFile))
 				.willReturn(List.of("Google（信頼度：99％）"));
-		given(logoDetectionService.summarizeWithGemini("Google"))
-				.willReturn("<h1>Google</h1><p>企業概要です。</p>");
+		given(logoDetectionService.summarizeWithGemini("Google")).willReturn(mockSummary);
 
 		mockMvc.perform(MockMvcRequestBuilders.multipart("/logo/detect")
 				.file(validFile)

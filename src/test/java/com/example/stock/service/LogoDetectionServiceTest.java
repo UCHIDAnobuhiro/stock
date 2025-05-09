@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.stock.prompt.PromptLoader;
 import com.example.stock.prompt.PromptType;
+import com.example.stock.repository.TickersRepository;
 import com.google.cloud.vision.v1.AnnotateImageResponse;
 import com.google.cloud.vision.v1.BatchAnnotateImagesResponse;
 import com.google.cloud.vision.v1.EntityAnnotation;
@@ -44,13 +45,16 @@ public class LogoDetectionServiceTest {
 	private OkHttpClient mockHttpClient;
 
 	@Mock
+	private TickersRepository tickersRepository;
+
+	@Mock
 	private Call mockCall;
 
 	private LogoDetectionService service;
 
 	@BeforeEach
 	void setUp() {
-		service = new LogoDetectionService(mockClient, mockLoader, mockHttpClient);
+		service = new LogoDetectionService(mockClient, mockLoader, mockHttpClient, tickersRepository);
 		service.setGeminiApiUrl("https://dummy.api/");
 		service.setGeminiApiKey("dummy-key");
 	}
@@ -273,7 +277,7 @@ public class LogoDetectionServiceTest {
 		when(mockCall.execute()).thenReturn(mockResponse);
 
 		// 実行
-		String result = service.summarizeWithGemini(visionJson);
+		String result = service.summarizeWithGemini(visionJson).getSummaryHtml();
 
 		// 検証：HTML変換されてるか
 		assertTrue(result.contains("<h1>Google</h1>"));

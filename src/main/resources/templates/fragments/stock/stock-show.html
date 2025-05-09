@@ -4,14 +4,24 @@
 	<div id="showAllOrFavoriteButton" class="flex flex-row px-4 pt-4 mb-4 border-b border-gray-300 ">
 		<input type="radio" id="showAllButton" value="all" name="showButton" class="hidden" checked>
 		<label for="showAllButton" class="flex items-center justify-center cursor-pointer text-black text-center border-0 py-2 text-base 
-	rounded px-2 mr-3 text-center transition duration-200 ease-in-out ">
+	rounded px-2 mr-1 text-center transition duration-200 ease-in-out ">
 			すべて
 		</label>
 		<input type="radio" id="showFavoriteButton" value="favorite" name="showButton" class="hidden">
 		<label for="showFavoriteButton" class="flex items-center justify-center cursor-pointer text-black border-0 py-2 text-base rounded 
-		ml-2 px-2 text-center transition duration-200 ease-in-out">
+		ml-1 px-2 text-center transition duration-200 ease-in-out">
 			お気に入り
 		</label>
+		<a th:href="@{/logo/detect}" class="ml-auto flex items-center space-x-2 bg-indigo-100 text-indigo-800 px-1 
+		rounded-md hover:bg-indigo-200 transition shadow-md">
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 22 22" stroke="currentColor"
+				stroke-width="2" class="w-6 h-6">
+				<rect x="3" y="4" width="18" height="14" rx="2" ry="2" stroke-linecap="round" stroke-linejoin="round" />
+				<path d="M3 16l5-5 4 4 5-6 4 5" stroke-linecap="round" stroke-linejoin="round" />
+			</svg>
+			<span class="font-bold">ロゴ検出</span>
+		</a>
+
 	</div>
 	<!--	ボタンEND-->
 	<!--	銘柄一覧リスト-->
@@ -41,14 +51,14 @@
 		<input type="checkbox" th:id="'favoriteCheckbox-' + ${ticker.id}" class="favoriteCheckbox hidden"
 			th:checked="${ticker.isFavorite}" th:data-ticker-id="${ticker.id}" style="color: blue;">
 		<label th:for="'favoriteCheckbox-' + ${ticker.id}" class="favoriteLabel">
-			<svg t="1744111796612" class="icon icon-checked" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
-				p-id="1641" width="20" height="20">
+			<svg t="1744111796612" class="icon icon-checked" viewBox="0 0 1024 1024" version="1.1"
+				xmlns="http://www.w3.org/2000/svg" p-id="1641" width="20" height="20">
 				<path
 					d="M667.786667 117.333333C832.864 117.333333 938.666667 249.706667 938.666667 427.861333c0 138.250667-125.098667 290.506667-371.573334 461.589334a96.768 96.768 0 0 1-110.186666 0C210.432 718.368 85.333333 566.112 85.333333 427.861333 85.333333 249.706667 191.136 117.333333 356.213333 117.333333c59.616 0 100.053333 20.832 155.786667 68.096C567.744 138.176 608.170667 117.333333 667.786667 117.333333z"
 					fill="currentColor" p-id="1642"></path>
 			</svg>
-			<svg t="1744157484883" class="icon icon-unchecked" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
-				p-id="1495" width="20" height="20">
+			<svg t="1744157484883" class="icon icon-unchecked" viewBox="0 0 1024 1024" version="1.1"
+				xmlns="http://www.w3.org/2000/svg" p-id="1495" width="20" height="20">
 				<path
 					d="M170.666667 384c0-107.008 73.130667-170.666667 149.333333-170.666667 81.322667 0 138.837333 67.498667 192 120.661334C565.162667 280.832 622.677333 213.333333 704 213.333333 781.482667 213.333333 853.333333 276.650667 853.333333 384c0 47.872-10.069333 91.733333-27.733333 132.352l78.336 33.962667A413.994667 413.994667 0 0 0 938.666667 384c0-149.504-105.216-256-234.666667-256-81.493333 0-143.104 42.026667-192 86.528C463.104 170.026667 401.493333 128 320 128 192.170667 128 85.333333 234.496 85.333333 384c0 128.853333 58.112 233.386667 136.661334 317.653333 78.08 83.712 178.432 149.76 268.330666 202.794667l43.349334-73.472c-88.192-52.053333-179.84-113.066667-249.258667-187.52C215.509333 569.6 170.666667 484.821333 170.666667 384z m640 341.333333v-128h-85.333334v128h-128v85.333334h127.957334L725.333333 938.666667h85.333334l-0.042667-128H938.666667v-85.333334h-128z"
 					fill="#000000" p-id="1496"></path>
@@ -56,5 +66,3 @@
 		</label>
 	</td>
 </tr>
-
-

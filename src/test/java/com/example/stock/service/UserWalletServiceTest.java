@@ -274,27 +274,53 @@ public class UserWalletServiceTest {
 		assertThat(updatedWallet.getJpyBalance()).isEqualByComparingTo("4900");
 	}
 
-	@DisplayName("T-014: 残高不足なら更新されない（ログのみ記録）")
+	@DisplayName("T-014: 残高不足なら例外が発生する（更新されない）")
 	@Test
 	void testApplyTradeToWallet_InsufficientBalance() {
-		BigDecimal before = userWalletRepository.findByUser(testUser).getJpyBalance();
-
 		testTrade = createTrade(testUser, testTicker, "JPY", new BigDecimal("5001"), 0);
-		userWalletService.applyTradeToWallet(testTrade);
+
+		assertThatThrownBy(() -> userWalletService.applyTradeToWallet(testTrade))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("残高不足");
 
 		UserWallet updatedWallet = userWalletRepository.findByUser(testUser);
-		assertThat(updatedWallet.getJpyBalance()).isEqualByComparingTo(before);
+		assertThat(updatedWallet.getJpyBalance()).isEqualByComparingTo("5000"); // 初期残高不变
 	}
 
-	@DisplayName("T-015: サポートされていない通貨なら更新されない（ログのみ記録）")
+	@DisplayName("T-015: サポートされていない通貨なら例外が発生する（更新されない）")
 	@Test
 	void testApplyTradeToWallet_InvalidCurrency() {
 		testTrade = createTrade(testUser, testTicker, "BTC", new BigDecimal("100"), 0);
-		BigDecimal before = testWallet.getJpyBalance();
 
-		userWalletService.applyTradeToWallet(testTrade);
+		assertThatThrownBy(() -> userWalletService.applyTradeToWallet(testTrade))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("未対応の通貨");
+
 		UserWallet updatedWallet = userWalletRepository.findByUser(testUser);
-		assertThat(updatedWallet.getJpyBalance()).isEqualByComparingTo(before);
+		assertThat(updatedWallet.getJpyBalance()).isEqualByComparingTo("5000"); // 初期残高不变
+	}
+
+	@DisplayName("T-016: 日本円の売り注文により残高が正常に増加すること")
+	@Test
+	void testApplyTradeToWallet_SellJPY() {
+		testTrade = createTrade(testUser, testTicker, "JPY", new BigDecimal("200"), 1); // side = 1 = 売り注文
+		userWalletService.applyTradeToWallet(testTrade);
+
+		UserWallet updatedWallet = userWalletRepository.findByUser(testUser);
+		assertThat(updatedWallet.getJpyBalance()).isEqualByComparingTo("5200"); // 初期5000 + 200
+	}
+
+	@DisplayName("T-017: 米ドルの売り注文により残高が正常に増加すること")
+	@Test
+	void testApplyTradeToWallet_SellUSD() {
+		testWallet.setUsdBalance(new BigDecimal("100"));
+		userWalletRepository.save(testWallet);
+
+		testTrade = createTrade(testUser, testTicker, "USD", new BigDecimal("50"), 1);
+		userWalletService.applyTradeToWallet(testTrade);
+
+		UserWallet updatedWallet = userWalletRepository.findByUser(testUser);
+		assertThat(updatedWallet.getUsdBalance()).isEqualByComparingTo("150"); // 100 + 50
 	}
 
 	// テスト用の取引データ生成ヘルパーメソッド

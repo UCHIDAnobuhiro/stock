@@ -38,7 +38,6 @@ class StockConfig {
 		this.#ichimokuPeriodMap[interval] = config;
 	}
 	
-
 	/**
 	* ページ内の DOM から ticker を取得し symbol を初期化する
 	*/

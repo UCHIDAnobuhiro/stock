@@ -33,6 +33,7 @@
 			<div class="flex flex-row border-2 rounded-lg border-gray-300 border-opacity-50 flex-row pt-2 pl-3 w-full">
 				<div th:replace="~{fragments/stock/today-information :: today-information-template}"></div>
 				<div th:insert="~{fragments/order/order-button :: order-template}"></div>
+				<div th:insert="~{fragments/order/trade-log-button :: trade-log-template}"></div>
 			</div>
 			<!--ローソクと出来高-->
 			<div class="flex-grow" th:insert="~{fragments/stock/graph-volume-show :: graph-volume-show-template}"></div>

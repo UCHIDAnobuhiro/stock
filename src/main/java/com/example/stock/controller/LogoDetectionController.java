@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.stock.dto.LogoSummaryWithTickers;
 import com.example.stock.service.LogoDetectionService;
 
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class LogoDetectionController {
 	public String detectLogo(@RequestParam("file") MultipartFile file, Model model) {
 		List<String> logos = new ArrayList<>();
 		String summaryHTML = "";
+		LogoSummaryWithTickers logoSummaryWithTickers = null;
 
 		String error = logoDetectionService.validateImageFile(file);
 		if (error != null) {
@@ -42,7 +44,8 @@ public class LogoDetectionController {
 			if (!logos.isEmpty() && !logos.get(0).equals("ロゴが検出されませんでした")) {
 				String topLogo = logos.get(0);
 				String companyName = topLogo.split("（")[0];
-				summaryHTML = logoDetectionService.summarizeWithGemini(companyName);
+				logoSummaryWithTickers = logoDetectionService.summarizeWithGemini(companyName);
+				summaryHTML = logoSummaryWithTickers.getSummaryHtml();
 			}
 
 		} catch (Exception e) {
@@ -51,6 +54,12 @@ public class LogoDetectionController {
 
 		model.addAttribute("logos", logos);
 		model.addAttribute("summaryHTML", summaryHTML);
+
+		//デフォルトをAAPLに設定
+		String tickerSymbol = (logoSummaryWithTickers != null && logoSummaryWithTickers.getTickerEntity() != null)
+				? logoSummaryWithTickers.getTickerEntity().getTicker()
+				: "AAPL";
+		model.addAttribute("symbol", tickerSymbol);
 		return "logo/upload";
 	}
 

@@ -27,6 +27,7 @@ export const renderCharts = async () => {
 
 	// チェックされたインジケーターの確認
 	const isSmaChecked = document.querySelector('input[value="sma"]').checked;
+
 	const isBbandsChecked = document.querySelector('input[value="bbands"]').checked;
 	const isIchimokuChecked = document.querySelector('input[value="ichimoku"]').checked;
 
@@ -76,6 +77,7 @@ export const renderCharts = async () => {
 	}));
 
 	let SMADatasets = [];
+
 	let bbandsDatasets = [];
 	let ichimokuDatasets = [];
 
@@ -96,7 +98,6 @@ export const renderCharts = async () => {
 				};
 			})
 		}));
-
 		SMADatasets = SMAResults.map(sma => ({
 			type: "line",
 			label: `SMA (${sma.timeperiod})`,
