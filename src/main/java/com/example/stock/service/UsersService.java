@@ -86,7 +86,7 @@ public class UsersService {
 		usersRepository.save(user);
 
 		// 認証トークンを作成
-		UserToken token = userTokenService.createToken(user, TokenType.VERIFY_EMAIL, Duration.ofHours(24));
+		UserToken token = userTokenService.createToken(user, TokenType.VERIFY_EMAIL, Duration.ofMinutes(30));
 
 		// 認証用メールを送信
 		mailService.sendVerificationEmail(user.getEmail(), token.getToken(), TokenType.VERIFY_EMAIL);
@@ -173,7 +173,7 @@ public class UsersService {
 		userTokenService.deleteToken(user, tokenType);
 
 		// 新しいトークンを発行
-		UserToken token = userTokenService.createToken(user, tokenType, Duration.ofHours(24));
+		UserToken token = userTokenService.createToken(user, tokenType, Duration.ofMinutes(30));
 
 		// 認証メールを再送信
 		mailService.sendVerificationEmail(user.getEmail(), token.getToken(), tokenType);
