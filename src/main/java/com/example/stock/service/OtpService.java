@@ -51,6 +51,8 @@ public class OtpService {
 		if (otpTokenOpt.isPresent()) {
 			OtpToken otpToken = otpTokenOpt.get();
 			if (otpToken.getOtp().equals(otpInput) && otpToken.getExpiryTime().isAfter(LocalDateTime.now())) {
+				// 認証が成功したらトークンを削除
+				otpTokenRepository.delete(otpToken);
 				return true;
 			}
 		}
