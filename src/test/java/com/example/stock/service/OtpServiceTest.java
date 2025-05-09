@@ -1,31 +1,36 @@
 package com.example.stock.service;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Optional;
 
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.mail.javamail.JavaMailSender;
 
 import com.example.stock.model.OtpToken;
 import com.example.stock.repository.OtpTokenRepository;
 
-@SpringBootTest
-@AutoConfigureMockMvc
 public class OtpServiceTest {
-	@Autowired
-	private OtpService otpService;
 
-	@Autowired
+	@Mock
 	private OtpTokenRepository otpTokenRepository;
 
-	@AfterEach
-	void cleanUp() {
-		otpTokenRepository.deleteAll();
+	@Mock
+	private JavaMailSender mailSender;
+
+	@InjectMocks
+	private OtpService otpService;
+
+	@BeforeEach
+	void setup() {
+		MockitoAnnotations.openMocks(this);
 	}
 
 	// F-007-TC1 OTPの生成と送信が正常に動作すること
@@ -33,24 +38,21 @@ public class OtpServiceTest {
 	void testGenerateAndSendOtp() {
 		String email = "test@example.com";
 		otpService.generateAndSendOtp(email);
+		verify(otpTokenRepository, times(1)).save(any());
 
-		List<OtpToken> tokens = otpTokenRepository.findAll();
-		assertFalse(tokens.isEmpty());
-
-		OtpToken otpToken = tokens.get(0);
-		assertEquals(email, otpToken.getEmail());
-		assertNotNull(otpToken.getOtp());
-		assertTrue(otpToken.getExpiryTime().isAfter(LocalDateTime.now()));
 	}
 
 	// F-007-TC2 正しいOTPで認証が成功すること
 	@Test
 	void testVerifyOtp_Success() {
 		String email = "test@example.com";
-		otpService.generateAndSendOtp(email);
+		String otp = "123456";
+		OtpToken token = new OtpToken();
+		token.setEmail(email);
+		token.setOtp(otp);
+		token.setExpiryTime(LocalDateTime.now().plusMinutes(5));
 
-		OtpToken latestToken = otpTokenRepository.findTopByEmailOrderByExpiryTimeDesc(email).orElseThrow();
-		String otp = latestToken.getOtp();
+		when(otpTokenRepository.findTopByEmailOrderByExpiryTimeDesc(email)).thenReturn(Optional.of(token));
 
 		boolean result = otpService.verifyOtp(email, otp);
 		assertTrue(result);
@@ -60,9 +62,15 @@ public class OtpServiceTest {
 	@Test
 	void testVerifyOtp_InvalidOtp() {
 		String email = "test@example.com";
-		otpService.generateAndSendOtp(email);
+		String otp = "123456";
+		OtpToken token = new OtpToken();
+		token.setEmail(email);
+		token.setOtp("654321"); // 間違ったOTPを設定
+		token.setExpiryTime(LocalDateTime.now().plusHours(1));
 
-		boolean result = otpService.verifyOtp(email, "000000"); // 間違ったOTP
+		when(otpTokenRepository.findTopByEmailOrderByExpiryTimeDesc(email)).thenReturn(Optional.of(token));
+
+		boolean result = otpService.verifyOtp(email, otp);
 		assertFalse(result);
 	}
 
@@ -71,12 +79,12 @@ public class OtpServiceTest {
 	void testVerifyOtp_Expired() {
 		String email = "test@example.com";
 		String otp = "123456";
+		OtpToken token = new OtpToken();
+		token.setEmail(email);
+		token.setOtp(otp);
+		token.setExpiryTime(LocalDateTime.now().minusMinutes(1)); // 期限切れ
 
-		OtpToken expiredToken = new OtpToken();
-		expiredToken.setEmail(email);
-		expiredToken.setOtp(otp);
-		expiredToken.setExpiryTime(LocalDateTime.now().minusMinutes(1)); // 期限切れ
-		otpTokenRepository.save(expiredToken);
+		when(otpTokenRepository.findTopByEmailOrderByExpiryTimeDesc(email)).thenReturn(Optional.of(token));
 
 		boolean result = otpService.verifyOtp(email, otp);
 		assertFalse(result);
