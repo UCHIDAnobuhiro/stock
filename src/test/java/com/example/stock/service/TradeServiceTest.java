@@ -299,8 +299,8 @@ public class TradeServiceTest {
 	@DisplayName("T-414: 今日の取引のみを取得できる")
 	@Test
 	void searchTrades_today_shouldReturnTodayOnly() {
-		LocalDateTime now = LocalDateTime.of(2025, 5, 8, 10, 0, 0);
-		LocalDateTime yesterday = LocalDateTime.of(2025, 5, 7, 10, 0, 0);
+		LocalDateTime now = LocalDateTime.now().withHour(10).withMinute(0).withSecond(0);
+		LocalDateTime yesterday = now.minusDays(1);
 
 		insertTradeWithTimestamp(testUser, testTicker, new BigDecimal("1"), new BigDecimal("100"), "USD", now);
 		insertTradeWithTimestamp(testUser, testTicker, new BigDecimal("2"), new BigDecimal("200"), "USD", yesterday);
