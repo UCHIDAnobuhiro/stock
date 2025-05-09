@@ -5,8 +5,13 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.validation.ConstraintViolationException;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +57,9 @@ public class TradeServiceTest {
 	private UserStockService userStockService;
 	@MockBean
 	private UserWalletService userWalletService;
+
+	@PersistenceContext
+	private EntityManager entityManager;
 
 	private Users testUser;
 	private Tickers testTicker;
@@ -109,6 +117,44 @@ public class TradeServiceTest {
 		t.setCreateAt(LocalDateTime.now());
 		t.setUpdateAt(LocalDateTime.now());
 		return t;
+	}
+
+	/**
+	 * テスト用：指定した日時で取引を挿入する（@PrePersistをバイパス）
+	 *
+	 * @param user 対象ユーザー
+	 * @param ticker 対象ティッカー
+	 * @param quantity 株数
+	 * @param unitPrice 単価
+	 * @param currency 通貨（例："USD"）
+	 * @param createAt 作成日時（任意）
+	 */
+	private void insertTradeWithTimestamp(Users user, Tickers ticker, BigDecimal quantity,
+			BigDecimal unitPrice, String currency, LocalDateTime createAt) {
+
+		BigDecimal totalPrice = quantity.multiply(unitPrice);
+		LocalDateTime updateAt = createAt;
+
+		entityManager.createNativeQuery("""
+					INSERT INTO trade (user_id, ticker_id, quantity, unit_price, total_price, currency,
+						settlement_currency, exchange_rate, side, type, status, create_at, update_at)
+					VALUES (:userId, :tickerId, :quantity, :unitPrice, :totalPrice, :currency,
+						:settlementCurrency, :exchangeRate, :side, :type, :status, :createAt, :updateAt)
+				""")
+				.setParameter("userId", user.getId())
+				.setParameter("tickerId", ticker.getId())
+				.setParameter("quantity", quantity)
+				.setParameter("unitPrice", unitPrice)
+				.setParameter("totalPrice", totalPrice)
+				.setParameter("currency", currency)
+				.setParameter("settlementCurrency", currency)
+				.setParameter("exchangeRate", BigDecimal.valueOf(143.07))
+				.setParameter("side", 0) // 購入
+				.setParameter("type", 0) // 指値
+				.setParameter("status", 4)
+				.setParameter("createAt", createAt)
+				.setParameter("updateAt", updateAt)
+				.executeUpdate();
 	}
 
 	@DisplayName("T-401: 負の数量はバリデーションエラー（異常系）")
@@ -234,4 +280,98 @@ public class TradeServiceTest {
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessageContaining("保有株数が不足");
 	}
+
+	@DisplayName("T-413: 'all' 指定で全ての取引を取得できる")
+	@Test
+	void searchTrades_all_shouldReturnAll() {
+		Trade trade1 = createTrade(new BigDecimal("1"), new BigDecimal("100"), "USD");
+		Trade trade2 = createTrade(new BigDecimal("2"), new BigDecimal("200"), "USD");
+
+		tradeRepository.save(trade1);
+		tradeRepository.save(trade2);
+
+		List<Trade> results = tradeService.searchTrades(testUser, "all", "");
+
+		// 取引が2件取得できていることを確認
+		assertThat(results).hasSize(2);
+	}
+
+	@DisplayName("T-414: 今日の取引のみを取得できる")
+	@Test
+	void searchTrades_today_shouldReturnTodayOnly() {
+		LocalDateTime now = LocalDateTime.now().withHour(10).withMinute(0).withSecond(0);
+		LocalDateTime yesterday = now.minusDays(1);
+
+		insertTradeWithTimestamp(testUser, testTicker, new BigDecimal("1"), new BigDecimal("100"), "USD", now);
+		insertTradeWithTimestamp(testUser, testTicker, new BigDecimal("2"), new BigDecimal("200"), "USD", yesterday);
+
+		List<Trade> results = tradeService.searchTrades(testUser, "today", "");
+		assertThat(results).hasSize(1);
+	}
+
+	@DisplayName("T-415: 今週の取引のみを取得できる")
+	@Test
+	void searchTrades_thisWeek_shouldReturnOnlyThisWeek() {
+		LocalDateTime monday = LocalDate.now().with(DayOfWeek.MONDAY).atTime(10, 0);
+		LocalDateTime beforeWeek = monday.minusDays(1);
+
+		insertTradeWithTimestamp(testUser, testTicker, new BigDecimal("1"), new BigDecimal("100"), "USD", monday);
+		insertTradeWithTimestamp(testUser, testTicker, new BigDecimal("2"), new BigDecimal("200"), "USD", beforeWeek);
+
+		List<Trade> results = tradeService.searchTrades(testUser, "1week", "");
+		assertThat(results).hasSize(1);
+	}
+
+	@DisplayName("T-416: 今月の取引のみを取得できる")
+	@Test
+	void searchTrades_thisMonth_shouldReturnOnlyThisMonth() {
+		LocalDateTime monthStart = LocalDate.now().withDayOfMonth(1).atTime(10, 0);
+		LocalDateTime lastMonth = monthStart.minusDays(1);
+
+		insertTradeWithTimestamp(testUser, testTicker, new BigDecimal("1"), new BigDecimal("100"), "USD", monthStart);
+		insertTradeWithTimestamp(testUser, testTicker, new BigDecimal("2"), new BigDecimal("200"), "USD", lastMonth);
+
+		List<Trade> results = tradeService.searchTrades(testUser, "1month", "");
+		assertThat(results).hasSize(1);
+	}
+
+	@DisplayName("T-417: ティッカーキーワードで連続部分一致フィルタが適用される")
+	@Test
+	void searchTrades_partialTickerMatch_shouldWork() {
+		tradeRepository.save(createTrade(new BigDecimal("1"), new BigDecimal("100"), "USD")); // AAPL
+
+		// MSFT を追加
+		Tickers msft = new Tickers();
+		msft.setTicker("MSFT");
+		msft.setBrand("Microsoft");
+		tickersRepository.save(msft);
+
+		Trade msftTrade = createTrade(new BigDecimal("1"), new BigDecimal("150"), "USD");
+		msftTrade.setTicker(msft);
+		tradeRepository.save(msftTrade);
+
+		List<Trade> results = tradeService.searchTrades(testUser, "all", "AAP");
+		assertThat(results).hasSize(1);
+		assertThat(results.get(0).getTicker().getTicker()).isEqualTo("AAPL");
+	}
+
+	@DisplayName("T-418: ティッカーがマッチしない場合は空のリストを返す")
+	@Test
+	void searchTrades_noMatch_shouldReturnEmpty() {
+		tradeRepository.save(createTrade(new BigDecimal("1"), new BigDecimal("100"), "USD")); // AAPL
+
+		List<Trade> results = tradeService.searchTrades(testUser, "all", "XYZ");
+		assertThat(results).isEmpty();
+	}
+
+	@DisplayName("T-419: ティッカーキーワードが null の場合はフィルターしない")
+	@Test
+	void searchTrades_nullTicker_shouldReturnAll() {
+		tradeRepository.save(createTrade(new BigDecimal("1"), new BigDecimal("100"), "USD"));
+		tradeRepository.save(createTrade(new BigDecimal("2"), new BigDecimal("200"), "USD"));
+
+		List<Trade> results = tradeService.searchTrades(testUser, "all", null);
+		assertThat(results).hasSize(2);
+	}
+
 }
