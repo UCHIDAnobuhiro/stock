@@ -1,6 +1,7 @@
 package com.example.stock.controller;
 
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -48,7 +49,8 @@ public class AuthControllerTest {
 		when(otpService.verifyOtp(TEST_EMAIL, otp)).thenReturn(true);
 
 		mockMvc.perform(post("/verify-otp")
-				.param("otp", otp))
+				.param("otp", otp)
+				.with(csrf()))
 				.andExpect(status().is3xxRedirection())
 				.andExpect(redirectedUrl("/logo/detect"));
 	}
@@ -63,7 +65,8 @@ public class AuthControllerTest {
 		when(otpService.verifyOtp(TEST_EMAIL, otp)).thenReturn(false);
 
 		mockMvc.perform(post("/verify-otp")
-				.param("otp", "000000"))
+				.param("otp", "000000")
+				.with(csrf()))
 				.andExpect(status().is3xxRedirection())
 				.andExpect(redirectedUrl("/otp"));
 	}
