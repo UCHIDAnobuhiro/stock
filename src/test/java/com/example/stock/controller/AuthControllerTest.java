@@ -1,10 +1,9 @@
 package com.example.stock.controller;
 
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -25,20 +24,10 @@ public class AuthControllerTest {
 	@MockBean
 	private OtpService otpService;
 
-	@Autowired
+	@MockBean
 	private OtpTokenRepository otpTokenRepository;
 
 	private final String TEST_EMAIL = "test@example.com";
-
-	@BeforeEach
-	void setup() {
-		// ここでテスト用ユーザーを作るなど（必要なら）
-	}
-
-	@AfterEach
-	void tearDown() {
-		otpTokenRepository.deleteAll();
-	}
 
 	// F-007-TC5 OTP入力ページが正常に表示されること
 	@Test
@@ -53,8 +42,10 @@ public class AuthControllerTest {
 	@Test
 	@WithMockUser(username = "test@example.com")
 	void testVerifyOtp_Success() throws Exception {
-		otpService.generateAndSendOtp(TEST_EMAIL);
-		String otp = otpTokenRepository.findTopByEmailOrderByExpiryTimeDesc(TEST_EMAIL).orElseThrow().getOtp();
+		String otp = "123456";
+
+		// OtpService.verifyOtp の戻り値をモックする
+		when(otpService.verifyOtp(TEST_EMAIL, otp)).thenReturn(true);
 
 		mockMvc.perform(post("/verify-otp")
 				.param("otp", otp))
@@ -66,6 +57,11 @@ public class AuthControllerTest {
 	@Test
 	@WithMockUser(username = "test@example.com")
 	void testVerifyOtp_Fail() throws Exception {
+		String otp = "000000";
+
+		// OtpService.verifyOtp の戻り値をモックする
+		when(otpService.verifyOtp(TEST_EMAIL, otp)).thenReturn(false);
+
 		mockMvc.perform(post("/verify-otp")
 				.param("otp", "000000"))
 				.andExpect(status().is3xxRedirection())
