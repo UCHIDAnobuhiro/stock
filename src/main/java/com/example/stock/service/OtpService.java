@@ -3,6 +3,8 @@ package com.example.stock.service;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import jakarta.transaction.Transactional;
+
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -19,9 +21,13 @@ public class OtpService {
 	private final OtpTokenRepository otpTokenRepository;
 	private final JavaMailSender mailSender;
 
+	@Transactional
 	public void generateAndSendOtp(String email) {
 		String otp = OtpUtil.generateOtp();
 		LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(5);
+
+		// 古いOTP削除（同じメールアドレスのものは1件だけにする）
+		otpTokenRepository.deleteByEmail(email);
 
 		// Save OTP to DB
 		OtpToken otpToken = new OtpToken();

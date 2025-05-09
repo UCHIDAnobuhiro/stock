@@ -10,4 +10,6 @@ import com.example.stock.model.OtpToken;
 @Repository
 public interface OtpTokenRepository extends JpaRepository<OtpToken, Long> {
 	Optional<OtpToken> findTopByEmailOrderByExpiryTimeDesc(String email);
+
+	void deleteByEmail(String email);
 }
