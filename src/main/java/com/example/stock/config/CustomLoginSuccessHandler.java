@@ -11,6 +11,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.stereotype.Component;
 
 import com.example.stock.repository.UsersRepository;
+import com.example.stock.service.OtpService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,13 +20,14 @@ import lombok.RequiredArgsConstructor;
 public class CustomLoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
 	private final UsersRepository usersRepository;
+	private final OtpService otpService;
 
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest request,
 			HttpServletResponse response,
 			Authentication authentication)
 			throws IOException, ServletException {
-		String email = authentication.getName(); // ログインしたユーザーのemail（username）
+		String email = authentication.getName();
 
 		// 試行回数リセット（ロックも解除）
 		usersRepository.findByEmail(email).ifPresent(user -> {
@@ -37,6 +39,13 @@ public class CustomLoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 			}
 		});
 
-		response.sendRedirect("/logo/detect");
+		// 6桁のOTPを生成してメール送信
+		otpService.generateAndSendOtp(email);
+
+		// 毎回必ず /otp にリダイレクト
+		setDefaultTargetUrl("/otp");
+
+		super.onAuthenticationSuccess(request, response, authentication);
+
 	}
 }
