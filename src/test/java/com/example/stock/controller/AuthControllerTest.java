@@ -40,7 +40,7 @@ public class AuthControllerTest {
 
 	// F-007-TC6 正しいOTPで認証が成功し、リダイレクトされること
 	@Test
-	@WithMockUser(username = "test@example.com")
+	@WithMockUser(username = "test@example.com", roles = "USER")
 	void testVerifyOtp_Success() throws Exception {
 		String otp = "123456";
 
@@ -55,7 +55,7 @@ public class AuthControllerTest {
 
 	// F-007-TC7 間違ったOTPで認証が失敗し、リダイレクトされること
 	@Test
-	@WithMockUser(username = "test@example.com")
+	@WithMockUser(username = "test@example.com", roles = "USER")
 	void testVerifyOtp_Fail() throws Exception {
 		String otp = "000000";
 
