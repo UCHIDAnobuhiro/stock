@@ -3,10 +3,15 @@ import stockConfig from './config/stock-config.js';//銘柄に関する変数配
 import chartStyleConfig from './config/chart-style-config.js';//グラフに関する変数配置ファイルをimport
 import { trendlineAnnotations, enableTrendlineDrawing } from './trendline.js';　//トレンドラインのファイルを導入
 
+//ロゴ画面から遷移時にsymbolを更新してから、chartを描く
+document.addEventListener("DOMContentLoaded", () => {
+	stockConfig.initFromDOM();  // DOM から symbol を取得
+});
 
 // グローバル変数：チャートインスタンスを保持しておく
 let candleChart = null;
 let volumeChart = null;
+let labels;
 
 stockConfig.showAmount = document.getElementById("rowSelector").value; //同時に表示するデータ数 本数selectorのdefault値をとる
 
@@ -18,11 +23,20 @@ export const renderCharts = async () => {
 	}
 	const isSmaChecked = document.querySelector('input[value="sma"]').checked;
 	const data = await fetchStockData(); // データ取得
-	//データの長さを更新
-	stockConfig.outputsize = data.length;
-	
+
 	// x軸用のラベル（日付）
-	const labels = data.map(d => d.datetime);
+	if (data.length == stockConfig.outputsize) {
+		labels = data.map(d => d.datetime);
+	}
+	else {
+		//データの数が200より少ない場合はappleからlableをとる
+		const beforeSymbol = stockConfig.symbol;
+		stockConfig.symbol = "AAPL";
+		const appleData = await fetchStockData();
+		labels = appleData.map(d => d.datetime);
+
+		stockConfig.symbol = beforeSymbol;
+	}
 
 	// ローソク足用のデータ構造に整形
 	const candleData = data.map(d => ({
@@ -40,9 +54,8 @@ export const renderCharts = async () => {
 	}));
 
 	let SMADatasets = [];
-	//SMAのデータsetを
 	if (isSmaChecked) {
-		const SMAResults = await fetchSMAData();
+		const SMAResults = await fetchSMAData(data.length);
 		SMADatasets = SMAResults.map(sma => ({
 			type: "line",
 			label: `SMA (${sma.timeperiod})`,
@@ -89,7 +102,7 @@ const createCandleChart = (labels, data, volumeData, SMADatasets) => {
 			responsive: true,
 			maintainAspectRatio: false,
 			animation: {
-			  duration: 0
+				duration: 0
 			},
 			scales: {
 				x: {
