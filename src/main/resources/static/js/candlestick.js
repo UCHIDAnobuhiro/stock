@@ -2,7 +2,6 @@ import { fetchStockData, fetchSMAData } from './stock-api.js';//chart.jsに使�
 import stockConfig from './config/stock-config.js';//銘柄に関する変数配置ファイルをimport
 import chartStyleConfig from './config/chart-style-config.js';//グラフに関する変数配置ファイルをimport
 import { trendlineAnnotations, enableTrendlineDrawing } from './trendline.js';　//トレンドラインのファイルを導入
-import { calculateBollingerBands } from './bollinger-calc.js';
 
 //ロゴ画面から遷移時にsymbolを更新してから、chartを描く
 document.addEventListener("DOMContentLoaded", () => {
@@ -23,39 +22,24 @@ export const renderCharts = async () => {
 		delete trendlineAnnotations[key];
 	}
 	const isSmaChecked = document.querySelector('input[value="sma"]').checked;
-	const isBbandsChecked = document.querySelector('input[value="bbands"]').checked;
-	const isIchimokuChecked = document.querySelector('input[value="ichimoku"]').checked;
-	let extra = 0;
-
-	//
-	if (isBbandsChecked) {
-		const periods = stockConfig.getSMAPeriods(); // e.g., [5, 25, 75]
-		extra = periods[1]; // => 25
-	}
-
-	if (isIchimokuChecked) {
-		const ichi = stockConfig.getIchimokuPeriods(); // {tenkan, kijun, senkouB}
-		extra = Math.max(extra, ichi.senkouB + ichi.kijun); // 通常 52 + 26 = 78
-	}
-	
-	const data = await fetchStockData(extra); // データ取得200+25個
+	const data = await fetchStockData(); // データ取得
 
 	// x軸用のラベル（日付）
 	if (data.length == stockConfig.outputsize) {
-			labels = data.map(d => d.datetime);
-		}
-		else {
-			//データの数が200より少ない場合はappleからlableをとる
-			const beforeSymbol = stockConfig.symbol;
-			stockConfig.symbol = "AAPL";
-			const appleData = await fetchStockData();
-			labels = appleData.map(d => d.datetime);
+		labels = data.map(d => d.datetime);
+	}
+	else {
+		//データの数が200より少ない場合はappleからlableをとる
+		const beforeSymbol = stockConfig.symbol;
+		stockConfig.symbol = "AAPL";
+		const appleData = await fetchStockData();
+		labels = appleData.map(d => d.datetime);
 
-			stockConfig.symbol = beforeSymbol;
-		}
-		
+		stockConfig.symbol = beforeSymbol;
+	}
+
 	// ローソク足用のデータ構造に整形
-	let candleData = data.map(d => ({
+	const candleData = data.map(d => ({
 		x: d.datetime,
 		o: d.open,
 		h: d.high,
@@ -64,32 +48,14 @@ export const renderCharts = async () => {
 	}));
 
 	// 出来高チャート用のデータ
-	let volumeData = data.map(d => ({
+	const volumeData = data.map(d => ({
 		x: d.datetime,
 		y: d.volume
 	}));
 
 	let SMADatasets = [];
-	let bbandsDatasets = [];
-	let ichimokuDatasets=[];
-	//SMAのデータsetを
-	if (isSmaChecked || isBbandsChecked) {
-		let SMAResults = await fetchSMAData(extra, data.length);
-
-		SMAResults = SMAResults.map(sma => ({
-			...sma,
-			values: sma.values.map(d => {
-				const smaValue = parseFloat(d.indicators?.sma ?? 0);
-				return {
-					...d,
-					indicators: {
-						...d.indicators,
-						sma: smaValue === 0 ? null : smaValue
-					}
-				};
-			})
-		}));
-		
+	if (isSmaChecked) {
+		const SMAResults = await fetchSMAData(data.length);
 		SMADatasets = SMAResults.map(sma => ({
 			type: "line",
 			label: `SMA (${sma.timeperiod})`,
@@ -97,74 +63,10 @@ export const renderCharts = async () => {
 			borderColor: chartStyleConfig.getSMAColor(sma.timeperiod),
 			borderWidth: 2,
 			pointRadius: 0,
-			fill: false,
-			order: 10
+			fill: false
 		}));
-
-		if (isBbandsChecked) {
-
-			//中央線設定 "1day": [5, 25, 75]の場合は25の線
-			const midSMA = SMAResults[1];
-			const smaArray = midSMA.values.map(d => ({
-				x: d.datetime,
-				y: parseFloat(d.indicators.sma)
-			}));
-
-			//毎日の終値を取得
-			const closePrices = candleData.map(d => d.c);
-
-			//+2σと-2σを計算する。
-			const { upperBand, lowerBand } = calculateBollingerBands(
-				smaArray,
-				closePrices,
-				midSMA.timeperiod
-			);
-
-			bbandsDatasets = [
-				{
-					type: "line",
-					label: "+2σ",
-					data: upperBand,
-					borderColor: chartStyleConfig.getBollingerBandColor("upper"),
-					borderWidth: 2,
-					pointRadius: 0,
-					fill: false,
-					order: 10,
-					borderDash: [5, 5] // 虛線
-				},
-				{
-					type: "line",
-					label: `SMA (${midSMA.timeperiod})`,
-					data: smaArray,
-					borderColor: chartStyleConfig.getBollingerBandMiddleColor(midSMA.timeperiod),
-					borderWidth: 2,
-					pointRadius: 0,
-					order: 10,
-					fill: false
-				},
-				{
-					type: "line",
-					label: "-2σ",
-					data: lowerBand,
-					borderColor: chartStyleConfig.getBollingerBandColor("lower"),
-					borderWidth: 2,
-					pointRadius: 0,
-					fill: false,
-					order: 10,
-					borderDash: [5, 5] // 虛線
-				}
-			];
-			
-			bbandsDatasets = bbandsDatasets.map(ds => ({
-					...ds,
-					data: ds.data.slice(-stockConfig.outputsize)
-				}));
-			if (!isSmaChecked) {
-				SMADatasets = [];
-			}
-		}
 	}
-	
+
 	// チャートが既にあれば破棄してから再生成（再描画時に必要）
 	if (candleChart) {
 		candleChart.destroy();
@@ -173,19 +75,8 @@ export const renderCharts = async () => {
 		volumeChart.destroy();
 	}
 
-	//計算用の余計なデータを消す
-	if(isBbandsChecked||isIchimokuChecked){
-	SMADatasets = SMADatasets.map(ds => ({
-		...ds,
-		data: ds.data.slice(-stockConfig.outputsize)
-	}));
-	candleData = candleData.slice(-stockConfig.outputsize);
-	volumeData = volumeData.slice(-stockConfig.outputsize);
-	labels = labels.slice(-stockConfig.outputsize);
-	}
-	
 	// チャートを生成・描画
-	candleChart = createCandleChart(labels, candleData, volumeData, SMADatasets, bbandsDatasets);
+	candleChart = createCandleChart(labels, candleData, volumeData, SMADatasets);
 	volumeChart = createVolumeChart(labels, volumeData);
 	setTimeout(() => {
 		enableTrendlineDrawing(candleChart);
@@ -193,10 +84,7 @@ export const renderCharts = async () => {
 }
 
 // ローソク足チャートの作成関数
-const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets) => {
-	let tooltipEl = null;
-	let shouldHideTooltip = false; // 表示/非表示を制御するフラグ
-
+const createCandleChart = (labels, data, volumeData, SMADatasets) => {
 	return new Chart(document.getElementById("candlestick-chart").getContext("2d"), {
 		type: "candlestick",
 		data: {
@@ -207,8 +95,7 @@ const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets
 				borderColor: { up: "#26a69a", down: "#ef5350" }, // 緑＝上昇、赤＝下落
 				backgroundColor: { up: "#26a69a", down: "#ef5350" }
 			},
-			...SMADatasets,
-			...bbandsDatasets
+			...SMADatasets
 			]
 		},
 		options: {
@@ -248,87 +135,27 @@ const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets
 			},
 			plugins: {
 				tooltip: {
-					enabled: false,
-					external: function(context) {
-						const { chart, tooltip } = context;
-
-						//mouseleave後再度externalを引用される防止
-						if (shouldHideTooltip) {
-							shouldHideTooltip = false;
-							return;
-						}
-
-						//tooltipの作成
-						if (!tooltipEl && !shouldHideTooltip) {
-							tooltipEl = document.getElementById('custom-tooltip');
-							if (!tooltipEl) {
-								tooltipEl = document.createElement('div');
-								tooltipEl.id = 'custom-tooltip';
-								tooltipEl.style.position = 'absolute';
-								tooltipEl.style.pointerEvents = 'none';
-								tooltipEl.style.background = 'rgba(0, 0, 0, 0.4)';
-								tooltipEl.style.borderRadius = '6px';
-								tooltipEl.style.padding = '8px 10px';
-								tooltipEl.style.fontFamily = 'sans-serif';
-								tooltipEl.style.fontSize = '13px';
-								tooltipEl.style.color = '#fff';
-								tooltipEl.style.boxShadow = '0 2px 6px rgba(0,0,0,0.25)';
-								tooltipEl.style.whiteSpace = 'nowrap';
-								tooltipEl.style.zIndex = 999;
-								tooltipEl.style.opacity = '1';
-								document.body.appendChild(tooltipEl);
-							}
-						}
-						// コンテンツ描画
-						const tooltipItems = tooltip.dataPoints;
-						const title = tooltip.title?.[0] ?? '';
-						let html = `<div style="margin-bottom: 6px; font-weight: bold;">${title}</div>`;
-
-						tooltipItems.forEach((ctx) => {
-							const item = ctx.raw;
-							const dataset = ctx.dataset;
-							const color = dataset.borderColor || '#fff';
-
-							if (item && item.o !== undefined && item.h !== undefined && item.l !== undefined && item.c !== undefined) {
-								const volume = volumeData.find(v => v.x === item.x)?.y?.toLocaleString() ?? 'N/A';
-								html += `
-									<div style="display: flex; align-items: center; margin-bottom: 2px;">
-									<span style="width:10px;height:10px;background:${color.up || '#fff'};display:inline-block;margin-right:6px;border-radius:2px;"></span>
-									<span>始値: ${item.o.toFixed(4)}</span>
-									</div>
-									<div style="margin-left:16px;">高値: ${item.h.toFixed(4)}</div>
-									<div style="margin-left:16px;">安値: ${item.l.toFixed(4)}</div>
-									<div style="margin-left:16px;">終値: ${item.c.toFixed(4)}</div>
-									<div style="margin-left:16px;">出来高: ${volume}</div>`;
-							} else if (item && item.y !== undefined) {
+					callbacks: {
+						// ツールチップタイトル（日付）
+						title: (context) => context[0].label,
+						// ツールチップ内容（OHLC + 出来高）
+						label: (context) => {
+							const item = context.raw;
+							if (context.dataset.type === "line") {
+								const item = context.raw;
 								const value = Number(item.y);
-								html += `
-									<div style="display: flex; align-items: center; margin-bottom: 2px;">
-									<span style="width:10px;height:10px;background:${color};display:inline-block;margin-right:6px;border-radius:2px;"></span>
-									<span>${dataset.label}: ${isNaN(value) ? 'N/A' : value.toFixed(4)}</span></div>`;
+								const label = context.dataset.label;
+								return isNaN(value) ? `${label}: N/A` : `${label}: ${value.toFixed(4)}`;
 							}
-						});
-
-						//htmlにtooltipを追加
-						tooltipEl.innerHTML = html;
-
-						//左上に配置する
-						const canvasRect = chart.canvas.getBoundingClientRect();
-						const { chartArea } = chart;
-						tooltipEl.style.left = canvasRect.left + 'px';
-						tooltipEl.style.top = (canvasRect.top + chartArea.top) + 'px';
-						tooltipEl.style.opacity = '1';
-
-						// mouseleaveされたらtooltipを削除
-						if (!tooltipEl.dataset.listenerAdded) {
-							chart.canvas.addEventListener('mouseleave', () => {
-								shouldHideTooltip = true;
-								if (tooltipEl) {
-									tooltipEl.remove();
-									tooltipEl = null;
-								}
-							});
-							tooltipEl.dataset.listenerAdded = 'true';
+							const matchedVolume = volumeData.find(v => v.x === item.x);
+							const volume = matchedVolume ? matchedVolume.y.toLocaleString() : "N/A";
+							return [
+								`始値: ${item.o.toFixed(4)}`,
+								`高値: ${item.h.toFixed(4)}`,
+								`安値: ${item.l.toFixed(4)}`,
+								`終値: ${item.c.toFixed(4)}`,
+								`出来高: ${volume}`
+							];
 						}
 					}
 				},
@@ -462,13 +289,6 @@ const syncChangeScale = (sourceChart, targetChart) => {
 	}
 };
 
-function hideTooltip(tooltipEl) {
-	if (tooltipEl) {
-		tooltipEl.style.opacity = 0;
-		tooltipEl.style.left = '-9999px';
-		tooltipEl.style.top = '-9999px';
-	}
-}
 
 // セレクタ変更時に interval を更新してチャート再描画
 document.getElementById("candleSelector").addEventListener("change", (event) => {
