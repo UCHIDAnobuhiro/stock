@@ -12,8 +12,9 @@ import stockConfig from './config/stock-config.js';
  * const data = await fetchStockData();
  * console.log(data[0].close); // 終値を出力
  */
-export const fetchStockData = async () => {
-	const url = `/api/stocks/list?symbol=${stockConfig.symbol}&interval=${stockConfig.interval}&outputsize=${stockConfig.outputsize}`;
+export const fetchStockData = async (extra=0) => {
+	const actualOutputsize = stockConfig.outputsize + extra;
+	const url = `/api/stocks/list?symbol=${stockConfig.symbol}&interval=${stockConfig.interval}&outputsize=${actualOutputsize}`;
 	const res = await fetch(url);
 	const json = await res.json();
 
@@ -38,14 +39,14 @@ export const fetchStockData = async () => {
  * console.log(smaList[0].timeperiod); // 例: 5
  * console.log(smaList[0].values[0].sma); // 例: 220.12
  */
-export const fetchSMAData = async (dataLength) => {
+export const fetchSMAData = async (extra = 0,dataLength) => {
 	const interval = stockConfig.interval;
 	const timePeriods = stockConfig.getSMAPeriods();
-	let outputsize = stockConfig.outputsize;
-
+	let actualOutputsize = stockConfig.outputsize + extra;
+	
 	const fetchOne = async (period) => {
-
-		//期間はロウソク足データより長いなら、smaがないはずため、fetchせずにreturn null
+		
+		//ロウソク足データよりsma期間が多い場合はsam存在しないため、fetchしない
 		if (period > dataLength) {
 			console.warn(`Skipping SMA(${period}) — Not enough candle data (${dataLength})`);
 			return null;
@@ -53,10 +54,10 @@ export const fetchSMAData = async (dataLength) => {
 
 		//ロウソク足データが少ない場合、それに合わせてsmaも少なめにfetchする。
 		if (dataLength < stockConfig.outputsize) {
-			outputsize = dataLength - period + 1;
+			actualOutputsize = extra + dataLength - period + 1;
 		}
-
-		const url = `/api/stocks/technical/SMA?symbol=${stockConfig.symbol}&interval=${interval}&timeperiod=${period}&outputsize=${outputsize}`;
+		
+		const url = `/api/stocks/technical/SMA?symbol=${stockConfig.symbol}&interval=${interval}&timeperiod=${period}&outputsize=${actualOutputsize}`;
 		const res = await fetch(url);
 		const json = await res.json();
 		if (json.status === "error") {
