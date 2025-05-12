@@ -27,7 +27,6 @@ export const renderCharts = async () => {
 
 	// チェックされたインジケーターの確認
 	const isSmaChecked = document.querySelector('input[value="sma"]').checked;
-
 	const isBbandsChecked = document.querySelector('input[value="bbands"]').checked;
 	const isIchimokuChecked = document.querySelector('input[value="ichimoku"]').checked;
 
@@ -49,18 +48,18 @@ export const renderCharts = async () => {
 
 	// x軸用のラベル（日付）
 	if (data.length == stockConfig.outputsize) {
-		labels = data.map(d => d.datetime);
-	}
-	else {
-		//データの数が200より少ない場合はappleからlableをとる
-		const beforeSymbol = stockConfig.symbol;
-		stockConfig.symbol = "AAPL";
-		const appleData = await fetchStockData();
-		labels = appleData.map(d => d.datetime);
+			labels = data.map(d => d.datetime);
+		}
+		else {
+			//データの数が200より少ない場合はappleからlableをとる
+			const beforeSymbol = stockConfig.symbol;
+			stockConfig.symbol = "AAPL";
+			const appleData = await fetchStockData();
+			labels = appleData.map(d => d.datetime);
 
-		stockConfig.symbol = beforeSymbol;
-	}
-
+			stockConfig.symbol = beforeSymbol;
+		}
+		
 	// ローソク足用のデータ構造に整形
 	let candleData = data.map(d => ({
 		x: d.datetime,
@@ -77,11 +76,9 @@ export const renderCharts = async () => {
 	}));
 
 	let SMADatasets = [];
-
 	let bbandsDatasets = [];
-	let ichimokuDatasets = [];
+	let ichimokuDatasets=[];
 
-	// SMAまたはBollinger Bandsが選択されている場合
 	if (isSmaChecked || isBbandsChecked) {
 		let SMAResults = await fetchSMAData(extra, data.length);
 
@@ -98,6 +95,7 @@ export const renderCharts = async () => {
 				};
 			})
 		}));
+
 		SMADatasets = SMAResults.map(sma => ({
 			type: "line",
 			label: `SMA (${sma.timeperiod})`,
@@ -297,6 +295,7 @@ export const renderCharts = async () => {
 }
 
 // ローソク足チャートの作成関数
+
 const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets, ichimokuDatasets) => {
 	let tooltipEl = null;
 	let shouldHideTooltip = false; // 表示/非表示を制御するフラグ
@@ -391,11 +390,11 @@ const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets
 						//titleを追加
 						let html = `<div style="margin-bottom: 6px; font-weight: bold;">${title}</div>`;
 
-						//データを追加
 						tooltipItems.forEach((ctx) => {
 							const item = ctx.raw;
 							const dataset = ctx.dataset;
 							const color = dataset.borderColor || '#fff';
+
 
 							//ロウソク足データがある場合はlabelsに表示
 							if (item && item.o != null && item.h != null && item.l != null && item.c != null) {
@@ -570,6 +569,7 @@ const syncChangeScale = (sourceChart, targetChart) => {
 		targetChart.update("none"); // アニメーション更新はしない、データだけの更新をする
 	}
 };
+
 
 function addDays(dateStr, days) {
 	const date = new Date(dateStr);

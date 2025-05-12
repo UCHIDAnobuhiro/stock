@@ -57,6 +57,4 @@ class StockConfig {
 		}
 	}
 
-}
-
 export default new StockConfig();
