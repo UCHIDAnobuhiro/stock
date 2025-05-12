@@ -292,6 +292,7 @@ export const renderCharts = async () => {
 	setTimeout(() => {
 		enableTrendlineDrawing(candleChart);
 	}, 100);
+	setTimeout(() => candleChart.update(), 0);
 }
 
 // ローソク足チャートの作成関数
@@ -300,6 +301,59 @@ const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets
 	let tooltipEl = null;
 	let shouldHideTooltip = false; // 表示/非表示を制御するフラグ
 
+	/**
+	 * autoScaleYPlugin
+	 * Chart.js カスタムプラグイン
+	 * 表示中の範囲 (x軸のmin〜max) 内にあるデータのみを対象に
+	 * 全datasetsのy値を走査し、y軸のmin/maxを自動計算する。
+	 * → Ichimoku等の先行スパン (未来データ) によるy軸の異常拡大を防ぐ。
+	 */
+	const autoScaleYPlugin = {
+	    id: 'autoScaleY',
+	    afterUpdate(chart) { // afterUpdateはscalesが確定した後に呼ばれる
+	        let min = Number.POSITIVE_INFINITY;   // 初期値：最小値
+	        let max = Number.NEGATIVE_INFINITY;   // 初期値：最大値
+
+	        // 現在表示中のx軸インデックス範囲を取得
+	        const minX = chart.scales.x.min;
+	        const maxX = chart.scales.x.max;
+
+	        // 全datasetsを走査
+	        chart.data.datasets.forEach(dataset => {
+	            dataset.data.forEach(point => {
+	                if (!point || point.x === undefined) return;
+
+	                // x値 (日付ラベル) → labels配列のindexに変換
+	                const labelIndex = chart.data.labels.indexOf(point.x);
+	                if (labelIndex === -1) return;                        // 存在しないデータはスキップ
+	                if (labelIndex < minX || labelIndex > maxX) return;  // 現在表示範囲外はスキップ
+
+	                // --- candlestick dataset の場合 (ローソク足データ)
+	                if (point.o != null && point.h != null && point.l != null && point.c != null) {
+	                    if (point.l < min) min = point.l;
+	                    if (point.h > max) max = point.h;
+	                }
+	                // --- line dataset の場合 (SMA, BBANDS, Ichimoku等)
+	                else if (point.y != null && !isNaN(point.y)) {
+	                    if (point.y < min) min = point.y;
+	                    if (point.y > max) max = point.y;
+	                }
+	            });
+	        });
+
+	        // 最終的に取得したmin/maxをy軸に反映
+	        if (min !== Number.POSITIVE_INFINITY && max !== Number.NEGATIVE_INFINITY) {
+	            const padding = (max - min) * 0.1; // 上下に10%の余白を追加
+	            chart.options.scales.y.min = min - padding;
+	            chart.options.scales.y.max = max + padding;
+
+	            // デバッグ出力 (開発時のみ)
+	            console.log("設定：最小値 = " + min + " / 最大値 = " + max);
+	        }
+	    }
+	};
+
+	
 	return new Chart(document.getElementById("candlestick-chart").getContext("2d"), {
 		type: "candlestick",
 		data: {
@@ -343,7 +397,7 @@ const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets
 				y: {
 					position: "right",
 					ticks: {
-						callback: (value) => value.toFixed(2)// 小数2桁で表示
+						callback: (value) => Number.isInteger(value) ? value.toFixed(2) : ''
 					},
 					afterFit: scale => {
 						scale.width = 90; // Y軸幅を固定
@@ -351,6 +405,7 @@ const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets
 				}
 			},
 			plugins: {
+				autoScaleYPlugin,
 				tooltip: {
 					enabled: false,
 					external: function(context) {
@@ -464,7 +519,8 @@ const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets
 				},
 				legend: { display: false } // 凡例は非表示
 			}
-		}
+		},
+		plugins: [ autoScaleYPlugin ] 
 	});
 }
 
