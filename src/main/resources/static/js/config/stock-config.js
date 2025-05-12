@@ -56,5 +56,6 @@ class StockConfig {
 			console.warn("StockConfig: #tickerNameAndCode 要素が存在しません");
 		}
 	}
+}
 
 export default new StockConfig();
