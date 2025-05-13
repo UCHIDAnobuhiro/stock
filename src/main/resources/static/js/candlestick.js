@@ -82,7 +82,7 @@ export const renderCharts = async () => {
 
 		SMADatasets.forEach(ds => ds.data = padDataToLabels(labels, ds.data));
 	}
-	
+
 	// チャートを生成・描画
 	candleChart = createCandleChart(labels, candleData, volumeData, SMADatasets);
 	volumeChart = createVolumeChart(labels, volumeData);
@@ -193,20 +193,20 @@ const createCandleChart = (labels, data, volumeData, SMADatasets) => {
 							if (item && item.o != null && item.h != null && item.l != null && item.c != null) {
 								const volume = volumeData.find(v => v.x === item.x)?.y?.toLocaleString() ?? 'N/A';
 								html += `
-													<div style="display: flex; align-items: center; margin-bottom: 2px;">
-													<span style="width:10px;height:10px;background:${color.up || '#fff'};display:inline-block;margin-right:6px;border-radius:2px;"></span>
-													<span>始値: ${item.o.toFixed(4)}</span>
-													</div>
-													<div style="margin-left:16px;">高値: ${item.h.toFixed(4)}</div>
-													<div style="margin-left:16px;">安値: ${item.l.toFixed(4)}</div>
-													<div style="margin-left:16px;">終値: ${item.c.toFixed(4)}</div>
-													<div style="margin-left:16px;">出来高: ${volume}</div>`;
+								<div style="display: flex; align-items: center; margin-bottom: 2px;">
+								<span style="width:10px;height:12px;background:${color.up || '#fff'};display:inline-block;margin-right:6px;border-radius:2px;"></span>
+								<span style="font-size:12px;">始値: ${item.o.toFixed(4)}</span>
+								</div>
+								<div style="margin-left:16px;font-size:12px;">高値: ${item.h.toFixed(4)}</div>
+								<div style="margin-left:16px;font-size:12px;">安値: ${item.l.toFixed(4)}</div>
+								<div style="margin-left:16px;font-size:12px;">終値: ${item.c.toFixed(4)}</div>
+								<div style="margin-left:16px;font-size:12px;">出来高: ${volume}</div>`;
 							} else if (item && item.y !== undefined) {　//ロウソク足以外のladels設定
 								const value = Number(item.y);
 								html += `
-													<div style="display: flex; align-items: center; margin-bottom: 2px;">
-													<span style="width:10px;height:10px;background:${color};display:inline-block;margin-right:6px;border-radius:2px;"></span>
-													<span>${dataset.label}: ${isNaN(value) ? 'N/A' : value.toFixed(4)}</span></div>`;
+								<div style="display: flex; align-items: center; margin-bottom: 2px;">
+								<span style="width:10px;height:10px;font-size:12px;background:${color};display:inline-block;margin-right:6px;border-radius:2px;"></span>
+								<span style="font-size:12px;">${dataset.label}: ${isNaN(value) ? 'N/A' : value.toFixed(4)}</span></div>`;
 							}
 						});
 
