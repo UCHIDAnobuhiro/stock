@@ -39,7 +39,7 @@ export const renderCharts = async () => {
 	}
 
 	// ローソク足用のデータ構造に整形
-	const candleData = data.map(d => ({
+	let candleData = data.map(d => ({
 		x: d.datetime,
 		o: d.open,
 		h: d.high,
@@ -48,7 +48,7 @@ export const renderCharts = async () => {
 	}));
 
 	// 出来高チャート用のデータ
-	const volumeData = data.map(d => ({
+	let volumeData = data.map(d => ({
 		x: d.datetime,
 		y: d.volume
 	}));
@@ -75,6 +75,14 @@ export const renderCharts = async () => {
 		volumeChart.destroy();
 	}
 
+	if (labels.length != candleData.length) {
+		console.log(candleData);
+		candleData = padCandleDataToLabels(labels, candleData);
+		volumeData = padVolumeDataToLabels(labels, volumeData);
+
+		SMADatasets.forEach(ds => ds.data = padDataToLabels(labels, ds.data));
+	}
+	
 	// チャートを生成・描画
 	candleChart = createCandleChart(labels, candleData, volumeData, SMADatasets);
 	volumeChart = createVolumeChart(labels, volumeData);
@@ -85,6 +93,8 @@ export const renderCharts = async () => {
 
 // ローソク足チャートの作成関数
 const createCandleChart = (labels, data, volumeData, SMADatasets) => {
+	let tooltipEl = null;
+	let shouldHideTooltip = false; // 表示/非表示を制御するフラグ
 	return new Chart(document.getElementById("candlestick-chart").getContext("2d"), {
 		type: "candlestick",
 		data: {
@@ -135,27 +145,91 @@ const createCandleChart = (labels, data, volumeData, SMADatasets) => {
 			},
 			plugins: {
 				tooltip: {
-					callbacks: {
-						// ツールチップタイトル（日付）
-						title: (context) => context[0].label,
-						// ツールチップ内容（OHLC + 出来高）
-						label: (context) => {
-							const item = context.raw;
-							if (context.dataset.type === "line") {
-								const item = context.raw;
-								const value = Number(item.y);
-								const label = context.dataset.label;
-								return isNaN(value) ? `${label}: N/A` : `${label}: ${value.toFixed(4)}`;
+					enabled: false,
+					external: function(context) {
+						const { chart, tooltip } = context;
+
+						//mouseleave後再度externalを引用される防止
+						if (shouldHideTooltip) {
+							shouldHideTooltip = false;
+							return;
+						}
+
+						//tooltipの作成
+						if (!tooltipEl && !shouldHideTooltip) {
+							tooltipEl = document.getElementById('custom-tooltip');
+							if (!tooltipEl) {
+								tooltipEl = document.createElement('div');
+								tooltipEl.id = 'custom-tooltip';
+								tooltipEl.style.position = 'absolute';
+								tooltipEl.style.pointerEvents = 'none';
+								tooltipEl.style.background = 'rgba(0, 0, 0, 0.4)';
+								tooltipEl.style.borderRadius = '6px';
+								tooltipEl.style.padding = '8px 10px';
+								tooltipEl.style.fontFamily = 'sans-serif';
+								tooltipEl.style.fontSize = '13px';
+								tooltipEl.style.color = '#fff';
+								tooltipEl.style.boxShadow = '0 2px 6px rgba(0,0,0,0.25)';
+								tooltipEl.style.whiteSpace = 'nowrap';
+								tooltipEl.style.zIndex = 999;
+								tooltipEl.style.opacity = '1';
+								document.body.appendChild(tooltipEl);
 							}
-							const matchedVolume = volumeData.find(v => v.x === item.x);
-							const volume = matchedVolume ? matchedVolume.y.toLocaleString() : "N/A";
-							return [
-								`始値: ${item.o.toFixed(4)}`,
-								`高値: ${item.h.toFixed(4)}`,
-								`安値: ${item.l.toFixed(4)}`,
-								`終値: ${item.c.toFixed(4)}`,
-								`出来高: ${volume}`
-							];
+						}
+						// コンテンツ描画
+						const tooltipItems = tooltip.dataPoints;
+						const title = tooltip.title?.[0] ?? '';
+
+						//titleを追加
+						let html = `<div style="margin-bottom: 6px; font-weight: bold;">${title}</div>`;
+
+						tooltipItems.forEach((ctx) => {
+							const item = ctx.raw;
+							const dataset = ctx.dataset;
+							const color = dataset.borderColor || '#fff';
+
+
+							//ロウソク足データがある場合はlabelsに表示
+							if (item && item.o != null && item.h != null && item.l != null && item.c != null) {
+								const volume = volumeData.find(v => v.x === item.x)?.y?.toLocaleString() ?? 'N/A';
+								html += `
+													<div style="display: flex; align-items: center; margin-bottom: 2px;">
+													<span style="width:10px;height:10px;background:${color.up || '#fff'};display:inline-block;margin-right:6px;border-radius:2px;"></span>
+													<span>始値: ${item.o.toFixed(4)}</span>
+													</div>
+													<div style="margin-left:16px;">高値: ${item.h.toFixed(4)}</div>
+													<div style="margin-left:16px;">安値: ${item.l.toFixed(4)}</div>
+													<div style="margin-left:16px;">終値: ${item.c.toFixed(4)}</div>
+													<div style="margin-left:16px;">出来高: ${volume}</div>`;
+							} else if (item && item.y !== undefined) {　//ロウソク足以外のladels設定
+								const value = Number(item.y);
+								html += `
+													<div style="display: flex; align-items: center; margin-bottom: 2px;">
+													<span style="width:10px;height:10px;background:${color};display:inline-block;margin-right:6px;border-radius:2px;"></span>
+													<span>${dataset.label}: ${isNaN(value) ? 'N/A' : value.toFixed(4)}</span></div>`;
+							}
+						});
+
+						//htmlにtooltipを追加
+						tooltipEl.innerHTML = html;
+
+						//左上に配置する
+						const canvasRect = chart.canvas.getBoundingClientRect();
+						const { chartArea } = chart;
+						tooltipEl.style.left = canvasRect.left + 'px';
+						tooltipEl.style.top = (canvasRect.top + chartArea.top) + 'px';
+						tooltipEl.style.opacity = '1';
+
+						// mouseleaveされたらtooltipを削除
+						if (!tooltipEl.dataset.listenerAdded) {
+							chart.canvas.addEventListener('mouseleave', () => {
+								shouldHideTooltip = true;
+								if (tooltipEl) {
+									tooltipEl.remove();
+									tooltipEl = null;
+								}
+							});
+							tooltipEl.dataset.listenerAdded = 'true';
 						}
 					}
 				},
@@ -289,6 +363,25 @@ const syncChangeScale = (sourceChart, targetChart) => {
 	}
 };
 
+const padDataToLabels = (labels, rawData) =>
+	labels.map(x => {
+		const found = rawData.find(d => d.x === x);
+		return { x, y: found ? found.y : null };
+	});
+
+const padCandleDataToLabels = (labels, rawData) =>
+	labels.map(x => {
+		const found = rawData.find(d => d.x === x);
+		return found
+			? { x, o: found.o, h: found.h, l: found.l, c: found.c }
+			: { x, o: null, h: null, l: null, c: null };
+	});
+
+const padVolumeDataToLabels = (labels, rawData) =>
+	labels.map(x => {
+		const found = rawData.find(d => d.x === x);
+		return { x, y: found?.y ?? null };
+	});
 
 // セレクタ変更時に interval を更新してチャート再描画
 document.getElementById("candleSelector").addEventListener("change", (event) => {
