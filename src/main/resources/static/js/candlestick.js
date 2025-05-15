@@ -269,10 +269,13 @@ export const renderCharts = async () => {
 		// 一目均衡表がオンなら未来の日付をlabelsに追加（先行スパン描画用）
 		const lastDate = labels[labels.length - 1];
 		if (isIchimokuChecked) {
-			for (let i = 1; i < 25; i++) {
-				const futureDate = addDays(lastDate, i); // 実際の日付を使用
-				labels.push(futureDate);
-			}
+		    const ichimokuPeriods = stockConfig.getIchimokuPeriods();  //intervalに対するmapを返す
+		    const futureSpan = ichimokuPeriods.span;
+			console.log(futureSpan);
+		    for (let i = 1; i <= futureSpan-1; i++) {  //spanを取得
+		        const futureDate = addDays(lastDate, i);
+		        labels.push(futureDate);
+		    }
 		}
 	}
 	
