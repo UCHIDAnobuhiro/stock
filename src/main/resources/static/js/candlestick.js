@@ -48,18 +48,18 @@ export const renderCharts = async () => {
 
 	// x軸用のラベル（日付）
 	if (data.length == stockConfig.outputsize) {
-			labels = data.map(d => d.datetime);
-		}
-		else {
-			//データの数が200より少ない場合はappleからlableをとる
-			const beforeSymbol = stockConfig.symbol;
-			stockConfig.symbol = "AAPL";
-			const appleData = await fetchStockData();
-			labels = appleData.map(d => d.datetime);
+		labels = data.map(d => d.datetime);
+	}
+	else {
+		//データの数が200より少ない場合はappleからlableをとる
+		const beforeSymbol = stockConfig.symbol;
+		stockConfig.symbol = "AAPL";
+		const appleData = await fetchStockData();
+		labels = appleData.map(d => d.datetime);
 
-			stockConfig.symbol = beforeSymbol;
-		}
-		
+		stockConfig.symbol = beforeSymbol;
+	}
+
 	// ローソク足用のデータ構造に整形
 	let candleData = data.map(d => ({
 		x: d.datetime,
@@ -77,7 +77,7 @@ export const renderCharts = async () => {
 
 	let SMADatasets = [];
 	let bbandsDatasets = [];
-	let ichimokuDatasets=[];
+	let ichimokuDatasets = [];
 
 	if (isSmaChecked || isBbandsChecked) {
 		let SMAResults = await fetchSMAData(extra, data.length);
@@ -269,16 +269,16 @@ export const renderCharts = async () => {
 		// 一目均衡表がオンなら未来の日付をlabelsに追加（先行スパン描画用）
 		const lastDate = labels[labels.length - 1];
 		if (isIchimokuChecked) {
-		    const ichimokuPeriods = stockConfig.getIchimokuPeriods();  //intervalに対するmapを返す
-		    const futureSpan = ichimokuPeriods.span;
+			const ichimokuPeriods = stockConfig.getIchimokuPeriods();  //intervalに対するmapを返す
+			const futureSpan = ichimokuPeriods.span;
 			console.log(futureSpan);
-		    for (let i = 1; i <= futureSpan-1; i++) {  //spanを取得
-		        const futureDate = addDays(lastDate, i);
-		        labels.push(futureDate);
-		    }
+			for (let i = 1; i <= futureSpan - 1; i++) {  //spanを取得
+				const futureDate = addDays(lastDate, i);
+				labels.push(futureDate);
+			}
 		}
 	}
-	
+
 	//データ量がlabelsと相違する場合nullで補足
 	if (labels.length != candleData.length) {
 		candleData = padCandleDataToLabels(labels, candleData);
@@ -312,51 +312,51 @@ const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets
 	 * → Ichimoku等の先行スパン (未来データ) によるy軸の異常拡大を防ぐ。
 	 */
 	const autoScaleYPlugin = {
-	    id: 'autoScaleY',
-	    afterUpdate(chart) { // afterUpdateはscalesが確定した後に呼ばれる
-	        let min = Number.POSITIVE_INFINITY;   // 初期値：最小値
-	        let max = Number.NEGATIVE_INFINITY;   // 初期値：最大値
+		id: 'autoScaleY',
+		afterUpdate(chart) { // afterUpdateはscalesが確定した後に呼ばれる
+			let min = Number.POSITIVE_INFINITY;   // 初期値：最小値
+			let max = Number.NEGATIVE_INFINITY;   // 初期値：最大値
 
-	        // 現在表示中のx軸インデックス範囲を取得
-	        const minX = chart.scales.x.min;
-	        const maxX = chart.scales.x.max;
+			// 現在表示中のx軸インデックス範囲を取得
+			const minX = chart.scales.x.min;
+			const maxX = chart.scales.x.max;
 
-	        // 全datasetsを走査
-	        chart.data.datasets.forEach(dataset => {
-	            dataset.data.forEach(point => {
-	                if (!point || point.x === undefined) return;
+			// 全datasetsを走査
+			chart.data.datasets.forEach(dataset => {
+				dataset.data.forEach(point => {
+					if (!point || point.x === undefined) return;
 
-	                // x値 (日付ラベル) → labels配列のindexに変換
-	                const labelIndex = chart.data.labels.indexOf(point.x);
-	                if (labelIndex === -1) return;                        // 存在しないデータはスキップ
-	                if (labelIndex < minX || labelIndex > maxX) return;  // 現在表示範囲外はスキップ
+					// x値 (日付ラベル) → labels配列のindexに変換
+					const labelIndex = chart.data.labels.indexOf(point.x);
+					if (labelIndex === -1) return;                        // 存在しないデータはスキップ
+					if (labelIndex < minX || labelIndex > maxX) return;  // 現在表示範囲外はスキップ
 
-	                // --- candlestick dataset の場合 (ローソク足データ)
-	                if (point.o != null && point.h != null && point.l != null && point.c != null) {
-	                    if (point.l < min) min = point.l;
-	                    if (point.h > max) max = point.h;
-	                }
-	                // --- line dataset の場合 (SMA, BBANDS, Ichimoku等)
-	                else if (point.y != null && !isNaN(point.y)) {
-	                    if (point.y < min) min = point.y;
-	                    if (point.y > max) max = point.y;
-	                }
-	            });
-	        });
+					// --- candlestick dataset の場合 (ローソク足データ)
+					if (point.o != null && point.h != null && point.l != null && point.c != null) {
+						if (point.l < min) min = point.l;
+						if (point.h > max) max = point.h;
+					}
+					// --- line dataset の場合 (SMA, BBANDS, Ichimoku等)
+					else if (point.y != null && !isNaN(point.y)) {
+						if (point.y < min) min = point.y;
+						if (point.y > max) max = point.y;
+					}
+				});
+			});
 
-	        // 最終的に取得したmin/maxをy軸に反映
-	        if (min !== Number.POSITIVE_INFINITY && max !== Number.NEGATIVE_INFINITY) {
-	            const padding = (max - min) * 0.1; // 上下に10%の余白を追加
-	            chart.options.scales.y.min = min - padding;
-	            chart.options.scales.y.max = max + padding;
+			// 最終的に取得したmin/maxをy軸に反映
+			if (min !== Number.POSITIVE_INFINITY && max !== Number.NEGATIVE_INFINITY) {
+				const padding = (max - min) * 0.1; // 上下に10%の余白を追加
+				chart.options.scales.y.min = min - padding;
+				chart.options.scales.y.max = max + padding;
 
-	            // デバッグ出力 (開発時のみ)
-	            console.log("設定：最小値 = " + min + " / 最大値 = " + max);
-	        }
-	    }
+				// デバッグ出力 (開発時のみ)
+				console.log("設定：最小値 = " + min + " / 最大値 = " + max);
+			}
+		}
 	};
 
-	
+
 	return new Chart(document.getElementById("candlestick-chart").getContext("2d"), {
 		type: "candlestick",
 		data: {
@@ -444,9 +444,17 @@ const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets
 						// コンテンツ描画
 						const tooltipItems = tooltip.dataPoints;
 						const title = tooltip.title?.[0] ?? '';
-						
-						//titleを追加
-						let html = `<div style="margin-bottom: 6px; font-weight: bold;">${title}</div>`;
+
+						//本日のデートを取る
+						const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+						let html = "";
+
+						//未来なら日付表示察せない
+						if (title <= today) {
+							//titleを追加
+							html = `<div style="margin-bottom: 6px; font-weight: bold;">${title}</div>`;
+						}
 
 						tooltipItems.forEach((ctx) => {
 							const item = ctx.raw;
@@ -523,7 +531,7 @@ const createCandleChart = (labels, data, volumeData, SMADatasets, bbandsDatasets
 				legend: { display: false } // 凡例は非表示
 			}
 		},
-		plugins: [ autoScaleYPlugin ] 
+		plugins: [autoScaleYPlugin]
 	});
 }
 
@@ -553,7 +561,14 @@ const createVolumeChart = (labels, data) => {
 					ticks: {
 						maxRotation: 0,
 						autoSkipPadding: chartStyleConfig.ticksSkipPadding,
-						callback: (index) => labels[index],
+						callback: (index) => {
+							const label = labels[index];
+							if (!label) return "";
+
+							// 判断label日期是否大于今天
+							const today = new Date().toISOString().slice(0, 10); // 格式: YYYY-MM-DD
+							return label > today ? "" : label;
+						}
 					},
 					grid: {
 						offset: false,//グリードを棒の中央に設置
